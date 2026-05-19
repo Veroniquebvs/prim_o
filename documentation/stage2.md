@@ -31,7 +31,7 @@ The project will be considered successful if the following are delivered by end 
 - A tested, containerized, and deployable MVP validated by the team and Holberton School
 
 ### Achievable
-The scope has been deliberately kept focused on the core token-reward loop. The team consists of two full-stack developers with complementary specializations — security & DevOps on one side, data architecture & UX on the other. The technology stack (Node.js, Express, MongoDB, React) reflects tools both members are confident working with. Docker containerization is introduced progressively to avoid added complexity at the MVP stage.
+The scope has been deliberately kept focused on the core token-reward loop. The team consists of two full-stack developers with complementary specializations — security & DevOps on one side, data architecture & UX on the other. The technology stack (Node.js, Express, PostgreSQL, React) reflects tools both members are confident working with. Docker containerization is introduced progressively to avoid added complexity at the MVP stage.
 
 ### Relevant
 Employee disengagement driven by delayed and impersonal recognition is a documented and widespread issue in SMEs. PRIM'O directly addresses a gap in how small organizations currently handle performance recognition — most rely on annual bonuses or collective benefits that carry no individual meritocratic signal. The token model avoids the heavy regulatory constraints of traditional financial transactions while restoring a direct, emotionally meaningful link between effort and reward.
@@ -153,7 +153,7 @@ Legend: ██ Active   ░░ Inactive
 | **Week 1** | May 5–11 | Stage 2 | Scoping & Backlog | Fully prioritized product backlog (MoSCoW). User Stories drafted and mapped to technical tasks in Notion. |
 | **Week 2** | May 12–18 | Stage 3.1 | UX Design | User flows (login → token → redemption). Low-fidelity wireframes for Employer Dashboard, Employee Dashboard, Marketplace. PRIM'O visual identity defined. |
 | **Week 3** | May 19–25 | Stage 3.2 | Technical Architecture | Mongoose schema (Users, Wallets, Transactions, Offers). Full API specification (routes, payloads, auth guards). Budget-to-token conversion logic documented. |
-| **Week 4** | May 26–Jun 1 | Stage 3.3 | Environment Setup | GitHub repository initialized. React + Node/Express boilerplate configured. MongoDB Atlas connected. JWT authentication baseline implemented. Docker Compose structure drafted. |
+| **Week 4** | May 26–Jun 1 | Stage 3.3 | Environment Setup | GitHub repository initialized. React + Node/Express boilerplate configured. JWT authentication baseline implemented. Docker Compose structure drafted. |
 
 #### Phase B — MVP Sprint (June)
 *Intensity: 5 days per week — high-velocity production*

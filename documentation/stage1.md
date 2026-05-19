@@ -148,7 +148,7 @@ We adopt an **Agile** approach (Scrum/Kanban style) for fast iterations.
 | :--- | :--- | :--- |
 | **Security Breaches** | High | Strict server-side validation, JWT authentication, and encryption of sensitive data. |
 | **Deployment Issues** | Medium | Implementation of automated CI/CD pipelines and staging environments. |
-| **Data Integrity** | High | Use of **MongoDB atomic operations** to guarantee reliability of token balances. |
+| **Data Integrity** | High | Use of **PostgreSQL atomic operations** to guarantee reliability of token balances. |
 
 ---
 
