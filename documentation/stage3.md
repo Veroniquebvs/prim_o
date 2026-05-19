@@ -68,7 +68,7 @@ The Figma mockup covers all user roles — Employer, Employee. It illustrates th
 
 *Example :*
 
-![alt text](../images/maquette1.png) ![alt text](../images/maquette2.png)
+![alt text](../images/maquette.png) ![alt text](../images/maquette1.png)
 
 
 
