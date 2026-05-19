@@ -1,4 +1,4 @@
-# PRIM'O — Stage 2 Report: High-Level Plan
+# High-Level Plan - PRIM'O
 **Project Portfolio | Holberton School — Cohort C28**  
 **Team:** Loïc Cerqueira · Véronique Beauvais  
 **Project Start:** May 2026 | **Expected Delivery:** End of June 2026
