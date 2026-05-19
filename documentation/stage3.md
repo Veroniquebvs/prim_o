@@ -67,7 +67,7 @@ The Figma mockup covers all user roles — Employer, Employee. It illustrates th
 🔗 [View Figma Mockup](https://nimbus-hack-73904302.figma.site/)
 
 *Exemple :*
-[maquette1](images/maquette1.png) [maquette2](images/maquette2.png)
+![maquette1](images/maquette1.png) ![maquette2](images/maquette2.png)
 
 
 
@@ -78,7 +78,7 @@ The Figma mockup covers all user roles — Employer, Employee. It illustrates th
 
 This section shows the technical organization of PRIM'O. The diagram illustrates how our React application communicates with our Node.js server and PostgreSQL database to ensure that tokens are assigned correctly and in real-time.
 
-[diagram](images/diagram-package.png)
+![diagram](images/diagram-package.png)
 
 The **5 layers** identified for the MVP:
 
@@ -154,7 +154,7 @@ This section details the internal organization of PRIM'O. We have chosen to use 
 
 ### 2.2 ER Diagram
 
-[diagram](images/diagram_class.png)
+![diagram](images/diagram_class.png)
 
 **5 tables** and their relational logic:
 
@@ -205,7 +205,7 @@ These diagrams visualize the dialogue between the Front-end, the Back-end, and t
 
 ### 3.1 Token Purchase by the Employer
 
-[diagram](images/diagram_seq1.png)
+![diagram](images/diagram_seq1.png)
 
 The diagram covers **18 steps** across three phases:
 
@@ -225,7 +225,7 @@ The diagram covers **18 steps** across three phases:
 
 ### 3.2 Voucher Redemption by the Employee
 
-[diagram](images/diagram_seq2.png)
+![diagram](images/diagram_seq2.png)
 
 The diagram covers **18 steps**, organized into 3 key phases:
 
@@ -262,7 +262,7 @@ This section details how PRIM'O connects and communicates with different service
 
 #### 4.2.1 Route Groups
 
-[diagram](images/diagram_endpoint.png)
+![diagram](images/diagram_endpoint.png)
 
 4 internal route groups, all behind the API Gateway's `authMiddleware` + `roleGuard`:
 
