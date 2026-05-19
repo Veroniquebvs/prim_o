@@ -1,4 +1,4 @@
-# STAGE 1: Team Formation, Brainstorming, and MVP
+# Team Formation, Brainstorming, and MVP - PRIM'O
 
 ## Table of Contents
 1. [Team Formation and Organizational Structure](#0-team-formation-and-organizational-structure)
