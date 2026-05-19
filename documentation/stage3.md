@@ -66,7 +66,7 @@ The Figma mockup covers all user roles — Employer, Employee. It illustrates th
 
 🔗 [View Figma Mockup](https://nimbus-hack-73904302.figma.site/)
 
-*Exemple :*
+*Example :*
 
 ![alt text](../images/maquette1.png) ![alt text](../images/maquette2.png)
 
