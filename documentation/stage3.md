@@ -3,6 +3,35 @@
 PRIM'O is a B2B SaaS platform enabling real-time meritocratic recognition in SMEs. Employers allocate tokens to employees, who exchange them for vouchers on an integrated marketplace. This document covers the full technical architecture of the MVP, serving as the primary reference for system design, API contracts, database structure, and QA practices.
 
 ---
+## Table of Contents
+
+- [0. User Stories and Mockup](#0-user-stories-and-mockup)
+  - [0.1 Prioritized User Stories (MoSCoW)](#01-prioritized-user-stories-moscow)
+    - [0.1.1 Must Have (MVP Core)](#011-must-have-mvp-core)
+    - [0.1.2 Should Have](#012-should-have)
+    - [0.1.3 Could Have](#013-could-have)
+    - [0.1.4 Won't Have (Next Phase)](#014-wont-have-next-phase)
+- [1. Design System Architecture](#1-design-system-architecture)
+- [2. Components, Classes, and Database Design](#2-components-classes-and-database-design)
+  - [2.1 Class Descriptions](#21-class-descriptions)
+    - [2.1.1 Class: User](#211-class-user)
+    - [2.1.2 Class: TokenTransaction](#212-class-tokentransaction)
+    - [2.1.3 Class: Voucher](#213-class-voucher)
+  - [2.2 Database Design & Relational Logic](#22-database-design--relational-logic)
+    - [Key Cardinalities](#key-cardinalities)
+  - [2.3 Components](#23-components)
+- [3. High-Level Sequence Diagrams](#3-high-level-sequence-diagrams)
+  - [3.1 Token Purchase by the Employer](#31-token-purchase-by-the-employer)
+  - [3.2 Voucher Redemption by the Employee](#32-voucher-redemption-by-the-employee)
+- [4. Document External and Internal APIs](#4-document-external-and-internal-apis)
+  - [4.1 External APIs](#41-external-apis)
+  - [4.2 Internal APIs](#42-internal-apis)
+- [5. SCM, QA, and Deployment Lifecycle](#5-scm-qa-and-deployment-lifecycle)
+  - [5.1 SCM Strategy — GitHub Flow](#51-scm-strategy--github-flow)
+  - [5.2 QA Strategy](#52-qa-strategy)
+  - [5.3 CI/CD Pipeline — Planned with GitHub Actions](#53-cicd-pipeline--planned-with-github-actions)
+  - [5.4 Definition of Done](#54-definition-of-done)
+---
 
 ## 0. User Stories and Mockup
 
