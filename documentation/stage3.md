@@ -346,3 +346,5 @@ A feature branch is considered **merge-ready** when:
 - [ ] The PR has been reviewed and approved by the other team member
 - [ ] No ESLint errors or Prettier violations
 - [ ] Manually tested against the Stripe test environment if the feature touches the payment flow
+
+test.
