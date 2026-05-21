@@ -343,7 +343,7 @@ This section details how PRIM'O connects and communicates with different service
 
 ## 5. SCM and QA Strategies
 
-### 5.1 SCM Strategy — GitHub Flow
+### 5.1 SCM(Source Control Management) Strategy — GitHub Flow
 
 The repository follows **GitHub Flow**, keeping the workflow simple and suited to a two-person team with a short MVP timeline.
 
@@ -366,7 +366,7 @@ Given the MVP scope and timeline, the testing strategy is pragmatic : focused on
 
 ---
 
-### 5.3 CI/CD Pipeline — Planned with GitHub Actions
+### 5.3 CI/CD(Continuous Integration / Continuous Deployment) Pipeline — Planned with GitHub Actions
 
 The pipeline triggers on every push to a `feature/*` branch and on every pull request targeting `main`.
 
