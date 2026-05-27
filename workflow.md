@@ -46,6 +46,7 @@ git checkout -b feature/init
 - Dépendances dev déjà présentes : `jest`, `nodemon`, `supertest`
 - Ajout : `eslint`, `prettier`, `eslint-config-prettier`, `@eslint/js`
 - Configuration ESLint flat config (v10) + Prettier — scripts `lint`, `lint:fix`, `format`
+- Configuration ESLint flat config (v10) + Prettier avec scripts `lint`, `lint:fix`, `format`
 
 **Dépendances frontend** (`client/`)
 - Ajout : `react-router-dom`, `axios`
