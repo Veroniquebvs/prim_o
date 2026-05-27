@@ -38,12 +38,14 @@ git checkout -b feature/init
 **Initialisation du projet Node.js**
 - Ajout d'un `package.json` racine avec npm workspaces (`server`, `client`)
 - Scripts racine : `dev:server`, `dev:client`, `test:server`
+- `package-lock.json` tracké dans git (requis par `npm ci` en CI/CD)
 
 **Dépendances backend** (`server/`)
 - Dépendances production déjà présentes : `express`, `pg`, `bcrypt`, `jsonwebtoken`, `dotenv`, `cors`, `helmet`, `stripe`
 - Ajout : `express-validator`
 - Dépendances dev déjà présentes : `jest`, `nodemon`, `supertest`
 - Ajout : `eslint`, `prettier`, `eslint-config-prettier`, `@eslint/js`
+- Configuration ESLint flat config (v10) + Prettier — scripts `lint`, `lint:fix`, `format`
 - Configuration ESLint flat config (v10) + Prettier avec scripts `lint`, `lint:fix`, `format`
 
 **Dépendances frontend** (`client/`)
@@ -66,6 +68,12 @@ git checkout -b feature/init
 - `server/.env` créé depuis `server/.env.example` (ajout de `CLIENT_URL`)
 - `client/.env` créé depuis `client/.env.example`
 - Les deux sont gitignorés — valeurs réelles à renseigner manuellement
+
+**Middleware `verifyToken`**
+- Vérification JWT avec algorithme forcé `HS256` (protection contre attaque `alg: none`)
+- Parsing strict du header `Authorization: Bearer <token>`
+- Erreurs typées : `TokenExpiredError` retourne un message distinct (utile pour le refresh flow)
+- 5 tests unitaires : token valide, header manquant, token malformé, token expiré, mauvais secret
 
 ---
 
