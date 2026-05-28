@@ -1,7 +1,6 @@
-version: '3.9'
+version: "3.9"
 
 services:
-
   # ── PostgreSQL ─────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
@@ -64,4 +63,6 @@ services:
       - api
 
 volumes:
-  postgres_data:
+  - postgres_data:/var/lib/postgresql/data
+  - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql #  01 first
+  - ./docker/postgres/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql #  02 second
