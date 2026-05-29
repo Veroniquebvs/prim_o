@@ -56,4 +56,20 @@ const handleWebhook = async (req) => {
   }
 };
 
-module.exports = { handleWebhook };
+const createPaymentIntent = async (companyId, tokenAmount) => {
+  // Imaginons que 1 token = 1 euro (à adapter selon ta logique)
+  const amountInCents = tokenAmount * 100;
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amountInCents,
+    currency: 'eur',
+    metadata: {
+      company_id: companyId,
+      token_amount: tokenAmount,
+    },
+  });
+
+  return { clientSecret: paymentIntent.client_secret };
+};
+
+module.exports = { handleWebhook, createPaymentIntent };

@@ -46,4 +46,24 @@ const stripeWebhook = async (req, res, next) => {
   }
 };
 
-module.exports = { allocate, getBalance, listTransactions, getTransaction, stripeWebhook };
+const createPurchaseIntent = async (req, res, next) => {
+  try {
+    // On appelle un nouveau service pour créer l'intention
+    const { clientSecret } = await stripeService.createPaymentIntent(
+      req.user.company_id,
+      req.body.amount
+    );
+    res.json({ clientSecret });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  allocate,
+  getBalance,
+  listTransactions,
+  getTransaction,
+  stripeWebhook,
+  createPurchaseIntent,
+};

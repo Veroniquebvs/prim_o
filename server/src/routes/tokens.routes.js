@@ -23,10 +23,7 @@ router.post(
 router.get(
   '/balance/:userId',
   verifyToken,
-  [
-    param('userId').isUUID().withMessage('userId must be a valid UUID'),
-    validate,
-  ],
+  [param('userId').isUUID().withMessage('userId must be a valid UUID'), validate],
   tokensController.getBalance
 );
 
@@ -44,14 +41,19 @@ router.get(
 router.get(
   '/transactions/:id',
   verifyToken,
-  [
-    param('id').isUUID().withMessage('id must be a valid UUID'),
-    validate,
-  ],
+  [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   tokensController.getTransaction
 );
 
 // Raw body required — express.raw() applied in server.js before express.json()
 router.post('/webhook', tokensController.stripeWebhook);
+
+router.post(
+  '/purchase',
+  verifyToken,
+  roleGuard('employer'),
+  [body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'), validate],
+  tokensController.createPurchaseIntent
+);
 
 module.exports = router;
