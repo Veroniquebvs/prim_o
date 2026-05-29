@@ -11,5 +11,8 @@
     "dev:client": "npm run start --workspace=client",
     "test:server": "npm run test --workspace=server",
     "install:all": "npm install --workspace=server && npm install --workspace=client"
+  },
+  "dependencies": {
+    "pg": "^8.21.0"
   }
 }

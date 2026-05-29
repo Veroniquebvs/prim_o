@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
+const sequelize = require('./src/config/database');
 const routes = require('./src/routes');
 const { errorHandler } = require('./src/middleware/errorHandler');
 
@@ -39,8 +40,15 @@ app.use((_req, res) => {
 
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  try {
+    await sequelize.authenticate();
+    console.log('PostgreSQL connection established');
+  } catch (err) {
+    console.error('PostgreSQL connection failed:', err.message);
+    process.exit(1);
+  }
 });
 
 const shutdown = () => server.close(() => process.exit(0));
