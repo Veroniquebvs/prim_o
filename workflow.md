@@ -2,10 +2,10 @@
 
 ## Branches
 
-| Branche | Rôle |
-|---|---|
-| `main` | Production-ready — protégée, aucun push direct |
-| `dev` | Développement actif — intégration des features |
+| Branche     | Rôle                                               |
+| ----------- | -------------------------------------------------- |
+| `main`      | Production-ready — protégée, aucun push direct     |
+| `dev`       | Développement actif — intégration des features     |
 | `feature/*` | Une branche par fonctionnalité, créée depuis `dev` |
 
 ---
@@ -13,6 +13,7 @@
 ## Historique des actions
 
 ### Initialisation du dépôt (main)
+
 - Initialisation du dépôt Git
 - Création de l'arborescence du projet (`/client`, `/server`, `/docker`, `/docs`)
 - Ajout du `.gitignore`, `.env.example`, `README.md`
@@ -20,6 +21,7 @@
 - Création du `docker-compose.yml` (services : `api`, `client`, `postgres`)
 
 ### Création de la branche dev
+
 ```bash
 git checkout -b dev
 git push -u origin dev
@@ -97,6 +99,7 @@ docker compose up --build
 ```
 
 Les trois services démarrent automatiquement :
+
 - Frontend → http://localhost:3000
 - API → http://localhost:5000
 - PostgreSQL → localhost:5433 (client externe type DBeaver, pgAdmin)
@@ -127,3 +130,40 @@ git checkout -b feature/nom-de-la-feature
 - Toute PR requiert une review avant merge
 - Format des commits : `type(scope): description`
   - Exemples : `feat(auth): add JWT middleware`, `fix(tokens): fix balance computation`
+
+### Mise en place de la couche Données (feature.data) 27/05/26
+
+- Installation et configuration de Sequelize (ORM) relié à PostgreSQL.
+- Création des 5 modèles de données principaux avec types stricts, valeurs par défaut et validations métiers :
+  - `Company.js` : Gestion des entreprises (séparation de l'adresse en `street`, `zip_code`, `city`).
+  - `User.js` : Gestion des comptes (rôles `admin`/`employer`/`employee` et mots de passe hashés).
+  - `TokenTransaction.js` : Registre des jetons (avec support des ID de paiement Stripe).
+  - `Voucher.js` : Catalogue des bons d'achat et gestion de disponibilité.
+  - `Redemption.js` : Historique des échanges de bons et stockage des codes promos partenaires.
+- Centralisation et configuration de la logique relationnelle (clés étrangères gérées par l'ORM) dans `src/models/index.js`.
+- Configuration de l'environnement VS Code local avec **Prettier** (`Format On Save`) pour garantir l'uniformité du code de l'équipe.
+
+### Mise en place de la couche SQL & Docker (feature.sql-init) 27/05/26
+
+- Séparation stricte de l'infrastructure de la base de données (`init.sql`) et des données fictives de test (`seed.sql`).
+- Écriture du script `init.sql` pour activer l'extension de génération d'UUID PostgreSQL (`uuid-ossp`).
+- Écriture du script `seed.sql` avec un jeu de données complet pour le MVP (1 entreprise "TechCorp", 1 manager/employer, 1 employé avec solde de jetons, 3 bons d'achat en boutique et 1 transaction historique).
+- Mise à jour du fichier `docker-compose.yml` pour monter les volumes SQL et forcer l'ordre d'exécution par Docker (`01_init.sql` puis `02_seed.sql`).
+
+---
+
+## Astuces & Résolution de problèmes (Database)
+
+### Comment forcer Docker à recharger les fichiers init.sql et seed.sql ?
+
+PostgreSQL sous Docker n'exécute les scripts du dossier `initdb.d` **que la toute première fois** où la base de données est créée. Si des modifications sont apportées à `init.sql` ou `seed.sql`, relancer un simple `docker compose up` ne les prendra pas en compte.
+
+Pour forcer la réinitialisation complète et propre avec les nouvelles graines (seeds), il faut vider le volume de stockage avec cette commande :
+
+```bash
+# Éteindre les conteneurs et détruire le volume de stockage local
+docker compose down -v
+
+# Relancer l'environnement à neuf (les scripts SQL seront rejoués)
+docker compose up --build
+```
