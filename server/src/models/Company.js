@@ -33,11 +33,11 @@ const initCompany = (sequelize) => {
       // 4 Instead of a single 'address' field, we split it:
       street: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
       },
       zip_code: {
         type: DataTypes.STRING(5),
-        allowNull: true,
+        allowNull: false,
         validate: {
           isNumeric: true,
           len: [5, 5],
@@ -45,12 +45,12 @@ const initCompany = (sequelize) => {
       },
       city: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
       },
       // 5. SIRET Number (Optional, but must be exactly 14 characters if provided)
       siret: {
         type: DataTypes.STRING(14), // Limits the database column to 14 characters maximum
-        allowNull: true,
+        allowNull: false,
         validate: {
           isNumeric: true, // Ensures the string contains only numbers
           len: [14, 14], // Forces the length to be exactly 14 characters

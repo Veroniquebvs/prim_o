@@ -1,61 +1,80 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { companyService } from '../services/company.service';
+import { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { companyService } from "../services/company.service";
 
-type Role = 'employer' | 'employee';
+type Role = "employer" | "employee";
 
 export default function RegisterPage() {
   const { register, isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<Role>('employee');
-  const [firstName, setFirstName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [companyId, setCompanyId] = useState('');
-  const [error, setError] = useState('');
+  const [role, setRole] = useState<Role>("employee");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Champs entreprise
+  const [companyName, setCompanyName] = useState("");
+  const [siret, setSiret] = useState("");
+  const [street, setStreet] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [city, setCity] = useState("");
+  const [companyId, setCompanyId] = useState("");
+
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   if (isLoading) return null;
 
   if (isAuthenticated && user) {
-    if (user.role === 'employer') return <Navigate to="/employer/dashboard" replace />;
-    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === "employer")
+      return <Navigate to="/employer/dashboard" replace />;
+    if (user.role === "admin")
+      return <Navigate to="/admin/dashboard" replace />;
     return <Navigate to="/catalogue" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     setSubmitting(true);
     try {
       let cId = companyId;
 
-      if (role === 'employer') {
-        const company = await companyService.create({ name: companyName });
+      if (role === "employer") {
+        // Submitting updated company details
+        const company = await companyService.create({
+          name: companyName,
+          siret,
+          street,
+          zip_code: zipCode,
+          city,
+        });
         cId = company.id;
       }
 
       await register({
         first_name: firstName,
-        name: firstName,
+        name: lastName,
         email,
         password,
         role,
         company_id: cId || undefined,
       });
 
-      // Navigate directly — avoids race condition with React state commit
-      if (role === 'employer') {
-        navigate('/employer/dashboard', { replace: true });
+      if (role === "employer") {
+        navigate("/employer/dashboard", { replace: true });
       } else {
-        navigate('/catalogue', { replace: true });
+        navigate("/catalogue", { replace: true });
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      setError(axiosErr.response?.data?.error ?? 'Erreur lors de la création du compte.');
+      setError(
+        axiosErr.response?.data?.error ??
+          "Erreur lors de la création du compte.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -66,9 +85,9 @@ export default function RegisterPage() {
       <div className="auth-card">
         <div className="auth-logo">PRIM'O</div>
         <h1 className="auth-title">Créer un compte</h1>
-        <p className="auth-subtitle">Rejoignez la plateforme</p>
 
         <form onSubmit={handleSubmit}>
+          {/* Rôle */}
           <div className="form-group">
             <label className="form-label" htmlFor="role">
               Je suis
@@ -84,6 +103,7 @@ export default function RegisterPage() {
             </select>
           </div>
 
+          {/* Name and Lastname */}
           <div className="form-group">
             <label className="form-label" htmlFor="firstName">
               Prénom
@@ -91,10 +111,20 @@ export default function RegisterPage() {
             <input
               id="firstName"
               className="form-input"
-              type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Jean"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="lastName">
+              Nom de famille
+            </label>
+            <input
+              id="lastName"
+              className="form-input"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               required
             />
           </div>
@@ -109,7 +139,6 @@ export default function RegisterPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
               required
             />
           </div>
@@ -124,28 +153,84 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="8 caractères minimum"
               required
               minLength={8}
             />
           </div>
 
-          {role === 'employer' ? (
-            <div className="form-group">
-              <label className="form-label" htmlFor="companyName">
-                Nom de l'entreprise
-              </label>
-              <input
-                id="companyName"
-                className="form-input"
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Ma Société SAS"
-                required
-              />
-            </div>
-          ) : (
+          {/* Employer-specific fields */}
+          {role === "employer" && (
+            <>
+              <div className="form-group">
+                <label className="form-label" htmlFor="companyName">
+                  Nom de l'entreprise
+                </label>
+                <input
+                  id="companyName"
+                  className="form-input"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="siret">
+                  SIRET (14 chiffres)
+                </label>
+                <input
+                  id="siret"
+                  className="form-input"
+                  value={siret}
+                  onChange={(e) => setSiret(e.target.value)}
+                  required
+                  maxLength={14}
+                  pattern="\d{14}"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="street">
+                  Adresse
+                </label>
+                <input
+                  id="street"
+                  className="form-input"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                  required
+                />
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label" htmlFor="zipCode">
+                    Code Postal
+                  </label>
+                  <input
+                    id="zipCode"
+                    className="form-input"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    required
+                    maxLength={5}
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 2 }}>
+                  <label className="form-label" htmlFor="city">
+                    Ville
+                  </label>
+                  <input
+                    id="city"
+                    className="form-input"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Employee-specific fields */}
+          {role === "employee" && (
             <div className="form-group">
               <label className="form-label" htmlFor="companyId">
                 ID de votre entreprise
@@ -153,29 +238,22 @@ export default function RegisterPage() {
               <input
                 id="companyId"
                 className="form-input"
-                type="text"
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
-                placeholder="Fourni par votre employeur"
               />
             </div>
           )}
 
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
+          {error && <p className="form-error">{error}</p>}
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
-            {submitting ? 'Création…' : 'Créer le compte'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            disabled={submitting}
+          >
+            {submitting ? "Création…" : "Créer le compte"}
           </button>
         </form>
-
-        <p className="auth-footer">
-          Déjà un compte ?{' '}
-          <Link to="/login">Se connecter</Link>
-        </p>
       </div>
     </div>
   );
