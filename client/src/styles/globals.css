@@ -333,20 +333,16 @@ a:hover {
   padding: 6px 14px;
   border-radius: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.75);
-  font-family: "Poppins", sans-serif;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.75);
+  font-family: 'Poppins', sans-serif;
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
+  margin-left: auto;
 }
-.top-nav-more-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
+.top-nav-more-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
 /* ═══════════════════════════════════════════════════════════
    BOTTOM NAV — floating pill (mobile only, <1024px)
@@ -377,9 +373,7 @@ a:hover {
   align-items: center;
   justify-content: space-around;
   padding: 0 6px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   z-index: 250;
 }
 
@@ -435,9 +429,7 @@ a:hover {
   position: fixed;
   inset: 0;
   /* leave room at bottom so the sheet stops above the bottom nav */
-  padding-bottom: calc(
-    var(--bottom-nav-h) + 14px + env(safe-area-inset-bottom, 0px)
-  );
+  padding-bottom: calc(var(--bottom-nav-h) + 14px + env(safe-area-inset-bottom, 0px));
   background: rgba(0, 0, 0, 0.55);
   z-index: 200;
   display: flex;
@@ -560,21 +552,13 @@ a:hover {
   align-items: center;
   color: rgba(255, 255, 255, 0.5);
 }
-.menu-sheet-action-icon svg {
-  width: 20px;
-  height: 20px;
-}
-.menu-sheet-action--danger {
-  color: var(--danger);
-}
-.menu-sheet-action--danger .menu-sheet-action-icon {
-  color: var(--danger);
-  opacity: 0.7;
-}
+.menu-sheet-action-icon svg { width: 20px; height: 20px; }
+.menu-sheet-action--danger { color: var(--danger); }
+.menu-sheet-action--danger .menu-sheet-action-icon { color: var(--danger); opacity: 0.7; }
 .menu-sheet-action-chevron {
   display: flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255,255,255,0.3);
   flex-shrink: 0;
 }
 
@@ -861,16 +845,10 @@ a:hover {
   text-align: center;
 }
 @media (min-width: 768px) {
-  .page-header {
-    margin: 0 -32px 32px;
-    padding: 24px 32px 20px;
-  }
+  .page-header { margin: 0 -32px 32px; padding: 24px 32px 20px; }
 }
 @media (min-width: 1024px) {
-  .page-header {
-    margin: 0 -40px 32px;
-    padding: 24px 40px 20px;
-  }
+  .page-header { margin: 0 -40px 32px; padding: 24px 40px 20px; }
 }
 .page-header h1 {
   font-size: 1.35rem;
@@ -884,9 +862,7 @@ a:hover {
   font-size: 0.875rem;
 }
 @media (min-width: 768px) {
-  .page-header h1 {
-    font-size: 1.6rem;
-  }
+  .page-header h1 { font-size: 1.6rem; }
 }
 
 .back-btn {
@@ -898,20 +874,15 @@ a:hover {
   border-radius: 8px;
   background: transparent;
   color: #ffffff;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.back-btn svg {
-  width: 14px;
-  height: 14px;
-}
-.back-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
+.back-btn svg { width: 14px; height: 14px; }
+.back-btn:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* ═══════════════════════════════════════════════════════════
    TOKEN BADGE
@@ -1310,12 +1281,8 @@ a:hover {
   background: var(--border);
   margin: 16px 0;
 }
-.text-muted {
-  color: var(--text-muted);
-}
-.text-primary {
-  color: var(--primary);
-}
+.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
 
 /* ═══════════════════════════════════════════════════════════
    MES INFORMATIONS PAGE
@@ -1348,7 +1315,7 @@ a:hover {
 .info-field-input {
   border: none;
   background: transparent;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text);
@@ -1386,7 +1353,7 @@ a:hover {
   flex: 1;
   border: none;
   background: transparent;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text);
@@ -1406,13 +1373,8 @@ a:hover {
   flex-shrink: 0;
   transition: color 0.15s;
 }
-.pwd-eye-btn svg {
-  width: 18px;
-  height: 18px;
-}
-.pwd-eye-btn:hover {
-  color: var(--primary);
-}
+.pwd-eye-btn svg { width: 18px; height: 18px; }
+.pwd-eye-btn:hover { color: var(--primary); }
 
 .pwd-rules-card {
   background: var(--card);
@@ -1514,7 +1476,7 @@ a:hover {
 }
 
 .param-toggle::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 3px;
   left: 3px;
@@ -1522,7 +1484,7 @@ a:hover {
   height: 20px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
   transition: transform 0.22s;
 }
 
@@ -1548,13 +1510,11 @@ a:hover {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .param-lang-btn + .param-lang-btn {
@@ -1572,7 +1532,7 @@ a:hover {
   background: transparent;
   border: none;
   color: var(--danger, #ef4444);
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.9rem;
   font-weight: 600;
   text-align: left;
@@ -1598,6 +1558,7 @@ a:hover {
   gap: 10px;
   justify-content: flex-end;
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    CGU PAGE
@@ -1675,15 +1636,13 @@ a:hover {
   border-radius: 14px;
   cursor: pointer;
   text-align: left;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-  font-family: "Poppins", sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: 'Poppins', sans-serif;
   color: var(--text);
 }
 .aide-card-btn:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 12px rgba(0, 161, 154, 0.1);
+  box-shadow: 0 2px 12px rgba(0,161,154,0.1);
 }
 .aide-card-icon {
   display: flex;
@@ -1691,10 +1650,7 @@ a:hover {
   color: var(--primary);
   flex-shrink: 0;
 }
-.aide-card-icon svg {
-  width: 22px;
-  height: 22px;
-}
+.aide-card-icon svg { width: 22px; height: 22px; }
 .aide-card-label {
   flex: 1;
   font-size: 0.95rem;
@@ -1718,10 +1674,7 @@ a:hover {
   margin-bottom: 24px;
 }
 @media (min-width: 768px) {
-  .faq-topbar {
-    margin: 0 -32px;
-    padding: 14px 32px;
-  }
+  .faq-topbar { margin: 0 -32px; padding: 14px 32px; }
 }
 @media (min-width: 1024px) {
   .faq-topbar {
@@ -1780,7 +1733,7 @@ a:hover {
   padding: 16px 18px;
   background: transparent;
   border: none;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text);
@@ -1788,9 +1741,7 @@ a:hover {
   cursor: pointer;
   transition: background 0.15s;
 }
-.faq-question:hover {
-  background: var(--primary-light);
-}
+.faq-question:hover { background: var(--primary-light); }
 
 .faq-answer {
   padding: 0 18px 16px;
@@ -1829,13 +1780,8 @@ a:hover {
   color: var(--primary);
   text-decoration: none;
 }
-.faq-contact-email svg {
-  width: 18px;
-  height: 18px;
-}
-.faq-contact-email:hover {
-  text-decoration: underline;
-}
+.faq-contact-email svg { width: 18px; height: 18px; }
+.faq-contact-email:hover { text-decoration: underline; }
 
 .faq-social-row {
   display: flex;
@@ -1852,26 +1798,15 @@ a:hover {
   background: var(--primary-light);
   color: var(--primary);
   text-decoration: none;
-  transition:
-    background 0.15s,
-    transform 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
-.faq-social-btn svg {
-  width: 20px;
-  height: 20px;
-}
-.faq-social-btn:hover {
-  background: var(--primary);
-  color: #fff;
-  transform: translateY(-2px);
-}
+.faq-social-btn svg { width: 20px; height: 20px; }
+.faq-social-btn:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
 
 /* ═══════════════════════════════════════════════════════════
    COMPANY ACTIVITY FEED
 ═══════════════════════════════════════════════════════════ */
-.feed-card {
-  padding: 20px;
-}
+.feed-card { padding: 20px; }
 
 .feed-header {
   display: flex;
@@ -1895,15 +1830,8 @@ a:hover {
 }
 
 @keyframes feed-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(0.75);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
 .feed-list {
@@ -1933,14 +1861,8 @@ a:hover {
 }
 
 @keyframes feed-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .feed-avatar {
