@@ -12,20 +12,18 @@ interface CreateCompanyPayload {
 
 export const companyService = {
   async getAll(): Promise<Company[]> {
-    const { data } = await api.get<ApiResponse<Company[]>>("/api/companies");
+    const { data } = await api.get<ApiResponse<Company[]>>("/companies");
     return data.data;
   },
 
   async getById(id: string): Promise<Company> {
-    const { data } = await api.get<ApiResponse<Company>>(
-      `/api/companies/${id}`,
-    );
+    const { data } = await api.get<ApiResponse<Company>>(`/companies/${id}`);
     return data.data;
   },
 
   async create(payload: CreateCompanyPayload): Promise<Company> {
     const { data } = await api.post<ApiResponse<Company>>(
-      "/api/companies",
+      "/companies",
       payload,
     );
     return data.data;
@@ -36,7 +34,7 @@ export const companyService = {
     payload: Partial<CreateCompanyPayload>,
   ): Promise<Company> {
     const { data } = await api.put<ApiResponse<Company>>(
-      `/api/companies/${id}`,
+      `/companies/${id}`,
       payload,
     );
     return data.data;

@@ -62,6 +62,12 @@ const initUser = (sequelize) => {
         allowNull: false,
         defaultValue: 0, // A user starts with 0 tokens by default
       },
+      // 8. employee status
+      status: {
+        type: DataTypes.ENUM('pending', 'active'),
+        defaultValue: 'pending',
+        allowNull: false,
+      },
     },
     {
       sequelize,

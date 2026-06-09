@@ -5,10 +5,12 @@ import { companyService } from "../../services/company.service";
 import TransferForm from "../../components/TransferForm";
 import type { User, Company } from "../../types";
 import { Link } from "react-router-dom";
+import { PrintableQRCode } from "../../components/PrintableQRCode";
 
 export default function EmployerDashboard() {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<User[]>([]);
+  const [pendingEmployees, setPendingEmployees] = useState<User[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,18 +18,37 @@ export default function EmployerDashboard() {
   const fetchData = useCallback(async () => {
     if (!user?.company_id) return;
     try {
-      const [emps, comp] = await Promise.all([
+      const results = await Promise.all([
         userService.getAll({ companyId: user.company_id, role: "employee" }),
         companyService.getById(user.company_id),
+        userService.getPending(user.company_id),
       ]);
-      setEmployees(emps);
-      setCompany(comp);
-    } catch {
-      setError("Impossible de charger les données.");
+
+      // results[0] est la réponse axios pour getAll
+      // results[0].data contient { success: true, data: [...] }
+      setEmployees(results[0].data.data || []);
+
+      // results[1] est la réponse axios pour getById (compagnie)
+      setCompany(results[1].data || results[1]);
+
+      // results[2] est la réponse axios pour getPending
+      // results[2].data contient directement le tableau [...]
+      setPendingEmployees(results[2].data || []);
+    } catch (err) {
+      console.error("Erreur :", err);
     } finally {
       setLoading(false);
     }
   }, [user?.company_id]);
+
+  const handleActivate = async (id: string) => {
+    try {
+      await userService.activate(id);
+      fetchData(); // Rafraîchit tout après activation
+    } catch {
+      alert("Erreur lors de la validation");
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -96,6 +117,43 @@ export default function EmployerDashboard() {
           <p className="stat-sub">employé{employees.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
+      {/* QRCode */}
+      {company && (
+        <PrintableQRCode companyId={company.id} companyName={company.name} />
+      )}
+
+      {/* SECTION FOR EMPLOYEES ON WAITING LIST */}
+      {pendingEmployees.length > 0 && (
+        <div
+          className="card"
+          style={{ marginBottom: "32px", borderColor: "var(--primary)" }}
+        >
+          <h2 style={{ fontSize: "1.1rem", marginBottom: "16px" }}>
+            Salariés en attente de validation
+          </h2>
+          {pendingEmployees.map((emp) => (
+            <div
+              key={emp.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: "1px solid #eee",
+              }}
+            >
+              <span>
+                {emp.first_name} {emp.name} ({emp.email})
+              </span>
+              <button
+                onClick={() => handleActivate(emp.id)}
+                className="btn btn-primary"
+              >
+                Valider
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid-2">
         <TransferForm employees={employees} onSuccess={fetchData} />
@@ -117,17 +175,20 @@ export default function EmployerDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
-                    <tr key={emp.id}>
-                      <td style={{ fontWeight: 500 }}>{emp.name}</td>
-                      <td style={{ color: "var(--text-muted)" }}>
-                        {emp.email}
-                      </td>
-                      <td>
-                        <span className="token-badge">{emp.token_balance}</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {Array.isArray(employees) &&
+                    employees.map((emp) => (
+                      <tr key={emp.id}>
+                        <td style={{ fontWeight: 500 }}>{emp.name}</td>
+                        <td style={{ color: "var(--text-muted)" }}>
+                          {emp.email}
+                        </td>
+                        <td>
+                          <span className="token-badge">
+                            {emp.token_balance}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

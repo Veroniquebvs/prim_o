@@ -12,11 +12,22 @@ router.get(
   verifyToken,
   roleGuard('employer', 'admin'),
   [
-    query('role').optional().isIn(['employer', 'employee', 'admin']).withMessage('role must be employer, employee or admin'),
+    query('role')
+      .optional()
+      .isIn(['employer', 'employee', 'admin'])
+      .withMessage('role must be employer, employee or admin'),
     query('companyId').optional().isUUID().withMessage('companyId must be a valid UUID'),
     validate,
   ],
   usersController.list
+);
+
+// Route to get pending employees (for the dashboard)
+router.get(
+  '/pending',
+  verifyToken,
+  roleGuard('employer', 'admin'),
+  usersController.getPendingUsers
 );
 
 router.get(
@@ -51,6 +62,15 @@ router.get(
   verifyToken,
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   usersController.history
+);
+
+// Route to activate an employee (the validation button)
+router.patch(
+  '/:id/activate',
+  verifyToken,
+  roleGuard('employer', 'admin'),
+  [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
+  usersController.activateUser
 );
 
 module.exports = router;

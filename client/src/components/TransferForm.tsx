@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { User } from '../types';
-import { tokenService } from '../services/token.service';
+import { useState } from "react";
+import type { User } from "../types";
+import { tokenService } from "../services/token.service";
 
 interface Props {
   employees: User[];
@@ -8,17 +8,17 @@ interface Props {
 }
 
 export default function TransferForm({ employees, onSuccess }: Props) {
-  const [receiverId, setReceiverId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
+  const [receiverId, setReceiverId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
     try {
       await tokenService.allocate({
@@ -27,13 +27,15 @@ export default function TransferForm({ employees, onSuccess }: Props) {
         reason: reason || undefined,
       });
       setSuccess(`${amount} tokens alloués avec succès.`);
-      setReceiverId('');
-      setAmount('');
-      setReason('');
+      setReceiverId("");
+      setAmount("");
+      setReason("");
       onSuccess();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
-      setError(axiosErr.response?.data?.error ?? "Erreur lors de l'allocation.");
+      setError(
+        axiosErr.response?.data?.error ?? "Erreur lors de l'allocation.",
+      );
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,7 @@ export default function TransferForm({ employees, onSuccess }: Props) {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 20, fontSize: '1rem', fontWeight: 600 }}>
+      <h2 style={{ marginBottom: 20, fontSize: "1rem", fontWeight: 600 }}>
         Allouer des tokens
       </h2>
       <form onSubmit={handleSubmit}>
@@ -54,11 +56,12 @@ export default function TransferForm({ employees, onSuccess }: Props) {
             required
           >
             <option value="">Sélectionner un employé…</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} — {emp.token_balance} tokens
-              </option>
-            ))}
+            {Array.isArray(employees) &&
+              employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} — {emp.token_balance} tokens
+                </option>
+              ))}
           </select>
         </div>
 
@@ -89,8 +92,12 @@ export default function TransferForm({ employees, onSuccess }: Props) {
         {error && <p className="form-error">{error}</p>}
         {success && <p className="form-success">{success}</p>}
 
-        <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-          {loading ? 'Envoi…' : 'Allouer'}
+        <button
+          type="submit"
+          className="btn btn-primary btn-full"
+          disabled={loading}
+        >
+          {loading ? "Envoi…" : "Allouer"}
         </button>
       </form>
     </div>

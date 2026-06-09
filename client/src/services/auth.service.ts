@@ -1,5 +1,5 @@
-import api from './api';
-import type { User, ApiResponse } from '../types';
+import api from "./api";
+import type { User, ApiResponse } from "../types";
 
 interface LoginPayload {
   email: string;
@@ -11,7 +11,7 @@ interface RegisterPayload {
   password: string;
   name: string;
   first_name: string;
-  role: 'employer' | 'employee';
+  role: "employer" | "employee";
   company_id?: string;
 }
 
@@ -23,21 +23,27 @@ interface AuthData {
 
 export const authService = {
   async login(payload: LoginPayload): Promise<AuthData> {
-    const { data } = await api.post<ApiResponse<AuthData>>('/api/auth/login', payload);
+    const { data } = await api.post<ApiResponse<AuthData>>(
+      "/auth/login",
+      payload,
+    );
     return data.data;
   },
 
   async register(payload: RegisterPayload): Promise<AuthData> {
-    const { data } = await api.post<ApiResponse<AuthData>>('/api/auth/register', payload);
+    const { data } = await api.post<ApiResponse<AuthData>>(
+      "/auth/register",
+      payload,
+    );
     return data.data;
   },
 
   async logout(): Promise<void> {
-    await api.post('/api/auth/logout');
+    await api.post("/auth/logout");
   },
 
   async me(): Promise<User> {
-    const { data } = await api.get<ApiResponse<User>>('/api/auth/me');
+    const { data } = await api.get<ApiResponse<User>>("/auth/me");
     return data.data;
   },
 };
