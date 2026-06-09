@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#dbeafe"/>
+  <rect width="400" height="6" fill="#2563eb"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#2563eb" text-anchor="middle" dominant-baseline="middle">Décathlon</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#2563eb88" text-anchor="middle">Sport</text>
+</svg>

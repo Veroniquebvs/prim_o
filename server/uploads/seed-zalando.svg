@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#fdf4ff"/>
+  <rect width="400" height="6" fill="#9333ea"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#9333ea" text-anchor="middle" dominant-baseline="middle">Zalando</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#9333ea88" text-anchor="middle">Shopping</text>
+</svg>

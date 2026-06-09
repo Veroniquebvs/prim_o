@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
+import { useFavorites } from '../hooks/useFavorites';
 import { useCart } from '../hooks/useCart';
 import type { Voucher, Redemption } from '../types';
 
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+
 /* ── Icons ── */
-function IconBookmark({ filled }: { filled: boolean }) {
+function IconHeart({ filled }: { filled: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       style={{ width: 16, height: 16 }}>
-      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   );
 }
@@ -33,27 +36,39 @@ function IconChevronLeft() {
 
 /* ── Voucher card (carousel) ── */
 function VoucherCard({
-  voucher, onRedeem, redeeming, promoCode, canAfford,
+  voucher, onRedeem, redeeming, promoCode, canAfford, saved, onToggle, inCart, onCartToggle,
 }: {
   voucher: Voucher;
   onRedeem: (v: Voucher) => void;
   redeeming: boolean;
   promoCode?: string;
   canAfford: boolean;
+  saved: boolean;
+  onToggle: (id: string) => void;
+  inCart: boolean;
+  onCartToggle: (id: string) => void;
 }) {
-  const { toggle, isInCart } = useCart();
-  const saved = isInCart(voucher.id);
-
   return (
     <div className="voucher-card-carousel">
+      {voucher.images?.[0] ? (
+        <div className="voucher-card-image">
+          <img src={`${API_URL}${voucher.images[0]}`} alt={voucher.partner} />
+        </div>
+      ) : (
+        <div className="voucher-card-image voucher-card-image--placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 28, height: 28, color: 'var(--text-muted)' }}>
+            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+          </svg>
+        </div>
+      )}
       <div className="voucher-card-carousel-top">
         <div className="voucher-card-partner">{voucher.partner}</div>
         <button
           className={`btn-bookmark ${saved ? 'btn-bookmark--saved' : ''}`}
-          onClick={(e) => { e.stopPropagation(); toggle(voucher.id); }}
-          aria-label={saved ? 'Retirer du panier' : 'Sauvegarder'}
+          onClick={(e) => { e.stopPropagation(); onToggle(voucher.id); }}
+          aria-label={saved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
-          <IconBookmark filled={saved} />
+          <IconHeart filled={saved} />
         </button>
       </div>
       <p className="voucher-card-carousel-title">{voucher.title}</p>
@@ -63,13 +78,17 @@ function VoucherCard({
           <span className="promo-code" style={{ fontSize: '0.72rem' }}>{promoCode}</span>
         ) : !voucher.available ? (
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Indisponible</span>
+        ) : canAfford ? (
+          <button className="btn btn-primary btn-sm" disabled={redeeming} onClick={() => onRedeem(voucher)}>
+            {redeeming ? '…' : 'Racheter'}
+          </button>
         ) : (
           <button
-            className="btn btn-primary btn-sm"
-            disabled={redeeming || !canAfford}
-            onClick={() => onRedeem(voucher)}
+            className="btn btn-outline btn-sm"
+            style={inCart ? { background: 'var(--primary-light)', fontWeight: 700 } : {}}
+            onClick={(e) => { e.stopPropagation(); onCartToggle(voucher.id); }}
           >
-            {redeeming ? '…' : 'Racheter'}
+            {inCart ? '✓ Sauvé' : '+ Panier'}
           </button>
         )}
       </div>
@@ -79,7 +98,7 @@ function VoucherCard({
 
 /* ── Carousel row ── */
 function CarouselRow({
-  title, vouchers, onRedeem, redeeming, promoCodes, userBalance,
+  title, vouchers, onRedeem, redeeming, promoCodes, userBalance, isFavorite, onToggle, isInCart, onCartToggle,
 }: {
   title: string;
   vouchers: Voucher[];
@@ -87,6 +106,10 @@ function CarouselRow({
   redeeming: string | null;
   promoCodes: Record<string, string>;
   userBalance: number;
+  isFavorite: (id: string) => boolean;
+  onToggle: (id: string) => void;
+  isInCart: (id: string) => boolean;
+  onCartToggle: (id: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   function scroll(dir: 'left' | 'right') {
@@ -96,7 +119,7 @@ function CarouselRow({
   return (
     <div className="carousel-section">
       <div className="carousel-header">
-        <h2 className="carousel-title">{title}</h2>
+        {title ? <h2 className="carousel-title">{title}</h2> : <span />}
         <div className="carousel-controls">
           <button className="carousel-btn" onClick={() => scroll('left')} aria-label="Précédent"><IconChevronLeft /></button>
           <button className="carousel-btn" onClick={() => scroll('right')} aria-label="Suivant"><IconChevronRight /></button>
@@ -111,6 +134,10 @@ function CarouselRow({
             redeeming={redeeming === v.id}
             promoCode={promoCodes[v.id]}
             canAfford={userBalance >= v.token_cost}
+            saved={isFavorite(v.id)}
+            onToggle={onToggle}
+            inCart={isInCart(v.id)}
+            onCartToggle={onCartToggle}
           />
         ))}
       </div>
@@ -126,6 +153,8 @@ export default function PourToi() {
   const [loading, setLoading]       = useState(true);
   const [redeeming, setRedeeming]   = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
+  const { isFavorite, toggle } = useFavorites();
+  const { isInCart, toggle: cartToggle } = useCart();
 
   useEffect(() => {
     Promise.all([
@@ -141,7 +170,7 @@ export default function PourToi() {
       setPromoCodes((p) => ({ ...p, [voucher.id]: promo_code }));
       setVouchers((vs) => vs.map((v) => v.id === voucher.id ? { ...v, available: false } : v));
     } catch {
-      // silently ignore — balance error handled by disabled state
+      // balance error handled by disabled state
     } finally {
       setRedeeming(null);
     }
@@ -149,9 +178,32 @@ export default function PourToi() {
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
-  const available = vouchers.filter((v) => v.available);
-  const populaires = [...available].sort((a, b) => a.token_cost - b.token_cost).slice(0, 8);
   const balance = user?.token_balance ?? 0;
+
+  const available = vouchers.filter((v) => v.available);
+
+  /* Offres du moment : plus favorisées d'abord, puis plus récentes */
+  const populaires = [...available]
+    .sort((a, b) =>
+      (b.favorite_count ?? 0) - (a.favorite_count ?? 0) ||
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 8);
+
+  /* Favoris : featured admin d'abord, puis les plus aimés pour compléter jusqu'à 50 */
+  const featured = available.filter((v) => v.is_featured);
+  const featuredIds = new Set(featured.map((v) => v.id));
+  const heartedFill = available
+    .filter((v) => !featuredIds.has(v.id) && (v.favorite_count ?? 0) > 0)
+    .sort((a, b) => (b.favorite_count ?? 0) - (a.favorite_count ?? 0));
+  const topFavoris = [...featured, ...heartedFill].slice(0, 50);
+
+  /* Offres de la semaine : ajoutées il y a moins de 7 jours */
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const newThisWeek = [...available]
+    .filter((v) => new Date(v.created_at) > sevenDaysAgo)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   function fmt(date: string) {
     return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -172,6 +224,38 @@ export default function PourToi() {
         redeeming={redeeming}
         promoCodes={promoCodes}
         userBalance={balance}
+        isFavorite={isFavorite}
+        onToggle={toggle}
+        isInCart={isInCart}
+        onCartToggle={cartToggle}
+      />
+
+      {/* Favoris globaux */}
+      <CarouselRow
+        title="❤️ Favoris"
+        vouchers={topFavoris}
+        onRedeem={handleRedeem}
+        redeeming={redeeming}
+        promoCodes={promoCodes}
+        userBalance={balance}
+        isFavorite={isFavorite}
+        onToggle={toggle}
+        isInCart={isInCart}
+        onCartToggle={cartToggle}
+      />
+
+      {/* Offres de la semaine */}
+      <CarouselRow
+        title="🆕 Les offres de la semaine"
+        vouchers={newThisWeek}
+        onRedeem={handleRedeem}
+        redeeming={redeeming}
+        promoCodes={promoCodes}
+        userBalance={balance}
+        isFavorite={isFavorite}
+        onToggle={toggle}
+        isInCart={isInCart}
+        onCartToggle={cartToggle}
       />
 
       {/* Bons déjà achetés */}

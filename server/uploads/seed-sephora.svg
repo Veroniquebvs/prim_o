@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#fff7ed"/>
+  <rect width="400" height="6" fill="#ea580c"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#ea580c" text-anchor="middle" dominant-baseline="middle">Sephora</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#ea580c88" text-anchor="middle">Bien-être</text>
+</svg>

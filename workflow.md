@@ -363,6 +363,57 @@ Structure créée sous `client/src/` :
 
 ---
 
+### Marketplace, favoris, panier & admin tokens — 08/06/26 (fait par Loïc)
+
+**Système de favoris (server-side)**
+- Nouveau modèle `Favorite.js` (UUID, `user_id`, `voucher_id`, index unique)
+- Route `GET /api/favorites` + `POST /api/favorites/toggle` avec `verifyToken`
+- Hook `useFavorites.ts` côté client (optimiste : mise à jour locale immédiate, rollback si erreur)
+- Icône bookmark remplacée par un cœur sur toutes les cartes voucher
+- `favorite_count` agrégé par voucher (COUNT + GROUP BY Sequelize) dans `listItems`
+
+**Carousels "Pour toi"**
+- Carousel **"Favoris"** : priorité aux bons `is_featured` (flag admin), puis les plus aimés — max 50
+- Carousel **"Offres de la semaine"** : bons ajoutés il y a moins de 7 jours, triés par date
+- Carousel **"Offres du moment"** : triés par `favorite_count` DESC puis date DESC
+- Correction `createdAt: 'created_at'` dans le modèle Voucher (Sequelize v6 — `toJSON()` renvoyait le nom camelCase)
+
+**Catalogue — améliorations**
+- Recherche par partenaire : autocomplete `startsWith` (jusqu'à 6 suggestions)
+- Dropdown suggestions : fond blanc explicite (`#ffffff`), z-index 500 (corrige transparence)
+- Bouton **"Plus d'offres"** sur chaque carousel → page `/catalogue/categorie/:slug`
+- `CategorieDetail.tsx` (nouvelle page) : pagination 30/page, triée par date desc
+- Carousels : max 20 offres — cœurs en priorité, puis les plus récentes pour compléter
+- Grille mobile : 2 colonnes ; desktop (≥1024px) : 3 colonnes
+
+**Panier (cart)**
+- Sur chaque carte voucher : si solde insuffisant → bouton **"+ Panier"** (`.btn-outline`) à la place du "Racheter" désactivé
+- État "✓ Sauvé" visible sur le bouton quand l'offre est déjà dans le panier
+- Badge numéroté sur le lien "Panier" dans la Navbar (via `useCart` localStorage)
+- Compatible Catalogue, CategorieDetail et PourToi
+
+**Champ `promo_code` sur les bons d'achat**
+- Colonne `promo_code` (STRING, unique, nullable) ajoutée au modèle Voucher
+- Formulaire de création admin : champ obligatoire "Code promo partenaire"
+- Page de détail admin : champ éditable + sauvegarde via `updateItem`
+- Liste AdminBons : nouvelle colonne "Code promo" avec le tag stylé
+- `redeem` service : utilise `voucher.promo_code` au lieu d'un UUID aléatoire
+- `listItems` et `GET /items/:id` : `promo_code` retiré des réponses employé (sécurité)
+
+**Admin — Donner des tokens aux entreprises**
+- Backend : `POST /api/companies/:id/tokens` — transaction PostgreSQL avec row-level lock, `TokenTransaction` type `admin_grant`
+- Frontend : carte "🪙 Donner des tokens" dans `AdminDashboard` — sélecteur entreprise avec adresse (nom + rue + ville), champ montant, feedback succès/erreur, mise à jour du solde en temps réel
+
+**Admin — Bons d'achat**
+- Liste triée alphabétiquement par partenaire (`localeCompare fr`)
+- Toggle `is_featured` (ON/OFF) dans la page de détail d'un bon → priorité dans le carousel Favoris, indépendamment du nombre de cœurs
+
+**Résolution de conflit Git**
+- `git pull origin dev` : conflits sur `TopNav.tsx` et `globals.css` avec les changements de Véronique
+- Résolution : ordre des liens admin (Tableau de bord en premier), variables CSS pour btn-bookmark, colonnes de grille explicites à 640px
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.

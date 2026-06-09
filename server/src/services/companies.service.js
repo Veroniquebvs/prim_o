@@ -1,4 +1,6 @@
+const { Op } = require('sequelize');
 const { Company } = require('../models');
+const sequelize = require('../config/database');
 
 const httpError = (message, status) => {
   const err = new Error(message);
@@ -50,4 +52,51 @@ const update = async (id, body, requesterId, requesterRole) => {
   return company;
 };
 
-module.exports = { create, getById, list, update };
+const remove = async (id) => {
+  const { User, TokenTransaction, Redemption } = require('../models');
+  const company = await Company.findByPk(id);
+  if (!company) throw httpError('Company not found', 404);
+
+  const users = await User.findAll({ where: { company_id: id } });
+  const userIds = users.map((u) => u.id);
+
+  if (userIds.length > 0) {
+    await Redemption.destroy({ where: { user_id: userIds } });
+    await TokenTransaction.destroy({
+      where: { [Op.or]: [{ sender_id: userIds }, { receiver_id: userIds }] },
+    });
+    await User.destroy({ where: { company_id: id } });
+  }
+
+  await TokenTransaction.destroy({ where: { company_id: id } });
+  await company.destroy();
+};
+
+const grantTokens = async (companyId, amount) => {
+  const { TokenTransaction } = require('../models');
+
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw httpError('amount must be a positive integer', 400);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    const company = await Company.findByPk(companyId, { transaction: t, lock: true });
+    if (!company) throw httpError('Company not found', 404);
+
+    await company.increment('token_balance', { by: amount, transaction: t });
+
+    await TokenTransaction.create(
+      { company_id: companyId, amount, type: 'admin_grant', sender_id: null, receiver_id: null },
+      { transaction: t }
+    );
+
+    await t.commit();
+    return { company_id: companyId, amount, new_balance: company.token_balance + amount };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
+module.exports = { create, getById, list, update, remove, grantTokens };

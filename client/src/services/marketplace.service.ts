@@ -12,12 +12,21 @@ export const marketplaceService = {
     return data.data;
   },
 
-  async createItem(payload: { partner: string; title: string; token_cost: number }): Promise<Voucher> {
+  async uploadImages(files: File[]): Promise<string[]> {
+    const form = new FormData();
+    files.forEach(f => form.append('images', f));
+    const { data } = await api.post<ApiResponse<{ urls: string[] }>>('/api/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data.urls;
+  },
+
+  async createItem(payload: { partner: string; title: string; promo_code: string; token_cost: number; images?: string[]; category?: string }): Promise<Voucher> {
     const { data } = await api.post<ApiResponse<Voucher>>('/api/marketplace/items', payload);
     return data.data;
   },
 
-  async updateItem(id: string, payload: Partial<{ partner: string; title: string; token_cost: number; available: boolean }>): Promise<Voucher> {
+  async updateItem(id: string, payload: Partial<{ partner: string; title: string; promo_code: string; token_cost: number; available: boolean; category: string; images: string[]; is_featured: boolean }>): Promise<Voucher> {
     const { data } = await api.put<ApiResponse<Voucher>>(`/api/marketplace/items/${id}`, payload);
     return data.data;
   },
@@ -43,6 +52,16 @@ export const marketplaceService = {
 
   async adminGetHistory(): Promise<AdminRedemption[]> {
     const { data } = await api.get<ApiResponse<AdminRedemption[]>>('/api/marketplace/admin/history');
+    return data.data;
+  },
+
+  async getFavorites(): Promise<{ voucher_id: string; created_at: string }[]> {
+    const { data } = await api.get<ApiResponse<{ voucher_id: string; created_at: string }[]>>('/api/favorites');
+    return data.data;
+  },
+
+  async toggleFavorite(voucher_id: string): Promise<{ favorited: boolean }> {
+    const { data } = await api.post<ApiResponse<{ favorited: boolean }>>('/api/favorites/toggle', { voucher_id });
     return data.data;
   },
 };

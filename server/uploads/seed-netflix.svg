@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#fce7f3"/>
+  <rect width="400" height="6" fill="#db2777"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#db2777" text-anchor="middle" dominant-baseline="middle">Netflix</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#db277788" text-anchor="middle">Loisirs</text>
+</svg>

@@ -39,4 +39,16 @@ export const companyService = {
     );
     return data.data;
   },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/api/companies/${id}`);
+  },
+
+  async grantTokens(id: string, amount: number): Promise<{ company_id: string; amount: number; new_balance: number }> {
+    const { data } = await api.post<ApiResponse<{ company_id: string; amount: number; new_balance: number }>>(
+      `/api/companies/${id}/tokens`,
+      { amount }
+    );
+    return data.data;
+  },
 };

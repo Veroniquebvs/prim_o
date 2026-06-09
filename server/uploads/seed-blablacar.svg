@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#f0fdf4"/>
+  <rect width="400" height="6" fill="#15803d"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#15803d" text-anchor="middle" dominant-baseline="middle">BlaBlaCar</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#15803d88" text-anchor="middle">Services</text>
+</svg>

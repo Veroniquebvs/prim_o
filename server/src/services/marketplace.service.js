@@ -1,4 +1,4 @@
-const { randomUUID } = require('crypto');
+// randomUUID no longer needed — promo codes are supplied by the partner at creation time
 const sequelize = require('../config/database');
 const { User, Voucher, Redemption } = require('../models');
 
@@ -8,27 +8,54 @@ const httpError = (message, status) => {
   return err;
 };
 
-const listItems = async () =>
-  Voucher.findAll({ where: { available: true }, order: [['created_at', 'DESC']] });
+const listItems = async () => {
+  const { Favorite } = require('../models');
 
-const getItem = async (id) => {
-  const voucher = await Voucher.findByPk(id);
-  if (!voucher) throw httpError('Voucher not found', 404);
-  return voucher;
+  const [vouchers, favCounts] = await Promise.all([
+    Voucher.findAll({ where: { available: true }, order: [['created_at', 'DESC']] }),
+    Favorite.findAll({
+      attributes: ['voucher_id', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      group: ['voucher_id'],
+    }),
+  ]);
+
+  const countMap = {};
+  for (const f of favCounts) {
+    countMap[f.voucher_id] = parseInt(f.getDataValue('count'), 10);
+  }
+
+  return vouchers.map((v) => {
+    const { promo_code, ...rest } = v.toJSON();
+    return { ...rest, favorite_count: countMap[v.id] ?? 0 };
+  });
 };
 
-const createItem = async ({ title, partner, token_cost, available }) => {
-  if (!title || !partner || token_cost == null) {
-    throw httpError('title, partner and token_cost are required', 400);
+const getItem = async (id, { includePromoCode = false } = {}) => {
+  const voucher = await Voucher.findByPk(id);
+  if (!voucher) throw httpError('Voucher not found', 404);
+  if (includePromoCode) return voucher;
+  const { promo_code, ...rest } = voucher.toJSON();
+  return rest;
+};
+
+const createItem = async ({ title, partner, promo_code, token_cost, available, category, images }) => {
+  if (!title || !partner || !promo_code || token_cost == null) {
+    throw httpError('title, partner, promo_code and token_cost are required', 400);
   }
-  return Voucher.create({ title, partner, token_cost, available: available ?? true });
+  return Voucher.create({
+    title, partner, promo_code: promo_code.trim(),
+    token_cost,
+    available: available ?? true,
+    category: category ?? null,
+    images: Array.isArray(images) ? images : [],
+  });
 };
 
 const updateItem = async (id, body) => {
   const voucher = await Voucher.findByPk(id);
   if (!voucher) throw httpError('Voucher not found', 404);
 
-  const allowed = ['title', 'partner', 'token_cost', 'available'];
+  const allowed = ['title', 'partner', 'promo_code', 'token_cost', 'available', 'category', 'images', 'is_featured'];
   allowed.forEach((key) => {
     if (body[key] !== undefined) voucher[key] = body[key];
   });
@@ -62,9 +89,9 @@ const redeem = async (userId, voucherId) => {
     if (user.token_balance < voucher.token_cost) throw httpError('Insufficient token balance', 403);
 
     await user.decrement('token_balance', { by: voucher.token_cost, transaction: t });
+    const promo_code = voucher.promo_code;
     await voucher.update({ available: false }, { transaction: t });
 
-    const promo_code = randomUUID();
     const redemption = await Redemption.create(
       { user_id: userId, voucher_id: voucherId, promo_code },
       { transaction: t }

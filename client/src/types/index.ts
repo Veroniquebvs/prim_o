@@ -19,6 +19,7 @@ export interface Company {
   zip_code?: string;
   city?: string;
   email?: string;
+  siret?: string;
   created_at: string;
 }
 
@@ -35,13 +36,24 @@ export interface TokenTransaction {
   receiver?: { id: string; name: string; first_name: string; email: string } | null;
 }
 
+export const VOUCHER_CATEGORIES = [
+  'sport', 'voyage', 'culture', 'nourriture', 'loisirs', 'tech', 'services', 'shopping', 'bien-être',
+] as const;
+
+export type VoucherCategory = typeof VOUCHER_CATEGORIES[number];
+
 export interface Voucher {
   id: string;
   partner: string;
   title: string;
+  promo_code: string;
   token_cost: number;
   available: boolean;
+  category: VoucherCategory | null;
+  images: string[];
   created_at: string;
+  favorite_count?: number;
+  is_featured?: boolean;
 }
 
 export interface Redemption {

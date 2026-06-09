@@ -10,7 +10,12 @@ import EmployerDashboard from './pages/employer/EmployerDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBons from './pages/admin/AdminBons';
 import AdminStats from './pages/admin/AdminStats';
+import AdminRachats from './pages/admin/AdminRachats';
+import AdminTauxRachat from './pages/admin/AdminTauxRachat';
+import AdminCompanyDetail from './pages/admin/AdminCompanyDetail';
+import AdminVoucherDetail from './pages/admin/AdminVoucherDetail';
 import Catalogue from './pages/employee/Catalogue';
+import CategorieDetail from './pages/employee/CategorieDetail';
 import Profil from './pages/employee/Profil';
 import Parameters from './pages/employee/Parameters';
 import Historique from './pages/Historique';
@@ -64,9 +69,19 @@ export default function App() {
               <Layout><AdminDashboard /></Layout>
             </ProtectedRoute>
           } />
+          <Route path="/admin/companies/:id" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminCompanyDetail /></Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/admin/bons" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <Layout><AdminBons /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/:id" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminVoucherDetail /></Layout>
             </ProtectedRoute>
           } />
           <Route path="/admin/stats" element={
@@ -74,11 +89,26 @@ export default function App() {
               <Layout><AdminStats /></Layout>
             </ProtectedRoute>
           } />
+          <Route path="/admin/rachats" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminRachats /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/taux-rachat" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminTauxRachat /></Layout>
+            </ProtectedRoute>
+          } />
 
           {/* All authenticated users */}
           <Route path="/catalogue" element={
             <ProtectedRoute>
               <Layout><Catalogue /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/catalogue/categorie/:category" element={
+            <ProtectedRoute>
+              <Layout><CategorieDetail /></Layout>
             </ProtectedRoute>
           } />
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { companyService } from '../../services/company.service';
 import { marketplaceService } from '../../services/marketplace.service';
 
@@ -9,7 +10,13 @@ interface Stats {
   available: number;
 }
 
+const cardClickStyle: React.CSSProperties = {
+  cursor: 'pointer',
+  transition: 'transform 0.12s, box-shadow 0.12s',
+};
+
 export default function AdminStats() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,27 +42,43 @@ export default function AdminStats() {
   return (
     <div>
       <div className="page-header">
-        <h1>Dashboard</h1>
+        <h1>Tableau de bord</h1>
         <p>Vue d'ensemble de la plateforme</p>
       </div>
 
       <div className="grid-2" style={{ marginBottom: 32 }}>
-        <div className="stat-card">
+        <div className="stat-card" style={cardClickStyle}
+          onClick={() => navigate('/admin/dashboard')}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
+        >
           <p className="stat-label">Entreprises</p>
           <p className="stat-value">{stats?.companies ?? 0}</p>
           <p className="stat-sub">enregistrées</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={cardClickStyle}
+          onClick={() => navigate('/admin/bons')}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
+        >
           <p className="stat-label">Bons d'achat</p>
           <p className="stat-value">{stats?.vouchers ?? 0}</p>
           <p className="stat-sub">{stats?.available ?? 0} disponibles</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={cardClickStyle}
+          onClick={() => navigate('/admin/rachats')}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
+        >
           <p className="stat-label">Rachats totaux</p>
           <p className="stat-value">{stats?.redeemed ?? 0}</p>
           <p className="stat-sub">bons échangés</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={cardClickStyle}
+          onClick={() => navigate('/admin/taux-rachat')}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
+        >
           <p className="stat-label">Taux de rachat</p>
           <p className="stat-value">
             {stats && stats.vouchers > 0

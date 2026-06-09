@@ -11,7 +11,8 @@ const listItems = async (req, res, next) => {
 
 const getItem = async (req, res, next) => {
   try {
-    const data = await marketplaceService.getItem(req.params.id);
+    const isAdmin = req.user?.role === 'admin';
+    const data = await marketplaceService.getItem(req.params.id, { includePromoCode: isAdmin });
     res.json({ success: true, data });
   } catch (err) {
     next(err);

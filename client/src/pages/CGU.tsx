@@ -273,14 +273,14 @@ export default function CGU() {
   return (
     <div>
       {/* Sticky top bar */}
-      <div className="faq-topbar">
+      <div className="faq-topbar" style={{ justifyContent: 'space-between' }}>
+        <h1 className="faq-topbar-title">CGU — CGV</h1>
         <button className="back-btn" onClick={() => navigate(from, { state: { reopenMenu: true } })}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Retour
         </button>
-        <h1 className="faq-topbar-title">CGU — CGV</h1>
       </div>
 
       <div className="cgu-content">

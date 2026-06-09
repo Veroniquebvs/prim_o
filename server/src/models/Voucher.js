@@ -45,13 +45,41 @@ const initVoucher = (sequelize) => {
         allowNull: false,
         defaultValue: true, // By default, a new voucher is available
       },
+      // 6. Category
+      category: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+          isIn: [['sport', 'voyage', 'culture', 'nourriture', 'loisirs', 'tech', 'services', 'shopping', 'bien-être']],
+        },
+      },
+      // 7. Images — array of relative URLs served from /uploads
+      images: {
+        type: DataTypes.ARRAY(DataTypes.TEXT),
+        allowNull: false,
+        defaultValue: [],
+      },
+      // 8. Promo code provided by the partner — revealed to the employee on redemption
+      promo_code: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      // 9. Admin-curated featured flag — appears in Favoris carousel regardless of heart count
+      is_featured: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
       modelName: 'Voucher',
       tableName: 'vouchers',
-      timestamps: true, // Automatically manages created_at and updated_at
-      underscored: true, // Converted to snake_case (token_cost)
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return Voucher;

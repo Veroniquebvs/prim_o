@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+  <rect width="400" height="200" fill="#fef3c7"/>
+  <rect width="400" height="6" fill="#d97706"/>
+  <text x="200" y="95" font-family="Arial,sans-serif" font-size="32" font-weight="bold"
+        fill="#d97706" text-anchor="middle" dominant-baseline="middle">Booking.com</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="16"
+        fill="#d9770688" text-anchor="middle">Voyage</text>
+</svg>

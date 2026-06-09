@@ -64,4 +64,26 @@ router.put(
   companiesController.update
 );
 
+// Admin only — grant tokens to a company
+router.post(
+  '/:id/tokens',
+  verifyToken,
+  roleGuard('admin'),
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
+    validate,
+  ],
+  companiesController.grantTokens
+);
+
+// Admin only — delete a company and cascade its users/transactions
+router.delete(
+  '/:id',
+  verifyToken,
+  roleGuard('admin'),
+  [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
+  companiesController.remove
+);
+
 module.exports = router;

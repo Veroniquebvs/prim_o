@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../hooks/useCart';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { count: cartCount } = useCart();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -62,7 +64,22 @@ export default function Navbar() {
           <Link to="/employer/dashboard" onClick={close}>Dashboard</Link>
         )}
         {user?.role === 'employee' && (
-          <Link to="/catalogue" onClick={close}>Catalogue</Link>
+          <>
+            <Link to="/catalogue" onClick={close}>Catalogue</Link>
+            <Link to="/panier" onClick={close} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              Panier
+              {cartCount > 0 && (
+                <span style={{
+                  background: 'var(--primary)', color: '#fff',
+                  fontSize: '0.65rem', fontWeight: 700,
+                  borderRadius: '999px', padding: '1px 5px',
+                  lineHeight: 1.4, minWidth: 16, textAlign: 'center',
+                }}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </>
         )}
         {user?.role === 'admin' && (
           <Link to="/admin/dashboard" onClick={close}>Administration</Link>

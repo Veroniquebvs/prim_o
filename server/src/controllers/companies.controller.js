@@ -41,4 +41,23 @@ const update = async (req, res, next) => {
   }
 };
 
-module.exports = { create, getById, list, update };
+const remove = async (req, res, next) => {
+  try {
+    await companiesService.remove(req.params.id);
+    res.json({ success: true, data: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const grantTokens = async (req, res, next) => {
+  try {
+    const amount = parseInt(req.body.amount, 10);
+    const data = await companiesService.grantTokens(req.params.id, amount);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { create, getById, list, update, remove, grantTokens };
