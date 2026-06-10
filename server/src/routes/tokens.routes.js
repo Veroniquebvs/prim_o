@@ -45,6 +45,21 @@ router.get(
   tokensController.getTransaction
 );
 
+router.post(
+  '/admin/deduct',
+  verifyToken,
+  roleGuard('admin'),
+  [
+    body('target').isIn(['company', 'employee']).withMessage('target must be "company" or "employee"'),
+    body('company_id').isUUID().withMessage('company_id must be a valid UUID'),
+    body('user_id').optional({ nullable: true }).isUUID().withMessage('user_id must be a valid UUID'),
+    body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
+    body('reason').optional().isString().trim(),
+    validate,
+  ],
+  tokensController.adminDeduct
+);
+
 // Raw body required — express.raw() applied in server.js before express.json()
 router.post('/webhook', tokensController.stripeWebhook);
 

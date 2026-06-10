@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   async function fetchCompany(u: User) {
-    if (u.role === 'employer' && u.company_id) {
+    if ((u.role === 'employer' || u.role === 'employee') && u.company_id) {
       try {
         const c = await companyService.getById(u.company_id);
         setCompany(c);

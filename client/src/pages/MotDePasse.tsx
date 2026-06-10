@@ -126,7 +126,7 @@ export default function MotDePasse() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 520 }}>
+      <form onSubmit={handleSubmit} style={{ maxWidth: 520, margin: '0 auto' }}>
         <div className="info-card-list">
 
           <PasswordField

@@ -16,7 +16,7 @@ function fmt(date: string) {
 }
 
 export default function Historique() {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const [tab, setTab] = useState<Tab>('tokens');
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -49,8 +49,10 @@ export default function Historique() {
     Promise.all(tasks).finally(() => setLoading(false));
   }, [user?.id, user?.role]);
 
+  const showFeed = user?.role === 'employer' || (user?.role === 'employee' && company?.feedback_enabled === true);
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !showFeed) return;
 
     const fetchFeed = async () => {
       try {
@@ -77,7 +79,7 @@ export default function Historique() {
     fetchFeed();
     const interval = setInterval(fetchFeed, 5000);
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [user?.id, showFeed]);
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
@@ -204,32 +206,34 @@ export default function Historique() {
         </div>
       )}
 
-      {/* Fil d'activité entreprise — temps réel */}
-      <div className="card feed-card" style={{ marginTop: 24 }}>
-        <div className="feed-header">
-          <span className="feed-title">Activité dans l'entreprise</span>
-          <span className="feed-dot" />
+      {/* Fil d'activité entreprise — temps réel, visible pour les employeurs et les employés si activé */}
+      {showFeed && (
+        <div className="card feed-card" style={{ marginTop: 24 }}>
+          <div className="feed-header">
+            <span className="feed-title">Activité dans l'entreprise</span>
+            <span className="feed-dot" />
+          </div>
+          {feed.length === 0 ? (
+            <p className="empty-state">Aucune activité pour le moment.</p>
+          ) : (
+            <ul className="feed-list">
+              {feed.map((tx) => {
+                const name = tx.receiver?.first_name || tx.receiver?.name || 'Un employé';
+                const isNew = newIds.has(tx.id);
+                return (
+                  <li key={tx.id} className={`feed-item${isNew ? ' feed-item--new' : ''}`}>
+                    <span className="feed-avatar">{name.charAt(0).toUpperCase()}</span>
+                    <span className="feed-text">
+                      <strong>{name}</strong> a gagné <span className="token-badge feed-badge">+{tx.amount}</span> tokens !
+                    </span>
+                    <span className="feed-time">{fmt(tx.created_at)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
-        {feed.length === 0 ? (
-          <p className="empty-state">Aucune activité pour le moment.</p>
-        ) : (
-          <ul className="feed-list">
-            {feed.map((tx) => {
-              const name = tx.receiver?.first_name || tx.receiver?.name || 'Un employé';
-              const isNew = newIds.has(tx.id);
-              return (
-                <li key={tx.id} className={`feed-item${isNew ? ' feed-item--new' : ''}`}>
-                  <span className="feed-avatar">{name.charAt(0).toUpperCase()}</span>
-                  <span className="feed-text">
-                    <strong>{name}</strong> a gagné <span className="token-badge feed-badge">+{tx.amount}</span> tokens !
-                  </span>
-                  <span className="feed-time">{fmt(tx.created_at)}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface Company {
   id: string;
   name: string;
   token_balance: number;
+  feedback_enabled: boolean;
   street?: string;
   zip_code?: string;
   city?: string;
@@ -54,6 +55,7 @@ export interface Voucher {
   created_at: string;
   favorite_count?: number;
   is_featured?: boolean;
+  is_weekly?: boolean;
 }
 
 export interface Redemption {

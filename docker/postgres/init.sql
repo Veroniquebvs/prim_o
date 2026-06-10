@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS companies (
   zip_code     VARCHAR(5)   NOT NULL,
   city         VARCHAR(255) NOT NULL,
   siret        VARCHAR(14),
-  token_balance INTEGER NOT NULL DEFAULT 0,
+  token_balance    INTEGER NOT NULL DEFAULT 0,
+  feedback_enabled BOOLEAN NOT NULL DEFAULT false,
   created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -39,6 +40,8 @@ CREATE TABLE IF NOT EXISTS vouchers (
   partner     VARCHAR(255) NOT NULL,
   token_cost  INTEGER NOT NULL DEFAULT 0 CHECK (token_cost >= 0),
   available   BOOLEAN NOT NULL DEFAULT TRUE,
+  is_featured BOOLEAN NOT NULL DEFAULT false,
+  is_weekly   BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

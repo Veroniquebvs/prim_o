@@ -66,6 +66,10 @@ router.put(
       .isNumeric()
       .isLength({ min: 14, max: 14 })
       .withMessage('siret must be 14 digits'),
+    body('feedback_enabled')
+      .optional()
+      .isBoolean()
+      .withMessage('feedback_enabled must be a boolean'),
     validate,
   ],
   companiesController.update

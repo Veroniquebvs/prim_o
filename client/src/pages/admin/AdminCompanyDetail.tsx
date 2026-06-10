@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { companyService } from '../../services/company.service';
 import { userService } from '../../services/user.service';
+import { tokenService } from '../../services/token.service';
 import type { Company, User } from '../../types';
 
 function fmt(date: string) {
@@ -18,6 +19,16 @@ export default function AdminCompanyDetail() {
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState('');
 
+  // Déduction admin
+  type DeductTarget = 'company' | 'employee';
+  const [deductTarget, setDeductTarget] = useState<DeductTarget>('company');
+  const [deductUserId, setDeductUserId] = useState('');
+  const [deductAmount, setDeductAmount] = useState('');
+  const [deductReason, setDeductReason] = useState('');
+  const [deductPending, setDeductPending] = useState(false);
+  const [deductConfirm, setDeductConfirm] = useState(false);
+  const [deductMsg, setDeductMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
@@ -28,6 +39,43 @@ export default function AdminCompanyDetail() {
       .catch(() => setError('Impossible de charger les données.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  function handleDeductSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setDeductMsg(null);
+    setDeductConfirm(true);
+  }
+
+  async function handleDeductConfirm() {
+    if (!id || !company) return;
+    setDeductPending(true);
+    try {
+      await tokenService.adminDeduct({
+        target: deductTarget,
+        company_id: id,
+        user_id: deductTarget === 'employee' ? deductUserId : undefined,
+        amount: Number(deductAmount),
+        reason: deductReason || undefined,
+      });
+      const [freshCompany, freshUsers] = await Promise.all([
+        companyService.getById(id),
+        userService.getAll({ companyId: id }),
+      ]);
+      setCompany(freshCompany);
+      setEmployees((freshUsers as any).data?.data || []);
+      setDeductMsg({ ok: true, text: `${deductAmount} tokens déduits avec succès.` });
+      setDeductAmount('');
+      setDeductReason('');
+      setDeductUserId('');
+      setDeductConfirm(false);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      setDeductMsg({ ok: false, text: axiosErr.response?.data?.error ?? 'Erreur lors de la déduction.' });
+      setDeductConfirm(false);
+    } finally {
+      setDeductPending(false);
+    }
+  }
 
   async function handleDelete() {
     if (!id) return;
@@ -69,7 +117,7 @@ export default function AdminCompanyDetail() {
 
       {error && <p className="form-error" style={{ marginBottom: 16 }}>{error}</p>}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 640, paddingBottom: 48 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 640, paddingBottom: 48, margin: '0 auto' }}>
 
         {/* Stats */}
         <div className="grid-3">
@@ -165,6 +213,139 @@ export default function AdminCompanyDetail() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+        </div>
+
+        {/* Déduction admin */}
+        <div>
+          <h2 className="faq-section-title">Déduire des tokens</h2>
+          <div className="card">
+            {/* Tabs cible */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {(['company', 'employee'] as DeductTarget[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setDeductTarget(t); setDeductUserId(''); setDeductMsg(null); setDeductConfirm(false); }}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 'var(--radius)',
+                    border: '1.5px solid', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                    background: deductTarget === t ? 'var(--primary)' : 'transparent',
+                    borderColor: deductTarget === t ? 'var(--primary)' : 'var(--border)',
+                    color: deductTarget === t ? '#fff' : 'var(--text)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {t === 'company' ? '🏢 Entreprise' : '👤 Employé'}
+                </button>
+              ))}
+            </div>
+
+            {!deductConfirm ? (
+              <form onSubmit={handleDeductSubmit}>
+                {deductTarget === 'company' && (
+                  <div className="form-group">
+                    <label className="form-label">Entreprise</label>
+                    <div className="form-input" style={{ background: 'var(--bg)', color: 'var(--text-muted)', cursor: 'default' }}>
+                      {company.name} — solde actuel : {company.token_balance} tokens
+                    </div>
+                  </div>
+                )}
+
+                {deductTarget === 'employee' && (
+                  <div className="form-group">
+                    <label className="form-label">Employé</label>
+                    <select
+                      className="form-select"
+                      value={deductUserId}
+                      onChange={(e) => setDeductUserId(e.target.value)}
+                      required
+                    >
+                      <option value="">Sélectionner un employé…</option>
+                      {[...employers, ...empList].map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.first_name} {u.name} — {u.token_balance} tokens
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label">Montant à déduire</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1}
+                    value={deductAmount}
+                    onChange={(e) => setDeductAmount(e.target.value)}
+                    placeholder="ex. 50"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Motif (facultatif)</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={deductReason}
+                    onChange={(e) => setDeductReason(e.target.value)}
+                    placeholder="ex. Correction d'erreur"
+                  />
+                </div>
+
+                {deductMsg && (
+                  <p className={deductMsg.ok ? 'form-success' : 'form-error'} style={{ marginBottom: 12 }}>
+                    {deductMsg.text}
+                  </p>
+                )}
+
+                <button type="submit" className="btn btn-primary">
+                  Déduire
+                </button>
+              </form>
+            ) : (
+              <div>
+                <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '16px 20px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cible</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                      {deductTarget === 'company'
+                        ? company.name
+                        : (() => { const u = [...employers, ...empList].find(u => String(u.id) === deductUserId); return u ? `${u.first_name} ${u.name}` : '—'; })()
+                      }
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tokens à déduire</span>
+                    <span className="token-badge" style={{ fontSize: '1rem', background: '#fee2e2', color: '#dc2626' }}>−{deductAmount}</span>
+                  </div>
+                  {deductReason && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>Motif</span>
+                      <span style={{ fontSize: '0.85rem', textAlign: 'right' }}>{deductReason}</span>
+                    </div>
+                  )}
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Cette action est irréversible. Confirmez-vous la déduction ?
+                </p>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn btn-outline" onClick={() => setDeductConfirm(false)} disabled={deductPending}>
+                    Annuler
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ background: '#dc2626', borderColor: '#dc2626' }}
+                    onClick={handleDeductConfirm}
+                    disabled={deductPending}
+                  >
+                    {deductPending ? 'Déduction…' : 'Confirmer la déduction'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

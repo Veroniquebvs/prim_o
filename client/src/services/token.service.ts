@@ -27,4 +27,14 @@ export const tokenService = {
     const { data } = await api.get<ApiResponse<TokenTransaction>>(`/tokens/transactions/${id}`);
     return data.data;
   },
+
+  async adminDeduct(payload: {
+    target: 'company' | 'employee';
+    company_id: string;
+    user_id?: string;
+    amount: number;
+    reason?: string;
+  }): Promise<void> {
+    await api.post('/tokens/admin/deduct', payload);
+  },
 };

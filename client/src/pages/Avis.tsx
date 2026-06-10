@@ -19,8 +19,10 @@ export default function Avis() {
         </button>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <p className="empty-state">Fonctionnalité à venir.</p>
+      <div style={{ maxWidth: 520, margin: '0 auto' }}>
+        <div className="card" style={{ marginTop: 16 }}>
+          <p className="empty-state">Fonctionnalité à venir.</p>
+        </div>
       </div>
     </div>
   );

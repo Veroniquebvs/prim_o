@@ -199,12 +199,16 @@ export default function PourToi() {
     .sort((a, b) => (b.favorite_count ?? 0) - (a.favorite_count ?? 0));
   const topFavoris = [...featured, ...heartedFill].slice(0, 50);
 
-  /* Offres de la semaine : ajoutées il y a moins de 7 jours */
+  /* Offres de la semaine : marquées is_weekly par l'admin, ou ajoutées il y a moins de 7 jours */
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const newThisWeek = [...available]
-    .filter((v) => new Date(v.created_at) > sevenDaysAgo)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const weeklyPinned = available.filter((v) => v.is_weekly);
+  const weeklyPinnedIds = new Set(weeklyPinned.map((v) => v.id));
+  const recentFill = available.filter((v) => !weeklyPinnedIds.has(v.id) && new Date(v.created_at) > sevenDaysAgo);
+  const newThisWeek = [
+    ...weeklyPinned,
+    ...recentFill.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+  ];
 
   function fmt(date: string) {
     return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });

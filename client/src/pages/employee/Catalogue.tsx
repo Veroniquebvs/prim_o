@@ -62,7 +62,7 @@ function IconChevronLeft() {
 
 /* ── Voucher card ── */
 function VoucherCard({
-  voucher, onRedeem, redeeming, promoCode, canAfford, saved, onToggle, inCart, onCartToggle,
+  voucher, onRedeem, redeeming, promoCode, canAfford, saved, onToggle, inCart, onCartToggle, onEdit,
 }: {
   voucher: Voucher;
   onRedeem: (v: Voucher) => void;
@@ -73,6 +73,7 @@ function VoucherCard({
   onToggle: (id: string) => void;
   inCart: boolean;
   onCartToggle: (id: string) => void;
+  onEdit?: (id: string) => void;
 }) {
   return (
     <div className="voucher-card-carousel">
@@ -92,18 +93,24 @@ function VoucherCard({
       )}
       <div className="voucher-card-carousel-top">
         <div className="voucher-card-partner">{voucher.partner}</div>
-        <button
-          className={`btn-bookmark ${saved ? 'btn-bookmark--saved' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onToggle(voucher.id); }}
-          aria-label={saved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        >
-          <IconHeart filled={saved} />
-        </button>
+        {!onEdit && (
+          <button
+            className={`btn-bookmark ${saved ? 'btn-bookmark--saved' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onToggle(voucher.id); }}
+            aria-label={saved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          >
+            <IconHeart filled={saved} />
+          </button>
+        )}
       </div>
       <p className="voucher-card-carousel-title">{voucher.title}</p>
       <div className="voucher-card-carousel-footer">
         <span className="token-badge">{voucher.token_cost}</span>
-        {promoCode ? (
+        {onEdit ? (
+          <button className="btn btn-outline btn-sm" onClick={(e) => { e.stopPropagation(); onEdit(voucher.id); }}>
+            Modifier
+          </button>
+        ) : promoCode ? (
           <span className="promo-code" style={{ fontSize: '0.72rem' }}>{promoCode}</span>
         ) : !voucher.available ? (
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Indisponible</span>
@@ -127,7 +134,7 @@ function VoucherCard({
 
 /* ── Carousel row ── */
 function CarouselRow({
-  title, vouchers, onRedeem, redeeming, promoCodes, userBalance, isFavorite, onToggle, categorySlug, isInCart, onCartToggle,
+  title, vouchers, onRedeem, redeeming, promoCodes, userBalance, isFavorite, onToggle, categorySlug, isInCart, onCartToggle, onEdit,
 }: {
   title: string;
   vouchers: Voucher[];
@@ -140,6 +147,7 @@ function CarouselRow({
   categorySlug?: string;
   isInCart: (id: string) => boolean;
   onCartToggle: (id: string) => void;
+  onEdit?: (id: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -187,6 +195,7 @@ function CarouselRow({
             onToggle={onToggle}
             inCart={isInCart(v.id)}
             onCartToggle={onCartToggle}
+            onEdit={onEdit}
           />
         ))}
       </div>
@@ -197,6 +206,9 @@ function CarouselRow({
 /* ── Page ── */
 export default function Catalogue() {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
+  const handleEdit = isAdmin ? (id: string) => navigate(`/admin/bons/${id}`) : undefined;
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -359,6 +371,7 @@ export default function Catalogue() {
                 onToggle={toggle}
                 inCart={isInCart(v.id)}
                 onCartToggle={cartToggle}
+                onEdit={handleEdit}
               />
             ))}
           </div>
@@ -376,6 +389,7 @@ export default function Catalogue() {
             onToggle={toggle}
             isInCart={isInCart}
             onCartToggle={cartToggle}
+            onEdit={handleEdit}
           />
           {orderedCategories.map((cat) => {
             const catVouchers = vouchers.filter((v) => getCategory(v) === cat && v.available);
@@ -394,6 +408,7 @@ export default function Catalogue() {
                 categorySlug={slug}
                 isInCart={isInCart}
                 onCartToggle={cartToggle}
+                onEdit={handleEdit}
               />
             );
           })}

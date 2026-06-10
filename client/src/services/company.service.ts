@@ -8,6 +8,7 @@ interface CreateCompanyPayload {
   zip_code: string;
   city: string;
   siret: string;
+  feedback_enabled?: boolean;
 }
 
 export const companyService = {

@@ -59,6 +59,15 @@ const createPurchaseIntent = async (req, res, next) => {
   }
 };
 
+const adminDeduct = async (req, res, next) => {
+  try {
+    await tokenService.adminDeduct(req.user, req.body);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   allocate,
   getBalance,
@@ -66,4 +75,5 @@ module.exports = {
   getTransaction,
   stripeWebhook,
   createPurchaseIntent,
+  adminDeduct,
 };

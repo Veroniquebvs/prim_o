@@ -48,7 +48,7 @@ export default function Service() {
         </button>
       </div>
 
-      <div style={{ maxWidth: 520 }}>
+      <div style={{ maxWidth: 520, margin: '0 auto' }}>
         <div className="card" style={{ marginBottom: 20, lineHeight: 1.65, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Une question ? Notre FAQ recense les questions fréquentes. Peut-être y trouveras-tu une réponse ?
         </div>

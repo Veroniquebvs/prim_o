@@ -1552,6 +1552,8 @@ a:hover {
   gap: 12px;
   max-width: 520px;
   margin-top: 16px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .param-card {
@@ -1695,6 +1697,8 @@ a:hover {
 .cgu-content {
   max-width: 680px;
   padding-bottom: 48px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cgu-update {

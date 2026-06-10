@@ -50,7 +50,7 @@ const update = async (id, body, requesterId, requesterRole) => {
     }
   }
 
-  const allowed = ['name', 'email', 'street', 'zip_code', 'city', 'siret'];
+  const allowed = ['name', 'email', 'street', 'zip_code', 'city', 'siret', 'feedback_enabled'];
   allowed.forEach((key) => {
     if (body[key] !== undefined) company[key] = body[key];
   });

@@ -55,7 +55,7 @@ const updateItem = async (id, body) => {
   const voucher = await Voucher.findByPk(id);
   if (!voucher) throw httpError('Voucher not found', 404);
 
-  const allowed = ['title', 'partner', 'promo_code', 'token_cost', 'available', 'category', 'images', 'is_featured'];
+  const allowed = ['title', 'partner', 'promo_code', 'token_cost', 'available', 'category', 'images', 'is_featured', 'is_weekly'];
   allowed.forEach((key) => {
     if (body[key] !== undefined) voucher[key] = body[key];
   });

@@ -15,6 +15,7 @@ export default function EmployerDashboard() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [feedbackSaving, setFeedbackSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user?.company_id) return;
@@ -41,6 +42,17 @@ export default function EmployerDashboard() {
       setLoading(false);
     }
   }, [user?.company_id]);
+
+  async function handleToggleFeedback() {
+    if (!company) return;
+    setFeedbackSaving(true);
+    try {
+      await companyService.update(company.id, { feedback_enabled: !company.feedback_enabled });
+      await fetchData();
+    } finally {
+      setFeedbackSaving(false);
+    }
+  }
 
   const handleActivate = async (id: string) => {
     try {
@@ -84,6 +96,34 @@ export default function EmployerDashboard() {
           <p className="stat-sub">employé{employees.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
+      {/* Feedback feed */}
+      {company && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 4 }}>
+                Fil d'activité pour les employés
+              </p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                {company.feedback_enabled
+                  ? 'Vos employés voient les tokens reçus dans l\'entreprise en temps réel.'
+                  : 'Activez pour que vos employés voient l\'activité tokens de l\'entreprise.'}
+              </p>
+              {feedbackSaving && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Enregistrement…</p>
+              )}
+            </div>
+            <button
+              role="switch"
+              aria-checked={company.feedback_enabled}
+              onClick={feedbackSaving ? undefined : handleToggleFeedback}
+              className={`param-toggle ${company.feedback_enabled ? 'param-toggle--on' : ''}`}
+              style={{ flexShrink: 0 }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* QRCode */}
       {company && (
         <PrintableQRCode companyId={company.id} companyName={company.name} />

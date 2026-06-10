@@ -2,13 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
 import { VOUCHER_CATEGORIES } from '../../types';
-import type { AdminVoucher, AdminRedemption, VoucherCategory } from '../../types';
-
-type Tab = 'gerer' | 'historique' | 'top';
-
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+import type { AdminVoucher, VoucherCategory } from '../../types';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
 
@@ -27,6 +21,8 @@ function OngletGerer() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
+
+  const [search, setSearch] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -185,9 +181,18 @@ function OngletGerer() {
 
       {/* Liste des bons */}
       <div className="card">
-        <p style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>
-          {vouchers.length} bon{vouchers.length > 1 ? 's' : ''} au total
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+          <p style={{ fontWeight: 700, fontSize: '0.9rem', margin: 0 }}>
+            {vouchers.length} bon{vouchers.length > 1 ? 's' : ''} au total
+          </p>
+          <input
+            className="form-input"
+            placeholder="Rechercher partenaire, titre, code…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ maxWidth: 260, marginBottom: 0 }}
+          />
+        </div>
         {vouchers.length === 0 ? (
           <p className="empty-state">Aucun bon enregistré.</p>
         ) : (
@@ -207,7 +212,15 @@ function OngletGerer() {
                 </tr>
               </thead>
               <tbody>
-                {[...vouchers].sort((a, b) => a.partner.localeCompare(b.partner, 'fr')).map(v => (
+                {[...vouchers]
+                  .filter(v => {
+                    const q = search.toLowerCase();
+                    return !q
+                      || v.partner.toLowerCase().includes(q)
+                      || v.title.toLowerCase().includes(q)
+                      || (v.promo_code ?? '').toLowerCase().includes(q);
+                  })
+                  .sort((a, b) => a.partner.localeCompare(b.partner, 'fr')).map(v => (
                   <tr key={v.id} onClick={() => navigate(`/admin/bons/${v.id}`)}
                     style={{ cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
@@ -269,113 +282,16 @@ function OngletGerer() {
   );
 }
 
-/* ── Onglet Historique ── */
-function OngletHistorique({ data }: { data: AdminRedemption[] }) {
-  if (data.length === 0) return <p className="empty-state">Aucun rachat enregistré.</p>;
-  return (
-    <div className="card">
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Bon</th>
-              <th>Tokens</th>
-              <th>Code</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map(r => (
-              <tr key={r.id}>
-                <td>
-                  <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.user?.first_name || r.user?.name || '—'}</p>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.user?.email}</p>
-                </td>
-                <td>
-                  <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.voucher?.partner}</p>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.voucher?.title}</p>
-                </td>
-                <td><span className="token-badge">{r.voucher?.token_cost}</span></td>
-                <td><span className="promo-code">{r.promo_code}</span></td>
-                <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                  {fmt(r.redeemed_at || r.created_at)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/* ── Onglet Top ventes ── */
-function OngletTop({ data }: { data: AdminRedemption[] }) {
-  const counts: Record<string, { partner: string; title: string; cost: number; count: number }> = {};
-  data.forEach(r => {
-    const key = r.voucher?.id;
-    if (!key) return;
-    if (!counts[key]) counts[key] = { partner: r.voucher.partner, title: r.voucher.title, cost: r.voucher.token_cost, count: 0 };
-    counts[key].count++;
-  });
-
-  const sorted = Object.entries(counts)
-    .map(([id, v]) => ({ id, ...v }))
-    .sort((a, b) => b.count - a.count);
-
-  if (sorted.length === 0) return <p className="empty-state">Aucun rachat enregistré pour l'instant.</p>;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {sorted.map((v, i) => (
-        <div key={v.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-            background: i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--primary-light)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: '0.9rem',
-            color: i < 3 ? '#fff' : 'var(--primary)',
-          }}>
-            {i + 1}
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{v.partner}</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{v.title}</p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>{v.count}</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>rachat{v.count > 1 ? 's' : ''}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ── Page principale ── */
 export default function AdminBons() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('gerer');
-  const [history, setHistory] = useState<AdminRedemption[]>([]);
-  const [histLoading, setHistLoading] = useState(true);
-
-  useEffect(() => {
-    marketplaceService.adminGetHistory().then(setHistory).finally(() => setHistLoading(false));
-  }, []);
-
-  const tabs = [
-    { key: 'gerer' as Tab,      label: 'Gérer' },
-    { key: 'historique' as Tab, label: 'Historique des achats' },
-    { key: 'top' as Tab,        label: 'Top ventes' },
-  ];
 
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Bons d'achat</h1>
-          <p>Gestion du catalogue et suivi des rachats</p>
+          <p>Gestion du catalogue</p>
         </div>
         <button className="back-btn" onClick={() => navigate('/admin/stats')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -385,21 +301,7 @@ export default function AdminBons() {
         </button>
       </div>
 
-      <div className="hist-tabs" style={{ marginBottom: 24 }}>
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            className={`hist-tab ${tab === t.key ? 'hist-tab--active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'gerer'      && <OngletGerer />}
-      {tab === 'historique' && (histLoading ? <p className="empty-state">Chargement…</p> : <OngletHistorique data={history} />)}
-      {tab === 'top'        && (histLoading ? <p className="empty-state">Chargement…</p> : <OngletTop data={history} />)}
+      <OngletGerer />
     </div>
   );
 }

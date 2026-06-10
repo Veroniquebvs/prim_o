@@ -99,4 +99,46 @@ const getTransaction = async (id) => {
   return tx;
 };
 
-module.exports = { allocate, getBalance, listTransactions, getTransaction };
+const adminDeduct = async (_adminUser, { target, company_id, user_id, amount, reason }) => {
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw httpError('amount must be a positive integer', 400);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    if (target === 'company') {
+      const company = await Company.findByPk(company_id, { lock: true, transaction: t });
+      if (!company) throw httpError('Company not found', 404);
+      if (company.token_balance < amount) throw httpError('Insufficient token balance', 402);
+
+      await company.decrement('token_balance', { by: amount, transaction: t });
+      await TokenTransaction.create(
+        { sender_id: null, receiver_id: null, company_id, amount, type: reason || 'admin_deduct' },
+        { transaction: t }
+      );
+    } else if (target === 'employee') {
+      const user = await User.findOne({
+        where: { id: user_id, company_id },
+        lock: true,
+        transaction: t,
+      });
+      if (!user) throw httpError('User not found in this company', 404);
+      if (user.token_balance < amount) throw httpError('Insufficient token balance', 402);
+
+      await user.decrement('token_balance', { by: amount, transaction: t });
+      await TokenTransaction.create(
+        { sender_id: user_id, receiver_id: null, company_id, amount, type: reason || 'admin_deduct' },
+        { transaction: t }
+      );
+    } else {
+      throw httpError('target must be "company" or "employee"', 400);
+    }
+
+    await t.commit();
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
+module.exports = { allocate, getBalance, listTransactions, getTransaction, adminDeduct };

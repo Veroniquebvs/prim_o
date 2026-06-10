@@ -523,6 +523,41 @@ Cette branche améliore le processus d'onboarding des salariés en permettant au
 
 ---
 
+## UX & fonctionnalités admin — 10/06/26 (fait par Loïc)
+
+**Centrage des pages "Voir plus"**
+
+- `.param-list` et `.cgu-content` : `margin: auto` ajouté dans `globals.css`
+- `MesInformations`, `MotDePasse`, `Service` : `margin: '0 auto'` ajouté sur le container `maxWidth`
+- `Avis` : wrappé dans un div centré `maxWidth: 520`
+
+**Modale de confirmation — Allocation de tokens**
+
+- `TransferForm.tsx` : le clic "Allouer" n'envoie plus directement
+- Affichage d'une modale overlay avec récap (avatar initiales, nom destinataire, montant badge, motif)
+- "Confirmer" → envoi réel | "Annuler" (ou clic en dehors) → retour au formulaire intact
+
+**Déduction de tokens admin**
+
+- Backend : nouvelle route `POST /api/tokens/admin/deduct` (`verifyToken` + `roleGuard('admin')`)
+  - `target: 'company'` → déduit de `companies.token_balance`
+  - `target: 'employee'` → déduit de `users.token_balance` (user doit appartenir à la company)
+  - Transaction PostgreSQL atomique (BEGIN / COMMIT / ROLLBACK)
+  - Enregistrement dans `TOKEN_TRANSACTIONS` avec `type: reason || 'admin_deduct'`
+- Frontend : card "Déduire des tokens" dans `AdminCompanyDetail`
+  - Deux tabs **🏢 Entreprise** / **👤 Employé**
+  - Mode Entreprise : affiche le nom + solde actuel (lecture seule)
+  - Mode Employé : select de tous les membres de l'entreprise avec leur solde
+  - Confirmation inline (récap cible / montant rouge / motif) avant envoi
+  - Refresh automatique des soldes après déduction
+
+**Corrections header admin**
+
+- `AdminStats` (`/admin/stats`) : "Tableau de bord" et "Vue d'ensemble" maintenant dans un wrapper `<div>` → empilés verticalement et centrés
+- `AdminDashboard` (`/admin/dashboard`) : restauré "Entreprises" / "Liste des entreprises" (écrasé par erreur)
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.

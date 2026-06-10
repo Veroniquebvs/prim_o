@@ -71,6 +71,12 @@ const initVoucher = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      // 10. Admin-curated weekly flag — appears in Offres de la semaine carousel
+      is_weekly: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       sequelize,

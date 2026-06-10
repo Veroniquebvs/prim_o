@@ -13,6 +13,8 @@ import AdminBons from './pages/admin/AdminBons';
 import AdminStats from './pages/admin/AdminStats';
 import AdminRachats from './pages/admin/AdminRachats';
 import AdminTauxRachat from './pages/admin/AdminTauxRachat';
+import AdminStatRachats from './pages/admin/AdminStatRachats';
+import AdminStatMotifs from './pages/admin/AdminStatMotifs';
 import AdminCompanyDetail from './pages/admin/AdminCompanyDetail';
 import AdminVoucherDetail from './pages/admin/AdminVoucherDetail';
 import Catalogue from './pages/employee/Catalogue';
@@ -103,6 +105,16 @@ export default function App() {
           <Route path="/admin/taux-rachat" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <Layout><AdminTauxRachat /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/stat-rachats" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminStatRachats /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/stat-motifs" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Layout><AdminStatMotifs /></Layout>
             </ProtectedRoute>
           } />
 

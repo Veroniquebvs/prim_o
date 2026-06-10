@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       <div className="page-header">
         <div>
           <h1>Entreprises</h1>
-          <p>Bienvenue, {user?.name}</p>
+          <p>Liste des entreprises</p>
         </div>
         <button className="back-btn" onClick={() => navigate('/admin/stats')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

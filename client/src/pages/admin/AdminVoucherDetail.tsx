@@ -13,6 +13,8 @@ export default function AdminVoucherDetail() {
   const [voucher, setVoucher]   = useState<Voucher | null>(null);
   const [isFeatured, setIsFeatured] = useState(false);
   const [featureSaving, setFeatureSaving] = useState(false);
+  const [isWeekly, setIsWeekly] = useState(false);
+  const [weeklySaving, setWeeklySaving] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
@@ -42,6 +44,7 @@ export default function AdminVoucherDetail() {
         setAvailable(v.available);
         setImages(v.images ?? []);
         setIsFeatured(v.is_featured ?? false);
+        setIsWeekly(v.is_weekly ?? false);
       })
       .catch(() => setError('Impossible de charger le bon.'))
       .finally(() => setLoading(false));
@@ -105,11 +108,25 @@ export default function AdminVoucherDetail() {
     }
   }
 
+  async function handleWeeklyToggle() {
+    if (!id) return;
+    const next = !isWeekly;
+    setIsWeekly(next);
+    setWeeklySaving(true);
+    try {
+      await marketplaceService.updateItem(id, { is_weekly: next });
+    } catch {
+      setIsWeekly(!next);
+    } finally {
+      setWeeklySaving(false);
+    }
+  }
+
   async function handleDelete() {
     if (!id || !confirm('Supprimer ce bon définitivement ?')) return;
     try {
       await marketplaceService.deleteItem(id);
-      navigate('/admin/bons');
+      navigate(-1);
     } catch {
       setError('Erreur lors de la suppression.');
     }
@@ -127,7 +144,7 @@ export default function AdminVoucherDetail() {
           <h1>{voucher.partner}</h1>
           <p>{voucher.title}</p>
         </div>
-        <button className="back-btn" onClick={() => navigate('/admin/bons')}>
+        <button className="back-btn" onClick={() => navigate(-1)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -276,6 +293,53 @@ export default function AdminVoucherDetail() {
                   position: 'absolute',
                   top: 3,
                   left: isFeatured ? 27 : 3,
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  transition: 'left 0.2s',
+                  display: 'block',
+                }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Offre de la semaine */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 4 }}>
+                  🆕 Offre de la semaine
+                </p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {isWeekly
+                    ? 'Ce bon apparaît dans le carousel "Offres de la semaine".'
+                    : 'Activez pour mettre ce bon en avant cette semaine.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleWeeklyToggle}
+                disabled={weeklySaving}
+                aria-pressed={isWeekly}
+                style={{
+                  flexShrink: 0,
+                  width: 52,
+                  height: 28,
+                  borderRadius: 14,
+                  border: 'none',
+                  cursor: weeklySaving ? 'wait' : 'pointer',
+                  background: isWeekly ? 'var(--primary)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                  position: 'relative',
+                  padding: 0,
+                }}
+              >
+                <span style={{
+                  position: 'absolute',
+                  top: 3,
+                  left: isWeekly ? 27 : 3,
                   width: 22,
                   height: 22,
                   borderRadius: '50%',

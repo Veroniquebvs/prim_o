@@ -41,9 +41,11 @@ export default function AdminStats() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Tableau de bord</h1>
-        <p>Vue d'ensemble de la plateforme</p>
+      <div className="page-header" style={{ justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1>Tableau de bord</h1>
+          <p>Vue d'ensemble</p>
+        </div>
       </div>
 
       <div className="grid-2" style={{ marginBottom: 32 }}>
@@ -66,26 +68,26 @@ export default function AdminStats() {
           <p className="stat-sub">{stats?.available ?? 0} disponibles</p>
         </div>
         <div className="stat-card" style={cardClickStyle}
-          onClick={() => navigate('/admin/rachats')}
+          onClick={() => navigate('/admin/stat-rachats')}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
         >
-          <p className="stat-label">Rachats totaux</p>
+          <p className="stat-label">Statistiques rachats</p>
           <p className="stat-value">{stats?.redeemed ?? 0}</p>
-          <p className="stat-sub">bons échangés</p>
+          <p className="stat-sub">
+            {stats && stats.vouchers > 0
+              ? `${Math.round((stats.redeemed / stats.vouchers) * 100)}% de taux de rachat`
+              : 'bons échangés'}
+          </p>
         </div>
         <div className="stat-card" style={cardClickStyle}
-          onClick={() => navigate('/admin/taux-rachat')}
+          onClick={() => navigate('/admin/stat-motifs')}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
         >
-          <p className="stat-label">Taux de rachat</p>
-          <p className="stat-value">
-            {stats && stats.vouchers > 0
-              ? Math.round((stats.redeemed / stats.vouchers) * 100)
-              : 0}%
-          </p>
-          <p className="stat-sub">rachats / bons créés</p>
+          <p className="stat-label">Statistiques motifs de don</p>
+          <p className="stat-value">→</p>
+          <p className="stat-sub">motifs d'attribution de tokens</p>
         </div>
       </div>
     </div>

@@ -63,7 +63,7 @@ export default function MesInformations() {
         </button>
       </div>
 
-      <form onSubmit={handleSave} style={{ maxWidth: 520 }}>
+      <form onSubmit={handleSave} style={{ maxWidth: 520, margin: '0 auto' }}>
         <div className="info-card-list">
 
           <div className="info-field-card">

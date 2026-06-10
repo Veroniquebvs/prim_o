@@ -58,9 +58,15 @@ const initCompany = (sequelize) => {
       },
       // 6. Token Balance (Required, Integer)
       token_balance: {
-        type: DataTypes.INTEGER, // Set to INTEGER for whole numbers
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: 0, // A company starts with 0 tokens by default
+        defaultValue: 0,
+      },
+      // 7. Feedback feed visibility for employees
+      feedback_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
     },
     {
