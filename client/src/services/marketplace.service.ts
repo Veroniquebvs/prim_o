@@ -26,7 +26,7 @@ export const marketplaceService = {
     return data.data;
   },
 
-  async updateItem(id: string, payload: Partial<{ partner: string; title: string; promo_code: string; token_cost: number; available: boolean; category: string; images: string[]; is_featured: boolean }>): Promise<Voucher> {
+  async updateItem(id: string, payload: Partial<{ partner: string; title: string; promo_code: string; token_cost: number; available: boolean; category: string; images: string[]; is_featured: boolean; is_weekly: boolean }>): Promise<Voucher> {
     const { data } = await api.put<ApiResponse<Voucher>>(`/marketplace/items/${id}`, payload);
     return data.data;
   },

@@ -30,7 +30,7 @@ export default function AdminCompanyDetail() {
     if (!id) return;
     Promise.all([
       companyService.getById(id),
-      userService.getAll({ companyId: id }),
+      userService.getAll({ companyId: id, role: 'employee' }),
     ])
       .then(([c, u]) => { setCompany(c); setEmployees((u as any).data?.data || []); })
       .catch(() => setError('Impossible de charger les données.'))
@@ -56,7 +56,7 @@ export default function AdminCompanyDetail() {
       });
       const [freshCompany, freshUsers] = await Promise.all([
         companyService.getById(id),
-        userService.getAll({ companyId: id }),
+        userService.getAll({ companyId: id, role: 'employee' }),
       ]);
       setCompany(freshCompany);
       setEmployees((freshUsers as any).data?.data || []);

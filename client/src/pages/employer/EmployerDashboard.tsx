@@ -61,7 +61,7 @@ export default function EmployerDashboard() {
       ]);
 
       setEmployees(results[0].data.data || []);
-      setCompany(results[1].data || results[1]);
+      setCompany((results[1] as any).data || results[1]);
       setPendingEmployees(results[2].data || []);
       setSchedRules(results[3] || []);
     } catch (err) {
