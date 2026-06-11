@@ -470,11 +470,16 @@ export default function EmployerDashboard() {
                   <label className="form-label">Jour du mois</label>
                   <input
                     className="form-input"
-                    type="number"
-                    min={1}
-                    max={28}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex : 15"
                     value={schedForm.day_of_month}
-                    onChange={(e) => setSchedForm({ ...schedForm, day_of_month: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val === '' || (parseInt(val) >= 1 && parseInt(val) <= 28)) {
+                        setSchedForm({ ...schedForm, day_of_month: val });
+                      }
+                    }}
                     required
                   />
                 </div>
