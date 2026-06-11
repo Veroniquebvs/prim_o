@@ -1,4 +1,4 @@
-export type UserRole = 'employer' | 'employee' | 'admin';
+export type UserRole = "employer" | "employee" | "admin";
 
 export interface User {
   id: string;
@@ -9,6 +9,7 @@ export interface User {
   token_balance: number;
   company_id: string | null;
   created_at: string;
+  entry_date?: string | null;
 }
 
 export interface Company {
@@ -32,15 +33,33 @@ export interface TokenTransaction {
   reason?: string;
   stripe_payment_id?: string;
   created_at: string;
-  sender?: { id: string; name: string; first_name: string; email: string } | null;
-  receiver?: { id: string; name: string; first_name: string; email: string } | null;
+  sender?: {
+    id: string;
+    name: string;
+    first_name: string;
+    email: string;
+  } | null;
+  receiver?: {
+    id: string;
+    name: string;
+    first_name: string;
+    email: string;
+  } | null;
 }
 
 export const VOUCHER_CATEGORIES = [
-  'sport', 'voyage', 'culture', 'nourriture', 'loisirs', 'tech', 'services', 'shopping', 'bien-être',
+  "sport",
+  "voyage",
+  "culture",
+  "nourriture",
+  "loisirs",
+  "tech",
+  "services",
+  "shopping",
+  "bien-être",
 ] as const;
 
-export type VoucherCategory = typeof VOUCHER_CATEGORIES[number];
+export type VoucherCategory = (typeof VOUCHER_CATEGORIES)[number];
 
 export interface Voucher {
   id: string;

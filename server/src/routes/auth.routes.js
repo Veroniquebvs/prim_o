@@ -13,7 +13,9 @@ router.post(
     body('first_name').trim().notEmpty().withMessage('First name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('role').isIn(['employer', 'employee', 'admin']).withMessage('Role must be employer, employee or admin'),
+    body('role')
+      .isIn(['employer', 'employee', 'admin'])
+      .withMessage('Role must be employer, employee or admin'),
     body('company_id').optional().isUUID().withMessage('company_id must be a valid UUID'),
     validate,
   ],
@@ -36,10 +38,7 @@ router.get('/me', verifyToken, authController.me);
 
 router.post(
   '/refresh',
-  [
-    body('refreshToken').notEmpty().withMessage('Refresh token is required'),
-    validate,
-  ],
+  [body('refreshToken').notEmpty().withMessage('Refresh token is required'), validate],
   authController.refresh
 );
 

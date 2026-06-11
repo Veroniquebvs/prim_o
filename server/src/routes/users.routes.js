@@ -69,8 +69,26 @@ router.patch(
   '/:id/activate',
   verifyToken,
   roleGuard('employer', 'admin'),
-  [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+
+    body('entry_date').optional().isISO8601().withMessage('entry_date must be a valid date'),
+
+    validate,
+  ],
   usersController.activateUser
+);
+
+router.patch(
+  '/:id/entry-date',
+  verifyToken,
+  roleGuard('employer', 'admin'),
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('entry_date').optional().isISO8601().withMessage('entry_date must be a valid date'),
+    validate,
+  ],
+  usersController.updateEntryDate
 );
 
 module.exports = router;

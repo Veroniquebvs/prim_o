@@ -68,6 +68,12 @@ const initUser = (sequelize) => {
         defaultValue: 'pending',
         allowNull: false,
       },
+
+      // 9. entry date
+      entry_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
     },
     {
       sequelize,

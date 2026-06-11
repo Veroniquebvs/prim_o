@@ -37,7 +37,15 @@ export const userService = {
     return api.get(`/users/pending?companyId=${companyId}`);
   },
 
-  activate: (id: string) => {
-    return api.patch(`/users/${id}/activate`);
+  activate: (id: string, entry_date?: string) => {
+    return api.patch(`/users/${id}/activate`, {
+      entry_date,
+    });
+  },
+
+  updateEntryDate: (id: string, entry_date?: string) => {
+    return api.patch(`/users/${id}/entry-date`, {
+      entry_date,
+    });
   },
 };

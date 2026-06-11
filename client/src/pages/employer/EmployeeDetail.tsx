@@ -1,16 +1,27 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { userService } from '../../services/user.service';
-import type { User, TokenTransaction } from '../../types';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { userService } from "../../services/user.service";
+import type { User, TokenTransaction } from "../../types";
 
 function fmt(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return new Date(date).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function IconArrowLeft() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 16, height: 16 }}
+    >
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -24,16 +35,19 @@ export default function EmployeeDetail() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [entryDate, setEntryDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([
-      userService.getById(id),
-      userService.getHistory(id),
-    ])
-      .then(([emp, hist]) => { setEmployee(emp); setHistory(hist); })
-      .catch(() => setError('Impossible de charger les données.'))
+    Promise.all([userService.getById(id), userService.getHistory(id)])
+      .then(([emp, hist]) => {
+        setEmployee(emp);
+        setHistory(hist);
+        setEntryDate(emp.entry_date || "");
+      })
+      .catch(() => setError("Impossible de charger les données."))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -42,25 +56,38 @@ export default function EmployeeDetail() {
     setDeleting(true);
     try {
       await userService.delete(id);
-      navigate('/employer/dashboard');
+      navigate("/employer/dashboard");
     } catch {
-      setError('Erreur lors de la suppression.');
+      setError("Erreur lors de la suppression.");
       setDeleting(false);
       setConfirmDelete(false);
     }
   }
 
-  if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
-  if (!employee) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Employé introuvable.</div>;
+  if (loading)
+    return (
+      <div style={{ padding: 32, color: "var(--text-muted)" }}>Chargement…</div>
+    );
+  if (!employee)
+    return (
+      <div style={{ padding: 32, color: "var(--text-muted)" }}>
+        Employé introuvable.
+      </div>
+    );
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1>{employee.first_name} {employee.name}</h1>
+          <h1>
+            {employee.first_name} {employee.name}
+          </h1>
           <p>{employee.email}</p>
         </div>
-        <button className="back-btn" onClick={() => navigate('/employer/dashboard')}>
+        <button
+          className="back-btn"
+          onClick={() => navigate("/employer/dashboard")}
+        >
           <IconArrowLeft /> Retour
         </button>
       </div>
@@ -76,19 +103,23 @@ export default function EmployeeDetail() {
         </div>
         <div className="stat-card">
           <p className="stat-label">Membre depuis</p>
-          <p className="stat-value" style={{ fontSize: '1.1rem' }}>{fmt(employee.created_at)}</p>
+          <p className="stat-value" style={{ fontSize: "1.1rem" }}>
+            {fmt(employee.created_at)}
+          </p>
         </div>
       </div>
 
       {/* Informations */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 16 }}>Informations</h2>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Informations
+        </h2>
         <div className="info-card-list">
           {[
-            { label: 'Prénom',  value: employee.first_name },
-            { label: 'Nom',     value: employee.name },
-            { label: 'Email',   value: employee.email },
-            { label: 'Rôle',    value: employee.role },
+            { label: "Prénom", value: employee.first_name },
+            { label: "Nom", value: employee.name },
+            { label: "Email", value: employee.email },
+            { label: "Rôle", value: employee.role },
           ].map(({ label, value }) => (
             <div key={label} className="info-field-card">
               <span className="info-field-label">{label}</span>
@@ -98,9 +129,46 @@ export default function EmployeeDetail() {
         </div>
       </div>
 
+      {/* Date d'entrée*/}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Date d'entrée
+        </h2>
+
+        <input
+          type="date"
+          value={entryDate}
+          onChange={(e) => setEntryDate(e.target.value)}
+          className="form-input"
+          style={{ width: 200 }}
+        />
+
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ marginTop: 10 }}
+          disabled={saving}
+          onClick={async () => {
+            try {
+              setSaving(true);
+
+              await userService.updateEntryDate(id!, entryDate);
+
+              const updated = await userService.getById(id!);
+              setEmployee(updated);
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          {saving ? "Sauvegarde..." : "Mettre à jour"}
+        </button>
+      </div>
+
       {/* Historique des transactions */}
       <div className="card" style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 16 }}>Historique des tokens</h2>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Historique des tokens
+        </h2>
         {history.length === 0 ? (
           <p className="empty-state">Aucune transaction.</p>
         ) : (
@@ -116,18 +184,38 @@ export default function EmployeeDetail() {
               <tbody>
                 {history.map((tx) => (
                   <tr key={tx.id}>
-                    <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmt(tx.created_at)}</td>
+                    <td
+                      style={{
+                        color: "var(--text-muted)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {fmt(tx.created_at)}
+                    </td>
                     <td>
                       <span
                         className="token-badge"
-                        style={tx.receiver_id === id
-                          ? { background: '#f0fdf4', color: 'var(--success)' }
-                          : { background: 'var(--danger-light)', color: 'var(--danger)' }}
+                        style={
+                          tx.receiver_id === id
+                            ? { background: "#f0fdf4", color: "var(--success)" }
+                            : {
+                                background: "var(--danger-light)",
+                                color: "var(--danger)",
+                              }
+                        }
                       >
-                        {tx.receiver_id === id ? '+' : '−'}{tx.amount}
+                        {tx.receiver_id === id ? "+" : "−"}
+                        {tx.amount}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{tx.type ?? '—'}</td>
+                    <td
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "0.82rem",
+                      }}
+                    >
+                      {tx.type ?? "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -137,29 +225,63 @@ export default function EmployeeDetail() {
       </div>
 
       {/* Zone suppression */}
-      <div className="card" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.02)' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 8, color: 'var(--danger)' }}>
+      <div
+        className="card"
+        style={{
+          borderColor: "rgba(239,68,68,0.3)",
+          background: "rgba(239,68,68,0.02)",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "1rem",
+            fontWeight: 600,
+            marginBottom: 8,
+            color: "var(--danger)",
+          }}
+        >
           Supprimer l'employé
         </h2>
         {!confirmDelete ? (
           <>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-              Cette action est irréversible. L'employé sera retiré de l'équipe et son compte supprimé.
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "var(--text-muted)",
+                marginBottom: 14,
+              }}
+            >
+              Cette action est irréversible. L'employé sera retiré de l'équipe
+              et son compte supprimé.
             </p>
-            <button className="btn btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => setConfirmDelete(true)}
+            >
               Supprimer
             </button>
           </>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>
-              Confirmer la suppression de <strong>{employee.first_name} {employee.name}</strong> ?
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>
+              Confirmer la suppression de{" "}
+              <strong>
+                {employee.first_name} {employee.name}
+              </strong>{" "}
+              ?
             </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Suppression…' : 'Oui, supprimer'}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Suppression…" : "Oui, supprimer"}
               </button>
-              <button className="btn btn-outline btn-sm" onClick={() => setConfirmDelete(false)}>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setConfirmDelete(false)}
+              >
                 Annuler
               </button>
             </div>

@@ -12,6 +12,7 @@ export default function EmployerDashboard() {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<User[]>([]);
   const [pendingEmployees, setPendingEmployees] = useState<User[]>([]);
+  const [entryDates, setEntryDates] = useState<Record<string, string>>({});
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,13 +45,13 @@ export default function EmployerDashboard() {
 
   const handleActivate = async (id: string) => {
     try {
-      await userService.activate(id);
+      await userService.activate(id, entryDates[id]);
+
       fetchData();
     } catch {
       alert("Erreur lors de la validation");
     }
   };
-
 
   useEffect(() => {
     fetchData();
@@ -65,7 +66,8 @@ export default function EmployerDashboard() {
     <div>
       <div className="page-header page-header--centered">
         <h1>
-          Tableau de bord<br />
+          Tableau de bord
+          <br />
           {company?.name || "Chargement..."}
         </h1>
       </div>
@@ -111,12 +113,33 @@ export default function EmployerDashboard() {
                 borderBottom: "1px solid #eee",
               }}
             >
+              <input
+                type="date"
+                value={entryDates[emp.id] || ""}
+                onChange={(e) =>
+                  setEntryDates({
+                    ...entryDates,
+                    [emp.id]: e.target.value,
+                  })
+                }
+                style={{
+                  padding: "6px",
+                  borderRadius: "8px",
+                }}
+              />
               <span style={{ minWidth: 0, flex: 1 }}>
                 {emp.first_name} {emp.name}
-                <span style={{ color: "var(--text-muted)", fontSize: "0.82rem", marginLeft: 4 }}>
+                <span
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: "0.82rem",
+                    marginLeft: 4,
+                  }}
+                >
                   ({emp.email})
                 </span>
               </span>
+
               <button
                 onClick={() => handleActivate(emp.id)}
                 className="btn btn-primary btn-sm"
@@ -138,7 +161,10 @@ export default function EmployerDashboard() {
           {employees.length === 0 ? (
             <p className="empty-state">Aucun employé dans votre équipe.</p>
           ) : (
-            <div className="table-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
+            <div
+              className="table-wrap"
+              style={{ maxHeight: 320, overflowY: "auto" }}
+            >
               <table className="table" style={{ minWidth: 0 }}>
                 <thead>
                   <tr>
@@ -151,11 +177,23 @@ export default function EmployerDashboard() {
                     employees.map((emp) => (
                       <tr
                         key={emp.id}
-                        onClick={() => navigate(`/employer/employees/${emp.id}`)}
+                        onClick={() =>
+                          navigate(`/employer/employees/${emp.id}`)
+                        }
                         style={{ cursor: "pointer" }}
                       >
-                        <td style={{ fontWeight: 500, padding: "8px 10px" }}>{emp.first_name} {emp.name}</td>
-                        <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>{emp.email}</td>
+                        <td style={{ fontWeight: 500, padding: "8px 10px" }}>
+                          {emp.first_name} {emp.name}
+                        </td>
+                        <td
+                          style={{
+                            color: "var(--text-muted)",
+                            padding: "8px 10px",
+                            fontSize: "0.82rem",
+                          }}
+                        >
+                          {emp.email}
+                        </td>
                       </tr>
                     ))}
                 </tbody>
