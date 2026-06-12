@@ -19,6 +19,7 @@ import AdminCompanyDetail from './pages/admin/AdminCompanyDetail';
 import AdminVoucherDetail from './pages/admin/AdminVoucherDetail';
 import Catalogue from './pages/employee/Catalogue';
 import CategorieDetail from './pages/employee/CategorieDetail';
+import VoucherDetail from './pages/employee/VoucherDetail';
 import Profil from './pages/employee/Profil';
 import Parameters from './pages/employee/Parameters';
 import Historique from './pages/Historique';
@@ -127,6 +128,11 @@ export default function App() {
           <Route path="/catalogue/categorie/:category" element={
             <ProtectedRoute>
               <Layout><CategorieDetail /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/catalogue/offre/:id" element={
+            <ProtectedRoute>
+              <Layout><VoucherDetail /></Layout>
             </ProtectedRoute>
           } />
 

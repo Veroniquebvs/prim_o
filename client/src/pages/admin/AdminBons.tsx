@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
 import { VOUCHER_CATEGORIES } from '../../types';
 import type { AdminVoucher, VoucherCategory } from '../../types';
-
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+import { resolveImageUrl } from '../../utils/imageUrl';
 
 /* ── Onglet Gérer ── */
 function OngletGerer() {
@@ -229,7 +228,7 @@ function OngletGerer() {
                     <td style={{ width: 48 }}>
                       {v.images?.[0] ? (
                         <img
-                          src={`${API_URL}${v.images[0]}`}
+                          src={resolveImageUrl(v.images[0])}
                           alt=""
                           style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }}
                         />
