@@ -558,6 +558,141 @@ Cette branche améliore le processus d'onboarding des salariés en permettant au
 
 ---
 
+## [feature/entry_date] - Gestion de la date d'entrée des salariés 11/06/26 (Vero)
+
+### Description
+
+Cette branche ajoute la gestion de la date d'entrée des salariés afin de permettre aux employeurs de renseigner cette information lors de la validation d'un nouveau collaborateur et de la modifier ultérieurement depuis sa fiche détaillée.
+
+Elle renforce également la sécurité des accès entre entreprises en limitant la consultation et la modification des utilisateurs à leur propre société.
+
+### Modifications apportées
+
+#### 1. Backend (`users.service.js`)
+
+- Renforcement de l'isolation multi-entreprises via `company_id`.
+
+- Modification des méthodes :
+  - `getById(id, companyId)`
+  - `update(id, body, companyId)`
+  - `activateUser(id, companyId, entry_date)`
+
+- Remplacement des recherches par identifiant seul (`findByPk`) par des recherches sécurisées :
+
+```js
+where: {
+  id,
+  company_id: companyId
+}
+```
+
+#### 2. Backend (`users.controller.js`)
+
+- Transmission systématique de `req.user.company_id` aux services concernés.
+- Adaptation de `activateUser()` afin de recevoir :
+
+```json
+{
+  "entry_date": "YYYY-MM-DD"
+}
+```
+
+- Mise à jour de la route de validation des salariés pour enregistrer simultanément :
+  - le changement de statut (`pending → active`) ;
+  - la date d'entrée.
+
+#### 3. Backend (`users.routes.js`)
+
+- Ajout de la validation :
+
+```js
+body("entry_date").optional().isISO8601();
+```
+
+- Création de la route :
+
+```http
+PATCH /users/:id/entry-date
+```
+
+permettant la modification ultérieure de la date d'entrée.
+
+#### 4. EmployerDashboard.tsx
+
+- Ajout d'un champ calendrier pour chaque salarié en attente de validation.
+- Mise en place d'un état local :
+
+```ts
+const [entryDates, setEntryDates] = useState<Record<string, string>>({});
+```
+
+- Transmission de la date sélectionnée lors de la validation :
+
+```ts
+userService.activate(id, entryDates[id]);
+```
+
+#### 5. user.service.ts
+
+- Modification de :
+
+```ts
+activate(id, entry_date?)
+```
+
+afin d'envoyer :
+
+```ts
+{
+  entry_date;
+}
+```
+
+- Ajout de la méthode :
+
+```ts
+updateEntryDate(id, entry_date);
+```
+
+pour communiquer avec :
+
+```http
+PATCH /users/:id/entry-date
+```
+
+#### 6. EmployeeDetail.tsx
+
+- Ajout d'une section « Date d'entrée » sur la fiche salarié.
+- Possibilité pour l'employeur :
+  - de visualiser la date d'entrée actuelle ;
+  - de la modifier ;
+  - de sauvegarder les changements directement depuis l'interface.
+
+### Notes de test & validation
+
+- Vérification de la transmission correcte de `entry_date` entre le frontend et le backend.
+
+- Validation du changement de statut d'un salarié (`pending → active`).
+
+- Contrôle de la persistance de la date d'entrée après rechargement de la page.
+
+- Vérification des protections multi-entreprises :
+  - consultation d'un salarié ;
+  - modification d'un salarié ;
+  - activation d'un salarié.
+
+- Correction d'une erreur de syntaxe dans `users.routes.js` (virgule manquante dans la route `PATCH /:id/activate`).
+
+### État actuel
+
+- Branche stable.
+- Date d'entrée enregistrée lors de l'activation d'un salarié.
+- Modification ultérieure possible depuis la fiche détaillée.
+- Isolation des données entre entreprises renforcée.
+- Backend et frontend synchronisés.
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.
