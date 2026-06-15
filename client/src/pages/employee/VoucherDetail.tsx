@@ -29,7 +29,7 @@ function IconChevronLeft() {
 export default function VoucherDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
+  const { user, company, refreshUser, refreshCompany } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
 
@@ -56,7 +56,11 @@ export default function VoucherDetail() {
       const { promo_code } = await marketplaceService.redeem(voucher.id);
       setPromoCode(promo_code);
       setVoucher((v) => (v ? { ...v, available: false } : v));
-      await refreshUser();
+      if (user?.role === 'employer') {
+        await refreshCompany();
+      } else {
+        await refreshUser();
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } } };
       setError(e.response?.data?.error ?? 'Erreur lors du rachat.');
@@ -70,8 +74,32 @@ export default function VoucherDetail() {
   if (notFound || !voucher) {
     return (
       <div>
+        <style>{`
+          .page-header .back-btn {
+            position: absolute !important;
+            right: 24px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            background-color: transparent !important;
+            color: white !important;
+            border-color: white !important;
+          }
+          @media (min-width: 768px) {
+            .page-header .back-btn {
+              right: 32px !important;
+            }
+          }
+          @media (min-width: 1024px) {
+            .page-header .back-btn {
+              right: 40px !important;
+            }
+          }
+          .page-header .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+          }
+        `}</style>
         <div className="page-header">
-          <div>
+          <div style={{ width: '100%', textAlign: 'center' }}>
             <h1>Offre introuvable</h1>
           </div>
           <button className="back-btn" onClick={() => navigate('/catalogue')}>
@@ -83,7 +111,7 @@ export default function VoucherDetail() {
     );
   }
 
-  const balance = user?.token_balance ?? 0;
+  const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
   const canAfford = balance >= voucher.token_cost;
   const saved = isFavorite(voucher.id);
   const inCart = isInCart(voucher.id);
@@ -94,8 +122,32 @@ export default function VoucherDetail() {
 
   return (
     <div>
+      <style>{`
+        .page-header .back-btn {
+          position: absolute !important;
+          right: 24px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          background-color: transparent !important;
+          color: white !important;
+          border-color: white !important;
+        }
+        @media (min-width: 768px) {
+          .page-header .back-btn {
+            right: 32px !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .page-header .back-btn {
+            right: 40px !important;
+          }
+        }
+        .page-header .back-btn:hover {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      `}</style>
       <div className="page-header">
-        <div>
+        <div style={{ width: '100%', textAlign: 'center' }}>
           <h1>Détail de l'offre</h1>
         </div>
         <button className="back-btn" onClick={() => navigate(-1)}>
@@ -124,8 +176,8 @@ export default function VoucherDetail() {
         {/* Header : partenaire + favoris */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{voucher.partner}</div>
-            <h2 style={{ margin: '4px 0 0', fontSize: '1.3rem' }}>{voucher.title}</h2>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text)', fontWeight: 700 }}>{voucher.partner}</div>
+            <h2 style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{voucher.title}</h2>
           </div>
           <button
             className={`btn-bookmark ${saved ? 'btn-bookmark--saved' : ''}`}
@@ -143,11 +195,11 @@ export default function VoucherDetail() {
         )}
 
         {/* Coût */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
           <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Coût :</span>
           <span className="token-badge" style={{ fontSize: '1rem' }}>{voucher.token_cost} tokens</span>
         </div>
-        <div style={{ marginTop: 6, fontSize: '0.85rem', color: canAfford ? 'var(--text-muted)' : 'var(--danger, #c0392b)' }}>
+        <div style={{ marginTop: 6, fontSize: '0.85rem', color: canAfford ? 'var(--text-muted)' : 'var(--danger, #c0392b)', textAlign: 'right' }}>
           Votre solde : {balance} tokens
           {!canAfford && !promoCode && ' — solde insuffisant'}
         </div>

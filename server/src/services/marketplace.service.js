@@ -1,6 +1,6 @@
 // randomUUID no longer needed — promo codes are supplied by the partner at creation time
 const sequelize = require('../config/database');
-const { User, Voucher, Redemption } = require('../models');
+const { User, Voucher, Redemption, Company } = require('../models');
 
 const httpError = (message, status) => {
   const err = new Error(message);
@@ -86,9 +86,24 @@ const redeem = async (userId, voucherId) => {
       transaction: t,
     });
     if (!user) throw httpError('User not found', 404);
-    if (user.token_balance < voucher.token_cost) throw httpError('Insufficient token balance', 403);
 
-    await user.decrement('token_balance', { by: voucher.token_cost, transaction: t });
+    if (user.role === 'employer') {
+      if (!user.company_id) throw httpError('Company not found', 404);
+      const company = await Company.findOne({
+        where: { id: user.company_id },
+        lock: true,
+        transaction: t,
+      });
+      if (!company) throw httpError('Company not found', 404);
+      if (company.token_balance < voucher.token_cost) throw httpError('Insufficient token balance', 403);
+
+      await company.decrement('token_balance', { by: voucher.token_cost, transaction: t });
+    } else {
+      if (user.token_balance < voucher.token_cost) throw httpError('Insufficient token balance', 403);
+
+      await user.decrement('token_balance', { by: voucher.token_cost, transaction: t });
+    }
+
     const promo_code = voucher.promo_code;
     await voucher.update({ available: false }, { transaction: t });
 

@@ -5,7 +5,7 @@ import type { TokenTransaction } from '../../types';
 import { fmtShort } from '../../utils/date';
 
 export default function Profil() {
-  const { user, refreshUser } = useAuth();
+  const { user, company, refreshUser } = useAuth();
   const [name, setName] = useState(user?.name ?? '');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
@@ -87,7 +87,7 @@ export default function Profil() {
               <input
                 className="form-input"
                 type="text"
-                value={user?.token_balance ?? 0}
+                value={user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0)}
                 disabled
               />
             </div>

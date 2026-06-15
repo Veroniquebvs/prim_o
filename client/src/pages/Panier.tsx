@@ -6,7 +6,7 @@ import type { Voucher } from '../types';
 import { fmtShort } from '../utils/date';
 
 export default function Panier() {
-  const { user, refreshUser } = useAuth();
+  const { user, company, refreshUser, refreshCompany } = useAuth();
   const { remove, isInCart, addedAt } = useCart();
   const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,13 +19,15 @@ export default function Panier() {
   }, []);
 
   const cartVouchers = allVouchers.filter((v) => isInCart(v.id));
+  const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
   const handleRedeemAll = useCallback(async () => {
+    const balanceVal = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
     const redeemable = allVouchers
-      .filter((v) => isInCart(v.id) && v.available && (user?.token_balance ?? 0) >= v.token_cost);
+      .filter((v) => isInCart(v.id) && v.available && balanceVal >= v.token_cost);
     for (const v of redeemable) await handleRedeem(v);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allVouchers, user?.token_balance]);
+  }, [allVouchers, user?.token_balance, company?.token_balance]);
 
   useEffect(() => {
     const handler = () => { handleRedeemAll(); };
@@ -43,7 +45,11 @@ export default function Panier() {
       setAllVouchers((prev) =>
         prev.map((v) => (v.id === voucher.id ? { ...v, available: false } : v)),
       );
-      await refreshUser();
+      if (user?.role === 'employer') {
+        await refreshCompany();
+      } else {
+        await refreshUser();
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } } };
       setError(e.response?.data?.error ?? 'Erreur lors du rachat.');
@@ -62,8 +68,8 @@ export default function Panier() {
 
       {/* Solde — masqué sur desktop (affiché dans la TopNav) */}
       <div className="stat-card panier-desktop-hidden" style={{ marginBottom: 24, display: 'inline-flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
-        <p className="stat-label">Solde disponible</p>
-        <p className="stat-value">{user?.token_balance ?? 0}</p>
+         <p className="stat-label">Solde disponible</p>
+        <p className="stat-value">{balance}</p>
         <p className="stat-sub">tokens</p>
       </div>
 
@@ -111,7 +117,7 @@ export default function Panier() {
               ) : (
                 <button
                   className="btn btn-primary btn-sm"
-                  disabled={redeeming === v.id || (user?.token_balance ?? 0) < v.token_cost}
+                  disabled={redeeming === v.id || balance < v.token_cost}
                   onClick={() => handleRedeem(v)}
                 >
                   {redeeming === v.id ? '…' : 'Racheter'}
@@ -146,7 +152,7 @@ export default function Panier() {
       {(() => {
         const hasItems = cartVouchers.length > 0;
         const canBuy = hasItems && !redeeming && cartVouchers.some(
-          v => v.available && (user?.token_balance ?? 0) >= v.token_cost
+          v => v.available && balance >= v.token_cost
         );
         return (
           <button

@@ -23,15 +23,21 @@ const mockUser = {
   token_balance: 50,
   decrement: jest.fn().mockResolvedValue(undefined),
 };
+const mockCompany = {
+  id: 'company-uuid',
+  token_balance: 100,
+  decrement: jest.fn().mockResolvedValue(undefined),
+};
 const mockRedemption = { id: 'redemption-uuid', promo_code: 'some-code', user_id: 'user-uuid', voucher_id: 'voucher-uuid' };
 
 jest.mock('../../src/models', () => ({
   User: { findOne: jest.fn(), findByPk: jest.fn() },
   Voucher: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() },
   Redemption: { findAll: jest.fn(), create: jest.fn() },
+  Company: { findOne: jest.fn(), findByPk: jest.fn() },
 }));
 
-const { User, Voucher, Redemption } = require('../../src/models');
+const { User, Voucher, Redemption, Company } = require('../../src/models');
 const {
   listItems, getItem, createItem, updateItem, deleteItem, redeem, listOrders,
 } = require('../../src/services/marketplace.service');
@@ -148,6 +154,7 @@ describe('redeem', () => {
     Voucher.findOne.mockResolvedValue(mockVoucher);
     User.findOne.mockResolvedValue(mockUser);
     Redemption.create.mockResolvedValue(mockRedemption);
+    Company.findOne.mockResolvedValue(mockCompany);
   });
 
   it('deducts balance, marks voucher unavailable, creates redemption, commits', async () => {
@@ -161,6 +168,42 @@ describe('redeem', () => {
     );
     expect(mockTx.commit).toHaveBeenCalled();
     expect(result).toHaveProperty('promo_code');
+  });
+
+  it('deducts company balance and commits when user is an employer', async () => {
+    const employerUser = {
+      id: 'employer-uuid',
+      role: 'employer',
+      company_id: 'company-uuid',
+      decrement: jest.fn(),
+    };
+    User.findOne.mockResolvedValue(employerUser);
+    Company.findOne.mockResolvedValue(mockCompany);
+
+    const result = await redeem('employer-uuid', 'voucher-uuid');
+
+    expect(mockCompany.decrement).toHaveBeenCalledWith('token_balance', { by: 20, transaction: mockTx });
+    expect(mockVoucher.update).toHaveBeenCalledWith({ available: false }, { transaction: mockTx });
+    expect(Redemption.create).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'employer-uuid', voucher_id: 'voucher-uuid', promo_code: expect.any(String) }),
+      { transaction: mockTx }
+    );
+    expect(mockTx.commit).toHaveBeenCalled();
+    expect(result).toHaveProperty('promo_code');
+  });
+
+  it('throws 403 and rolls back when employer company balance is insufficient', async () => {
+    const employerUser = {
+      id: 'employer-uuid',
+      role: 'employer',
+      company_id: 'company-uuid',
+      decrement: jest.fn(),
+    };
+    User.findOne.mockResolvedValue(employerUser);
+    Company.findOne.mockResolvedValue({ ...mockCompany, token_balance: 5 });
+
+    await expect(redeem('employer-uuid', 'voucher-uuid')).rejects.toMatchObject({ status: 403 });
+    expect(mockTx.rollback).toHaveBeenCalled();
   });
 
   it('throws 403 and rolls back when voucher is not available', async () => {
