@@ -54,10 +54,33 @@ export default function AdminDashboard() {
 
   return (
     <div>
+      <style>{`
+        .page-header .back-btn {
+          position: absolute !important;
+          right: 24px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          background-color: transparent !important;
+          color: white !important;
+          border-color: white !important;
+        }
+        @media (min-width: 768px) {
+          .page-header .back-btn {
+            right: 32px !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .page-header .back-btn {
+            right: 40px !important;
+          }
+        }
+        .page-header .back-btn:hover {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      `}</style>
       <div className="page-header">
-        <div>
-          <h1>Entreprises</h1>
-          <p>Liste des entreprises</p>
+        <div style={{ width: '100%', textAlign: 'center' }}>
+          <h1>Liste des entreprises</h1>
         </div>
         <button className="back-btn" onClick={() => navigate('/admin/stats')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
