@@ -12,7 +12,7 @@ router.get('/items', verifyToken, marketplaceController.listItems);
 router.get(
   '/items/:id',
   verifyToken,
-  roleGuard('employee', 'admin'),
+  roleGuard('employee', 'admin', 'employer'),
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   marketplaceController.getItem
 );

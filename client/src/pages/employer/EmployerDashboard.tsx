@@ -19,7 +19,7 @@ const MONTHS = [
 
 const EMPTY_SCHED = {
   receiver_id: "",
-  amount: 10,
+  amount: "" as string | number,
   label: "",
   frequency: "monthly" as "monthly" | "annual",
   day_of_month: "",
@@ -120,7 +120,7 @@ export default function EmployerDashboard() {
     setSchedLoading(true);
     const payload = {
       receiver_id: schedForm.receiver_id || null,
-      amount: schedForm.amount,
+      amount: parseInt(String(schedForm.amount)) || 1,
       label: schedForm.label || undefined,
       frequency: schedForm.frequency,
       day_of_month: parseInt(String(schedForm.day_of_month)) || 1,
@@ -445,10 +445,14 @@ export default function EmployerDashboard() {
                   <label className="form-label">Tokens</label>
                   <input
                     className="form-input"
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex : 20"
                     value={schedForm.amount}
-                    onChange={(e) => setSchedForm({ ...schedForm, amount: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setSchedForm({ ...schedForm, amount: val });
+                    }}
                     required
                   />
                 </div>
@@ -470,11 +474,16 @@ export default function EmployerDashboard() {
                   <label className="form-label">Jour du mois</label>
                   <input
                     className="form-input"
-                    type="number"
-                    min={1}
-                    max={28}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex : 15"
                     value={schedForm.day_of_month}
-                    onChange={(e) => setSchedForm({ ...schedForm, day_of_month: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val === '' || (parseInt(val) >= 1 && parseInt(val) <= 31)) {
+                        setSchedForm({ ...schedForm, day_of_month: val });
+                      }
+                    }}
                     required
                   />
                 </div>

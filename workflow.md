@@ -693,6 +693,16 @@ PATCH /users/:id/entry-date
 
 ---
 
+## Déploiement Render & Vercel — 11/06/26 (fait par Loïc)
+
+**Mise en production de l'application**
+
+- Fork du dépôt de Véronique et déploiement à partir du fork
+- Déploiement du backend sur **Render**
+- Déploiement du frontend sur **Vercel**
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.
@@ -714,3 +724,34 @@ docker compose down -v
 # Relancer l'environnement à neuf (les scripts SQL seront rejoués)
 docker compose up --build
 ```
+
+---
+
+## Comptes de démonstration (base Render — production)
+
+Mot de passe pour tous les comptes : `admin123456789`
+
+### Admin
+| Email | Rôle |
+|---|---|
+| admin123@admin.com | admin |
+
+### Employeurs
+| Email | Entreprise |
+|---|---|
+| pierre.dupont@leclerc-demo.fr | Leclerc |
+| marie.garcia@aldi-demo.fr | Aldi |
+| paul.thomas@amazon-demo.fr | Amazon |
+
+### Employés
+| Email | Entreprise |
+|---|---|
+| sophie.martin@leclerc-demo.fr | Leclerc |
+| lucas.bernard@leclerc-demo.fr | Leclerc |
+| emma.dubois@leclerc-demo.fr | Leclerc |
+| hugo.petit@aldi-demo.fr | Aldi |
+| camille.leroy@aldi-demo.fr | Aldi |
+| nathan.moreau@aldi-demo.fr | Aldi |
+| lea.simon@amazon-demo.fr | Amazon |
+| tom.laurent@amazon-demo.fr | Amazon |
+| jade.michel@amazon-demo.fr | Amazon |

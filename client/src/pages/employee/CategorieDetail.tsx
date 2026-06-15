@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { marketplaceService } from '../../services/marketplace.service';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useCart } from '../../hooks/useCart';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import type { Voucher } from '../../types';
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
 const PAGE_SIZE = 30;
 
 function IconHeart({ filled }: { filled: boolean }) {
@@ -41,11 +41,21 @@ function VoucherCard({
   inCart: boolean;
   onCartToggle: (id: string) => void;
 }) {
+  const navigate = useNavigate();
+  const imgSrc = resolveImageUrl(voucher.images?.[0]);
+
   return (
-    <div className="voucher-card-carousel">
-      {voucher.images?.[0] ? (
+    <div
+      className="voucher-card-carousel"
+      style={{ cursor: 'pointer' }}
+      onClick={() => navigate(`/catalogue/offre/${voucher.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/catalogue/offre/${voucher.id}`); }}
+    >
+      {imgSrc ? (
         <div className="voucher-card-image">
-          <img src={`${API_URL}${voucher.images[0]}`} alt={voucher.partner} />
+          <img src={imgSrc} alt={voucher.partner} />
         </div>
       ) : (
         <div className="voucher-card-image voucher-card-image--placeholder">
@@ -75,7 +85,7 @@ function VoucherCard({
         ) : !voucher.available ? (
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Indisponible</span>
         ) : canAfford ? (
-          <button className="btn btn-primary btn-sm" disabled={redeeming} onClick={() => onRedeem(voucher)}>
+          <button className="btn btn-primary btn-sm" disabled={redeeming} onClick={(e) => { e.stopPropagation(); onRedeem(voucher); }}>
             {redeeming ? '…' : 'Racheter'}
           </button>
         ) : (

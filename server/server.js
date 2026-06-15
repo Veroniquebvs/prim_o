@@ -14,9 +14,24 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
+
+// Allowed origins: explicit list from CLIENT_URL (comma-separated) + localhost dev.
+// Any *.vercel.app domain is accepted so deployment-specific preview/prod URLs
+// don't break CORS every time Vercel generates a new one.
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin(origin, callback) {
+      // Allow non-browser clients (curl, Stripe webhooks) with no Origin header
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return callback(null, true);
+      return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     credentials: true,
   })
 );
