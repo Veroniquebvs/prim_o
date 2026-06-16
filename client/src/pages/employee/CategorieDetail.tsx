@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -78,25 +78,13 @@ function VoucherCard({
         </button>
       </div>
       <p className="voucher-card-carousel-title">{voucher.title}</p>
-      <div className="voucher-card-carousel-footer">
-        <span className="token-badge">{voucher.token_cost}</span>
+      <div className="voucher-card-carousel-footer" style={{ justifyContent: 'flex-end' }}>
         {promoCode ? (
-          <span className="promo-code" style={{ fontSize: '0.72rem' }}>{promoCode}</span>
+          <span className="promo-code" style={{ fontSize: '0.72rem', marginRight: 'auto' }}>{promoCode}</span>
         ) : !voucher.available ? (
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Indisponible</span>
-        ) : canAfford ? (
-          <button className="btn btn-primary btn-sm" disabled={redeeming} onClick={(e) => { e.stopPropagation(); onRedeem(voucher); }}>
-            {redeeming ? '…' : 'Racheter'}
-          </button>
-        ) : (
-          <button
-            className="btn btn-outline btn-sm"
-            style={inCart ? { background: 'var(--primary-light)', fontWeight: 700 } : {}}
-            onClick={(e) => { e.stopPropagation(); onCartToggle(voucher.id); }}
-          >
-            {inCart ? '✓ Sauvé' : '+ Panier'}
-          </button>
-        )}
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: 'auto' }}>Indisponible</span>
+        ) : null}
+        <span className="token-badge">{voucher.token_cost}</span>
       </div>
     </div>
   );
@@ -105,9 +93,12 @@ function VoucherCard({
 export default function CategorieDetail() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
+  const { user, company, refreshUser, refreshCompany } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
+
+  const backBtnRef = useRef<HTMLButtonElement>(null);
+  const [backBtnHovered, setBackBtnHovered] = useState(false);
 
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +108,16 @@ export default function CategorieDetail() {
   const [error, setError] = useState('');
 
   const decodedCategory = category ? decodeURIComponent(category) : '';
+
+  useEffect(() => {
+    if (backBtnRef.current) {
+      backBtnRef.current.style.setProperty('background-color', backBtnHovered ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 'important');
+      backBtnRef.current.style.setProperty('color', '#ffffff', 'important');
+      backBtnRef.current.style.setProperty('border-color', '#ffffff', 'important');
+      backBtnRef.current.style.setProperty('margin-left', 'auto', 'important');
+    }
+  }, [backBtnHovered, loading]);
+
   const displayName = decodedCategory.charAt(0).toUpperCase() + decodedCategory.slice(1);
 
   useEffect(() => {
@@ -138,7 +139,11 @@ export default function CategorieDetail() {
       const { promo_code } = await marketplaceService.redeem(voucher.id);
       setPromoCodes((p) => ({ ...p, [voucher.id]: promo_code }));
       setVouchers((vs) => vs.map((v) => v.id === voucher.id ? { ...v, available: false } : v));
-      await refreshUser();
+      if (user?.role === 'employer') {
+        await refreshCompany();
+      } else {
+        await refreshUser();
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } } };
       setError(e.response?.data?.error ?? 'Erreur lors du rachat.');
@@ -149,26 +154,26 @@ export default function CategorieDetail() {
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
-  const balance = user?.token_balance ?? 0;
+  const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
   const totalPages = Math.max(1, Math.ceil(vouchers.length / PAGE_SIZE));
   const pageVouchers = vouchers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div>
-      {/* Header */}
-      <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => navigate('/catalogue')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-        >
-          <IconChevronLeft />
-          Retour
-        </button>
+      <div className="page-header">
         <div>
           <h1 style={{ marginBottom: 2 }}>{displayName}</h1>
           <p style={{ margin: 0 }}>{vouchers.length} offre{vouchers.length !== 1 ? 's' : ''} disponible{vouchers.length !== 1 ? 's' : ''}</p>
         </div>
+        <button
+          ref={backBtnRef}
+          className="back-btn"
+          onClick={() => navigate('/catalogue')}
+          onMouseEnter={() => setBackBtnHovered(true)}
+          onMouseLeave={() => setBackBtnHovered(false)}
+        >
+          <IconChevronLeft /> Retour
+        </button>
       </div>
 
       {error && <p className="form-error" style={{ marginBottom: 12 }}>{error}</p>}

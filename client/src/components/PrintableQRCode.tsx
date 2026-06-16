@@ -72,7 +72,7 @@ export const PrintableQRCode = ({ companyId, companyName }: Props) => {
       </div>
 
       {/* Les boutons d'action */}
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap", justifyContent: "center" }}>
         <button onClick={() => handlePrint()} className="btn btn-outline">
           Imprimer l'affiche
         </button>

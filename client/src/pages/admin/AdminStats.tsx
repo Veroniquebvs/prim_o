@@ -44,7 +44,6 @@ export default function AdminStats() {
       <div className="page-header" style={{ justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <h1>Tableau de bord</h1>
-          <p>Vue d'ensemble</p>
         </div>
       </div>
 

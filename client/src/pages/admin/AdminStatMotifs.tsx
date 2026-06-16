@@ -46,8 +46,32 @@ export default function AdminStatMotifs() {
 
   return (
     <div>
+      <style>{`
+        .page-header .back-btn {
+          position: absolute !important;
+          right: 24px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          background-color: transparent !important;
+          color: white !important;
+          border-color: white !important;
+        }
+        @media (min-width: 768px) {
+          .page-header .back-btn {
+            right: 32px !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .page-header .back-btn {
+            right: 40px !important;
+          }
+        }
+        .page-header .back-btn:hover {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      `}</style>
       <div className="page-header">
-        <div>
+        <div style={{ width: '100%', textAlign: 'center' }}>
           <h1>Statistiques motifs de don</h1>
           <p>{total} allocation{total !== 1 ? 's' : ''} analysée{total !== 1 ? 's' : ''}</p>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface Plan {
@@ -36,7 +37,8 @@ const PLANS: Plan[] = [
 ];
 
 export default function Abonnement() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, company } = useAuth();
   const [selected, setSelected] = useState<string>('growth');
   const [loading, setLoading] = useState(false);
 
@@ -54,9 +56,44 @@ export default function Abonnement() {
 
   return (
     <div>
+      <style>{`
+        .page-header .back-btn {
+          position: absolute !important;
+          right: 24px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          background-color: transparent !important;
+          color: white !important;
+          border-color: white !important;
+        }
+        @media (min-width: 768px) {
+          .page-header .back-btn {
+            right: 32px !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .page-header .back-btn {
+            right: 40px !important;
+          }
+        }
+        .page-header .back-btn:hover {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+      `}</style>
       <div className="page-header">
-        <h1>Abonnement tokens</h1>
-        <p>Rechargez le solde de votre entreprise chaque mois</p>
+        <div style={{ width: '100%', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Abonnement tokens</h1>
+          <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', marginTop: 4 }}>
+            recharger le solde de votre entreprise chaque mois
+          </p>
+        </div>
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Retour
+        </button>
       </div>
 
       {/* Solde actuel */}
@@ -64,7 +101,7 @@ export default function Abonnement() {
         <div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 2 }}>Solde actuel</p>
           <p style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary)' }}>
-            {user?.token_balance ?? 0}
+            {company?.token_balance ?? 0}
             <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: 6 }}>tokens</span>
           </p>
         </div>
