@@ -64,11 +64,13 @@ router.post(
 router.post('/webhook', tokensController.stripeWebhook);
 
 router.post(
-  '/purchase',
+  '/subscribe',
   verifyToken,
   roleGuard('employer'),
-  [body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'), validate],
-  tokensController.createPurchaseIntent
+  [body('planId').isIn(['starter', 'growth', 'scale']).withMessage('Invalid planId'), validate],
+  tokensController.subscribe
 );
+
+router.get('/subscription', verifyToken, roleGuard('employer'), tokensController.getSubscription);
 
 module.exports = router;

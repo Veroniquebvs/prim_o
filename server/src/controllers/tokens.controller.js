@@ -1,5 +1,6 @@
 const tokenService = require('../services/token.service');
 const stripeService = require('../services/stripe.service');
+const { Company } = require('../models');
 
 const allocate = async (req, res, next) => {
   try {
@@ -46,14 +47,23 @@ const stripeWebhook = async (req, res, next) => {
   }
 };
 
-const createPurchaseIntent = async (req, res, next) => {
+const subscribe = async (req, res, next) => {
   try {
-    // On appelle un nouveau service pour créer l'intention
-    const { clientSecret } = await stripeService.createPaymentIntent(
-      req.user.company_id,
-      req.body.amount
-    );
-    res.json({ clientSecret });
+    const company = await Company.findByPk(req.user.company_id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    const result = await stripeService.createOrUpdateSubscription(company, req.body.planId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSubscription = async (req, res, next) => {
+  try {
+    const company = await Company.findByPk(req.user.company_id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    const subscription = await stripeService.getSubscription(company);
+    res.json({ subscription });
   } catch (err) {
     next(err);
   }
@@ -74,6 +84,7 @@ module.exports = {
   listTransactions,
   getTransaction,
   stripeWebhook,
-  createPurchaseIntent,
+  subscribe,
+  getSubscription,
   adminDeduct,
 };

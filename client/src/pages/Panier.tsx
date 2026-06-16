@@ -66,14 +66,7 @@ export default function Panier() {
         <h1>Vos bons d'achat sauvegardés</h1>
       </div>
 
-      {/* Solde — masqué sur desktop (affiché dans la TopNav) */}
-      <div className="stat-card panier-desktop-hidden" style={{ marginBottom: 24, display: 'inline-flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
-         <p className="stat-label">Solde disponible</p>
-        <p className="stat-value">{balance}</p>
-        <p className="stat-sub">tokens</p>
-      </div>
-
-      {error && <p className="form-error">{error}</p>}
+      {error &&<p className="form-error">{error}</p>}
 
       {/* Codes déjà obtenus dans cette session */}
       {Object.keys(promoCodes).length > 0 && (

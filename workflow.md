@@ -703,6 +703,44 @@ PATCH /users/:id/entry-date
 
 ---
 
+## UX, polissage & intégration Stripe complète — 16/06/26 (fait par Loïc)
+
+**Polissage UI**
+
+- Suppression de la fenêtre "Solde disponible" redondante sur la page Panier (déjà affiché en haut à droite)
+- Remplacement du cadran horloge par un logo token Prim'O (cercle jaune `#F5C518` + lettre **P** verte) dans la TopNav desktop et la barre mobile (`Layout.tsx`)
+- Alignement à gauche du titre "Détail de l'offre" sur `VoucherDetail.tsx`
+- Correction du style des boutons ← Retour sur les pages "Voir plus" (Paramètres, Mes informations, Mot de passe, CGU, Aide, Nous noter) : `.page-header .back-btn` unifié dans `globals.css` — transparent, texte blanc, `margin-left: auto`
+- Ajout d'un bouton ← Retour (chevron vert + `var(--primary)`) dans les modales "Attribution automatique" et "Créer un employé" sur `EmployerDashboard`
+- Remplacement de l'ID entreprise par le nom de l'entreprise dans la modale "Créer un employé"
+- Suppression de la fenêtre "Solde actuel" redondante sur la page Abonnement
+
+**Page de chargement (SplashScreen)**
+
+- Création de `SplashScreen.tsx` : fond blanc, logo centré, dégradé vert léger en haut
+- Branché sur `ProtectedRoute` (remplace le texte "Chargement…")
+- Logo `logo_page-chargement.png` copié dans `public/` pour accès direct
+
+**Œil afficher/masquer le mot de passe**
+
+- Ajout d'un toggle œil sur le champ mot de passe de `LoginPage.tsx`
+- SVG œil barré / ouvert selon l'état, couleur `var(--text-muted)`
+
+**Intégration Stripe complète (abonnements mensuels récurrents)**
+
+- Migration de `PaymentIntent` vers **Stripe Subscription** (vrai prélèvement mensuel automatique)
+- Backend `stripe.service.js` : `createOrUpdateSubscription()` — crée un Stripe Customer + Subscription avec `price_data` inline, annule l'ancien abonnement si changement de plan
+- Backend : nouveau webhook `invoice.payment_succeeded` (remplace `payment_intent.succeeded`) — crédit des tokens via transaction PostgreSQL atomique
+- Nouveaux endpoints : `POST /api/tokens/subscribe` (planId) · `GET /api/tokens/subscription`
+- Modèle `Company` : 5 nouvelles colonnes (`stripe_customer_id`, `stripe_subscription_id`, `subscription_plan`, `subscription_status`, `subscription_next_billing`) — ajout automatique via `sync({ alter: true })`
+- Frontend `Abonnement.tsx` : 4 états — chargement · abonnement actif (plan + date prochain prélèvement + changement de plan) · sélection · paiement · succès
+- Polling du solde toutes les 2 s après paiement (le webhook crédite de façon asynchrone)
+- `PaymentElement` configuré : carte bancaire uniquement (`payment_method_types: ['card']`, `wallets: { link: 'never' }`)
+- `docker-compose.yml` : `env_file: ./client/.env` pour injecter `VITE_STRIPE_PUBLIC_KEY` dans le conteneur frontend
+- Masquage du badge test-mode Stripe via CSS global (`#stripe-badge-iframe`)
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.
@@ -724,6 +762,66 @@ docker compose down -v
 # Relancer l'environnement à neuf (les scripts SQL seront rejoués)
 docker compose up --build
 ```
+
+---
+
+## Lancer Stripe en développement local
+
+Cette procédure est nécessaire à chaque session de test du paiement. La Stripe CLI fait le pont entre les événements Stripe et ton serveur local.
+
+### Prérequis (une seule fois)
+
+```bash
+# Installation de la CLI (WSL2 / Linux)
+curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
+sudo apt update && sudo apt install stripe
+
+# Connexion au compte Stripe (valide 90 jours)
+stripe login
+```
+
+### À chaque session de test
+
+**Terminal 1 — Docker (backend + frontend)**
+```bash
+docker compose up --build
+```
+
+**Terminal 2 — Stripe CLI (à garder ouvert pendant les tests)**
+```bash
+stripe listen --events invoice.payment_succeeded --forward-to localhost:5000/api/tokens/webhook
+```
+
+La CLI affiche au démarrage :
+```
+> Ready! Your webhook signing secret is whsec_abc123...
+```
+
+Copie ce secret dans `server/.env` si ce n'est pas déjà fait :
+```
+STRIPE_WEBHOOK_SECRET=whsec_abc123...
+```
+
+Puis redémarre le backend pour qu'il prenne en compte le nouveau secret.
+
+### Carte de test Stripe
+
+| Champ | Valeur |
+|---|---|
+| Numéro | `4242 4242 4242 4242` |
+| Date d'expiration | N'importe quelle date future (ex: `12/26`) |
+| CVC | N'importe quels 3 chiffres (ex: `123`) |
+| Code postal | N'importe quels 5 chiffres (ex: `75001`) |
+
+### En production
+
+Le `stripe listen` **n'est pas nécessaire en production**. Configurer l'URL de webhook directement dans le dashboard Stripe :
+
+1. [dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks) → **Ajouter un endpoint**
+2. URL : `https://ton-domaine.com/api/tokens/webhook`
+3. Événement : `invoice.payment_succeeded`
+4. Copier le `whsec_...` généré → variable d'environnement `STRIPE_WEBHOOK_SECRET` sur Render
 
 ---
 

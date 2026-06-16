@@ -53,9 +53,10 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - ./client/.env
     environment:
       VITE_API_URL: http://localhost:5000
-      VITE_STRIPE_PUBLIC_KEY: ${VITE_STRIPE_PUBLIC_KEY:-pk_test_placeholder}
       CI: "false"
     volumes:
       - ./client:/app

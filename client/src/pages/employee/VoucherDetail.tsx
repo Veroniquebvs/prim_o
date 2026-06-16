@@ -147,9 +147,7 @@ export default function VoucherDetail() {
         }
       `}</style>
       <div className="page-header">
-        <div style={{ width: '100%', textAlign: 'center' }}>
-          <h1>Détail de l'offre</h1>
-        </div>
+        <h1>Détail de l'offre</h1>
         <button className="back-btn" onClick={() => navigate(-1)}>
           <IconChevronLeft /> Retour
         </button>

@@ -37,4 +37,14 @@ export const tokenService = {
   }): Promise<void> {
     await api.post('/tokens/admin/deduct', payload);
   },
+
+  async subscribe(planId: string): Promise<{ clientSecret: string; subscriptionId: string }> {
+    const { data } = await api.post('/tokens/subscribe', { planId });
+    return data;
+  },
+
+  async getSubscription(): Promise<{ plan: string; status: string; next_billing: string } | null> {
+    const { data } = await api.get('/tokens/subscription');
+    return data.subscription;
+  },
 };

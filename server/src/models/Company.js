@@ -68,6 +68,12 @@ const initCompany = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      // 8. Stripe subscription fields
+      stripe_customer_id: { type: DataTypes.STRING, allowNull: true },
+      stripe_subscription_id: { type: DataTypes.STRING, allowNull: true },
+      subscription_plan: { type: DataTypes.STRING, allowNull: true },
+      subscription_status: { type: DataTypes.STRING, allowNull: true },
+      subscription_next_billing: { type: DataTypes.DATE, allowNull: true },
     },
     {
       sequelize,

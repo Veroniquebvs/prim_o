@@ -1027,19 +1027,13 @@ a:hover {
 }
 
 .page-header .back-btn {
-  background-color: white !important;
-  color: black !important;
-  border-color: white !important;
-}
-
-.page-header .back-btn.back-btn--right-white {
   margin-left: auto;
   background-color: transparent !important;
   color: white !important;
-  border-color: white !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
-.page-header .back-btn.back-btn--right-white:hover {
+.page-header .back-btn:hover {
   background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
@@ -2324,4 +2318,11 @@ a:hover {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+}
+
+/* Masque le badge test-mode Stripe */
+#stripe-badge-iframe,
+iframe[src*="stripe"][title*="Stripe"],
+a[href*="stripe.com/about"][target="_blank"] {
+  display: none !important;
 }

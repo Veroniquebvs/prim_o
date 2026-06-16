@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -35,7 +36,7 @@ import PourToi from './pages/PourToi';
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
-  if (isLoading) return null;
+  if (isLoading) return <SplashScreen />;
   if (!user) return <HomePage />;
   if (user.role === 'employer') return <Navigate to="/employer/dashboard" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;

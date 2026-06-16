@@ -551,8 +551,17 @@ export default function EmployerDashboard() {
               {schedError && <p className="form-error">{schedError}</p>}
 
               <div className="emp-modal-actions">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowSchedModal(false)} disabled={schedLoading}>
-                  Annuler
+                <button
+                  type="button"
+                  style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}
+                  onClick={() => setShowSchedModal(false)}
+                  disabled={schedLoading}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  Retour
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={schedLoading}>
                   {schedLoading ? "Enregistrement…" : editingSchedId ? "Enregistrer" : "Créer"}
@@ -619,11 +628,11 @@ export default function EmployerDashboard() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">ID Entreprise</label>
+                <label className="form-label">Entreprise</label>
                 <input
                   className="form-input"
                   type="text"
-                  value={user?.company_id ?? ""}
+                  value={company?.name ?? ""}
                   disabled
                   readOnly
                 />
@@ -634,11 +643,15 @@ export default function EmployerDashboard() {
               <div className="emp-modal-actions">
                 <button
                   type="button"
-                  className="btn btn-ghost"
+                  style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}
                   onClick={() => setShowCreateModal(false)}
                   disabled={createLoading}
                 >
-                  Annuler
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  Retour
                 </button>
                 <button
                   type="submit"
