@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 
@@ -43,7 +43,7 @@ export default function TopNav() {
     <header className="top-nav">
       <div className="top-nav-inner">
         {/* Brand */}
-        <span className="top-nav-brand">PRIM'O</span>
+        <Link to="/pour-toi" className="top-nav-brand">PRIM'O</Link>
 
         {/* Nav links + Voir plus (à gauche) */}
         <nav className="top-nav-links">

@@ -703,6 +703,26 @@ PATCH /users/:id/entry-date
 
 ---
 
+### 🗓️ 15 Juin 2026 : Optimisations UI/UX et corrections de logique
+
+**Objectifs :** Améliorer l'interface utilisateur (UI) du catalogue et sécuriser les calculs financiers côté employeur.
+
+#### 🎨 Interface Utilisateur (UI/UX) - 15/06/26 (fait par Véro)
+*   **Alignement des titres :** Centralisation des titres de page pour une meilleure lisibilité et uniformité visuelle.
+*   **Bouton "Retour" :** 
+    *   Refonte du style : passage en fond blanc avec texte contrasté.
+    *   Positionnement fixe à droite dans le header pour une meilleure ergonomie mobile/desktop.
+*   **Style des offres :** Restructuration visuelle des cartes d'offres :
+    *   Amélioration de la hiérarchie typographique (titre mis en avant, description plus lisible).
+    *   Ajustement des espacements (padding/margin) pour aérer le contenu.
+
+#### ⚙️ Logique & Backend
+*   **Correction du panier :**
+    *   Audit et correction de l'algorithme de calcul du solde total du panier côté employeur.
+    *   Assurance de la cohérence des totaux lors de l'ajout/suppression d'offres.
+
+---
+
 ## UX, polissage & intégration Stripe complète — 16/06/26 (fait par Loïc)
 
 **Polissage UI**
