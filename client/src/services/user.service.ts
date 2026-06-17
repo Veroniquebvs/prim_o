@@ -1,3 +1,9 @@
+/**
+ * services/user.service.ts — Client-side wrapper for user management API endpoints.
+ *
+ * Provides CRUD operations for users plus activation and entry-date management.
+ * Used by employer dashboards to manage the employee list.
+ */
 import api from "./api";
 import type { User, TokenTransaction, ApiResponse } from "../types";
 

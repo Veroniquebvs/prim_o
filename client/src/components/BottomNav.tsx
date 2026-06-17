@@ -152,7 +152,18 @@ function IconChevron() {
   );
 }
 
-/* ── Component ────────────────────────────────────────── */
+/**
+ * Mobile bottom navigation bar and slide-up menu sheet.
+ *
+ * Displays four main navigation tabs whose destinations differ by role (admin vs. all others),
+ * plus a "Voir plus" button that slides up a menu sheet containing secondary navigation links
+ * (settings, personal info, password, help, CGU, rating) and a logout button.
+ *
+ * The menu sheet re-opens automatically if the user navigates to a secondary page that sets
+ * the reopenMenu flag in the location state (so the back gesture feels natural).
+ *
+ * Cart badge count is shown on the Panier tab for non-admin users.
+ */
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();

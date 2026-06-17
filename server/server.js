@@ -1,3 +1,17 @@
+/**
+ * server.js — Application entry point for the PRIM'O Express API.
+ *
+ * Bootstraps the Express application, applies global middleware (Helmet, CORS, body parsing),
+ * registers all API routes under /api, connects to PostgreSQL via Sequelize, and starts the
+ * daily cron job for scheduled token allocations. Listens on the port defined by the PORT
+ * environment variable (default 5000).
+ *
+ * The Stripe webhook route (/api/tokens/webhook) receives its body as raw bytes because Stripe
+ * requires the raw payload to verify the signature — it is therefore mounted before express.json().
+ *
+ * Graceful shutdown is handled on SIGTERM and SIGINT so in-flight requests complete before
+ * the process exits.
+ */
 const path = require('path');
 const express = require('express');
 const cors = require('cors');

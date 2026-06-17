@@ -1,3 +1,10 @@
+/**
+ * routes/index.js — Root API router.
+ *
+ * Aggregates all feature routers and mounts them under their respective path prefixes.
+ * Every sub-router is responsible for its own authentication and role guards.
+ * This file is the single place where new route groups must be registered.
+ */
 const { Router } = require('express');
 
 const authRoutes = require('./auth.routes');

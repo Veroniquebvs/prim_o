@@ -1,3 +1,13 @@
+/**
+ * pages/MotDePasse.tsx — Password change page.
+ *
+ * Requires the user to enter their current password and a new password that satisfies all
+ * five strength rules (min 8 chars, at least one digit, one uppercase, one lowercase, one
+ * special character). The new password must be confirmed by repeating it; a visual match
+ * indicator is shown. The submit button is disabled until all rules pass and the passwords
+ * match. On success, the form clears. On failure, the server error message is displayed
+ * (e.g. "Mot de passe actuel incorrect").
+ */
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

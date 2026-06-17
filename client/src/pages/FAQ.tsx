@@ -1,3 +1,15 @@
+/**
+ * pages/FAQ.tsx — Frequently asked questions page with a contact section.
+ *
+ * Questions are organised into thematic sections (Mon compte, Les tokens, Catalogue,
+ * Paiement, Sécurité) and rendered as accessible accordion items — each question expands
+ * to show the answer when clicked. The contact section at the bottom includes an email link
+ * and social media links.
+ *
+ * When navigated to with `{ state: { anchor: 'contact' } }`, the page scrolls the contact
+ * section into view after a brief delay (to let the DOM paint). This is used by the Service
+ * page to deep-link directly to the contact area.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 

@@ -1,3 +1,15 @@
+/**
+ * tokens.routes.js — Route definitions for token management and Stripe subscription endpoints.
+ *
+ * POST /allocate       — employer only; transfers tokens from company balance to an employee
+ * GET  /balance/:userId — any authenticated user; reads a user's token balance
+ * GET  /transactions   — any authenticated user; filterable ledger query
+ * GET  /transactions/:id — any authenticated user; single transaction lookup
+ * POST /admin/deduct   — admin only; forcibly removes tokens from a company or employee
+ * POST /webhook        — public (Stripe); raw body required for signature verification
+ * POST /subscribe      — employer only; creates/updates a Stripe subscription
+ * GET  /subscription   — employer only; retrieves current subscription status
+ */
 const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const tokensController = require('../controllers/tokens.controller');

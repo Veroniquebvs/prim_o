@@ -1,3 +1,12 @@
+/**
+ * pages/admin/AdminDashboard.tsx — Company management hub for the admin role.
+ *
+ * Lists all registered companies with their current token balance. Clicking a company row
+ * navigates to AdminCompanyDetail. Also provides an admin-level "grant tokens" form that
+ * credits tokens directly to a company's token_balance outside the normal Stripe subscription
+ * flow (for manual adjustments or corrections). The company list is updated in-place after
+ * a successful grant without a full re-fetch.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

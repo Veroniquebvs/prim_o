@@ -1,3 +1,12 @@
+/**
+ * pages/admin/AdminBons.tsx — Voucher management page for the admin role.
+ *
+ * Provides two tabs: "Gérer" (create new vouchers and view/search the existing list) and
+ * "Rachats" (all-time redemption history across the platform). The Gérer tab supports image
+ * uploads (up to 5 per voucher, preview shown before save), category assignment, and a
+ * free-text search to filter the existing voucher list. Clicking a voucher row navigates
+ * to AdminVoucherDetail for full editing. The Rachats tab is rendered via AdminRachats.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';

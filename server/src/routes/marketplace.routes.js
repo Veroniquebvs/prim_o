@@ -1,3 +1,16 @@
+/**
+ * marketplace.routes.js — Route definitions for the voucher marketplace.
+ *
+ * GET  /items              — any authenticated user; browse available vouchers
+ * GET  /items/:id          — employee, employer, or admin; single voucher (admin sees promo_code)
+ * POST /items              — admin only; create a voucher
+ * PUT  /items/:id          — admin only; update a voucher
+ * DELETE /items/:id        — admin only; delete a voucher
+ * POST /redeem             — employee only; exchange tokens for a promo code
+ * GET  /orders             — employee or manager; own redemption history
+ * GET  /admin/vouchers     — admin only; full catalogue including unavailable vouchers
+ * GET  /admin/history      — admin only; all redemptions across all users
+ */
 const { Router } = require('express');
 const { body, param } = require('express-validator');
 const marketplaceController = require('../controllers/marketplace.controller');

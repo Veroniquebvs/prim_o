@@ -1,3 +1,16 @@
+/**
+ * pages/RegisterPage.tsx — Account creation page for both employers and employees.
+ *
+ * Supports two registration paths:
+ * 1. Direct registration: the user picks their role (employer or employee) and fills in the
+ *    corresponding fields. Employers must supply company details (name, SIRET, address); a new
+ *    company record is created before the user account.
+ * 2. QR-code registration: if a `?companyId=<id>` query param is present (scanned from the
+ *    PrintableQRCode poster), the role is locked to employee, the company is pre-resolved
+ *    (name fetched via the public endpoint), and the company ID field is non-editable.
+ *
+ * On successful registration, navigates to the role-appropriate dashboard.
+ */
 import { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";

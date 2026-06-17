@@ -1,3 +1,12 @@
+/**
+ * pages/manager/CollaborateurDetail.tsx — Team member detail page, visible to the manager.
+ *
+ * Fetches the collaborator's profile and full token transaction history by :id param.
+ * Displays initials avatar, stat cards (current balance, tokens received from this manager,
+ * account creation date), personal info fields, and a colour-coded token history table.
+ * Read-only — managers cannot edit collaborator profiles from this page.
+ * Back button navigates to /pour-toi (the manager home page).
+ */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";

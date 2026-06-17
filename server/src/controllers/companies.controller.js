@@ -1,5 +1,10 @@
+/**
+ * companies.controller.js — HTTP handlers for company management routes.
+ * Thin delegates to CompaniesService for create, read, update, delete, and token grant operations.
+ */
 const companiesService = require('../services/companies.service');
 
+/** Creates a new company. Public endpoint used during employer self-onboarding. Responds 201. */
 const create = async (req, res, next) => {
   try {
     const data = await companiesService.create(req.body);
@@ -9,6 +14,7 @@ const create = async (req, res, next) => {
   }
 };
 
+/** Returns a company's full details including Stripe subscription fields. */
 const getById = async (req, res, next) => {
   try {
     const data = await companiesService.getById(req.params.id);
@@ -18,6 +24,7 @@ const getById = async (req, res, next) => {
   }
 };
 
+/** Returns minimal public company info (id, name only) for the QR-code registration flow. */
 const getPublicById = async (req, res, next) => {
   try {
     const data = await companiesService.getPublicById(req.params.id);
@@ -27,6 +34,7 @@ const getPublicById = async (req, res, next) => {
   }
 };
 
+/** Admin-only: returns all companies alphabetically. */
 const list = async (req, res, next) => {
   try {
     const data = await companiesService.list();
@@ -36,6 +44,7 @@ const list = async (req, res, next) => {
   }
 };
 
+/** Updates a company's editable fields. Accessible by the company's employer or an admin. */
 const update = async (req, res, next) => {
   try {
     const data = await companiesService.update(
@@ -50,6 +59,7 @@ const update = async (req, res, next) => {
   }
 };
 
+/** Admin-only: permanently deletes a company and all its associated users and transactions. */
 const remove = async (req, res, next) => {
   try {
     await companiesService.remove(req.params.id);
@@ -59,6 +69,10 @@ const remove = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin-only: credits a token amount to a company's balance without a Stripe payment.
+ * Parses req.body.amount as an integer before passing it to the service.
+ */
 const grantTokens = async (req, res, next) => {
   try {
     const amount = parseInt(req.body.amount, 10);

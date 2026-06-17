@@ -1,3 +1,9 @@
+/**
+ * components/TokenBalance.tsx — Stat card displaying the logged-in employee's current token balance.
+ *
+ * Reads the balance directly from AuthContext, so it reflects the latest refresh of the user object.
+ * Intended for use on employee-facing pages such as the wallet/dashboard area.
+ */
 import { useAuth } from '../context/AuthContext';
 
 export default function TokenBalance() {

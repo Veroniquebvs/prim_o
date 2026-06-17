@@ -1,3 +1,12 @@
+/**
+ * pages/CGU.tsx — Terms of use and sale (CGU-CGV) page.
+ *
+ * Renders 17 legal articles covering the platform's object, contact details, user capacities,
+ * token rules, marketplace terms, payment and billing, data protection (RGPD), intellectual
+ * property, and jurisdiction. Content is statically defined in the articles array and rendered
+ * as paragraphs split on double newlines. Article numbers and titles form a readable heading
+ * hierarchy. The contact section mirrors the one in FAQ.
+ */
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function IconMail() {

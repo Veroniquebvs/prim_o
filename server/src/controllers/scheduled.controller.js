@@ -1,3 +1,13 @@
+/**
+ * scheduled.controller.js — HTTP handlers for employer-level scheduled allocation routes.
+ *
+ * Manages recurring token distribution rules created by employers (targeting employees or all
+ * active employees). The next_run_at date is computed locally by the controller rather than
+ * delegating to a service, which differs from the pattern used in manager routes.
+ *
+ * Note: the 'monthly' and 'annual' next-run helpers here are duplicates of the same helpers
+ * in cron.service.js; both must stay in sync if the scheduling logic changes.
+ */
 const { ScheduledAllocation, User } = require('../models');
 
 function nextMonthly(dayOfMonth) {
@@ -18,6 +28,7 @@ const withReceiver = {
   include: [{ model: User, as: 'receiver', attributes: ['id', 'first_name', 'name', 'email'] }],
 };
 
+/** Returns all scheduled allocation rules for the authenticated employer's company, newest first. */
 const list = async (req, res, next) => {
   try {
     const rules = await ScheduledAllocation.findAll({
@@ -31,6 +42,7 @@ const list = async (req, res, next) => {
   }
 };
 
+/** Creates a new recurring allocation rule for the authenticated employer's company. Responds 201. */
 const create = async (req, res, next) => {
   try {
     const { receiver_id, amount, label, frequency, day_of_month, month, excluded_user_ids } = req.body;
@@ -60,6 +72,7 @@ const create = async (req, res, next) => {
   }
 };
 
+/** Replaces an existing allocation rule's schedule and target. Recomputes next_run_at. */
 const update = async (req, res, next) => {
   try {
     const rule = await ScheduledAllocation.findOne({
@@ -92,6 +105,7 @@ const update = async (req, res, next) => {
   }
 };
 
+/** Flips the active flag of a rule, pausing or resuming it without deleting it. */
 const toggle = async (req, res, next) => {
   try {
     const rule = await ScheduledAllocation.findOne({
@@ -106,6 +120,7 @@ const toggle = async (req, res, next) => {
   }
 };
 
+/** Permanently deletes a scheduled allocation rule scoped to the employer's company. */
 const remove = async (req, res, next) => {
   try {
     const rule = await ScheduledAllocation.findOne({

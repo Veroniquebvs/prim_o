@@ -1,3 +1,13 @@
+/**
+ * hooks/useFavorites.ts — Server-backed favorites list for the logged-in employee.
+ *
+ * Fetches the full favorites list from the API on mount. The toggle function performs an
+ * optimistic UI update (removes or adds the entry immediately) then calls the API; if the
+ * call fails the change is reverted so the UI stays consistent with the server state.
+ *
+ * isFavorite is a fast synchronous lookup derived from the in-memory list. count returns
+ * the total number of favourited vouchers.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { marketplaceService } from '../services/marketplace.service';
 

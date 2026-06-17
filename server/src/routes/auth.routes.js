@@ -1,3 +1,12 @@
+/**
+ * auth.routes.js — Route definitions for authentication endpoints.
+ *
+ * Public routes: POST /register, POST /login, POST /refresh
+ * Protected routes (require valid JWT): POST /logout, GET /me
+ *
+ * Input validation is applied on every public write route via express-validator rules
+ * followed by the validate middleware. Failed validation returns 400 before the controller runs.
+ */
 const { Router } = require('express');
 const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');

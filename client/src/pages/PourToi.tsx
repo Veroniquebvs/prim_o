@@ -1,3 +1,18 @@
+/**
+ * pages/PourToi.tsx — Personalised home page, rendered differently per role.
+ *
+ * For employees: shows three curated voucher carousels (trending, most-favorited, this week's offers)
+ * plus the user's redeemed voucher history. Voucher ordering uses is_featured/is_weekly flags and
+ * aggregate favorite_count to rank items. Redemption deducts tokens client-side and refreshes the
+ * balance via AuthContext.
+ *
+ * For managers: shows a manager dashboard with a token give form (with confirmation step), a team
+ * member list (with add-existing or create-new collaborator flows), scheduled automatic allocation
+ * rules management, and redeemed voucher history. Data is fetched in parallel via Promise.allSettled
+ * so a single failing endpoint does not block the rest.
+ *
+ * The default export switches between ManagerPourToi and EmployeePourToi based on user.role.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

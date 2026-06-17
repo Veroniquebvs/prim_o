@@ -1,3 +1,10 @@
+/**
+ * components/SplashScreen.tsx — Full-screen loading overlay shown while the auth session is initialising.
+ *
+ * Displayed by ProtectedRoute while AuthContext is still resolving the stored access token.
+ * Renders a fixed white overlay with a subtle green gradient at the top and the PRIM'O logo
+ * centred on screen. Disappears as soon as isLoading becomes false in AuthContext.
+ */
 export default function SplashScreen() {
   return (
     <div style={{

@@ -1,3 +1,15 @@
+/**
+ * pages/employer/ManagerDetail.tsx — Detail page for a manager, visible to the employer.
+ *
+ * Fetches manager profile, their current team with members, and their token transaction
+ * history. Displays stat cards (token balance, team size, total tokens distributed to team),
+ * personal information, the team member list (each row links to the employee detail page),
+ * and a full transaction history table with colour-coded credits/debits and the counterpart name.
+ *
+ * Includes a two-step demotion section: demoting the manager converts them back to an employee,
+ * dissolves their team (left_at is set on all TeamMember records), and disables all their
+ * scheduled automatic allocations. The employer is redirected to the dashboard on completion.
+ */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { managerService } from "../../services/manager.service";

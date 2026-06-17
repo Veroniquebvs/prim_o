@@ -1,3 +1,13 @@
+/**
+ * employer.routes.js — Route definitions for employer-only management features.
+ * All routes require a valid JWT with role 'employer' (applied via router-level middleware).
+ *
+ * GET    /managers/:id/team      — view a manager's profile and active team
+ * PATCH  /employees/:id/role     — promote an employee to manager or demote a manager to employee
+ * GET    /allocations            — list all employer_to_manager scheduled allocation rules
+ * POST   /allocations            — create a new scheduled allocation to a manager
+ * PATCH  /allocations/:id        — update an existing allocation rule (amount, active, day_of_month)
+ */
 const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const employerController = require('../controllers/employer.controller');

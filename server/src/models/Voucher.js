@@ -1,5 +1,23 @@
+/**
+ * models/Voucher.js — Sequelize model for the vouchers table.
+ *
+ * Represents a partner reward available in the marketplace. Each voucher has a fixed token
+ * cost and a promo code that is revealed to the employee only upon successful redemption.
+ * The promo_code is unique across the table because each code can only be redeemed once;
+ * when a redemption succeeds, the voucher's available flag is flipped to false so it cannot
+ * be redeemed again.
+ *
+ * The images field is a PostgreSQL array of relative URL paths served from /uploads. The
+ * category constrains the voucher to one of the predefined marketplace categories. The
+ * is_featured and is_weekly flags are set by admins to surface vouchers in special carousels
+ * on the catalogue page regardless of their favourite count.
+ */
 const { Model, DataTypes } = require('sequelize');
 
+/**
+ * Voucher model class. The initVoucher function must be called with the Sequelize instance
+ * before the model can be used for database queries.
+ */
 class Voucher extends Model {
   // Space for future custom methods
 }

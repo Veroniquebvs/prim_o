@@ -1,3 +1,15 @@
+/**
+ * pages/employer/EmployeeDetail.tsx — Individual employee detail page for employers.
+ *
+ * Fetches the employee profile and token transaction history by :id param. Displays:
+ * - Stat cards (current token balance, account creation date)
+ * - Read-only personal info fields
+ * - An editable entry date (saved via userService.updateEntryDate)
+ * - Token history table with colour-coded credits (+) and debits (−)
+ * - A two-step deletion confirmation section
+ *
+ * Navigates back to the employer dashboard on deletion or when the back button is clicked.
+ */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";

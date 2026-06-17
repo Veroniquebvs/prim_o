@@ -1,5 +1,11 @@
+/**
+ * manager.controller.js — HTTP handlers for manager-only routes.
+ * Covers team management, employee creation, token distribution, and scheduled allocation CRUD.
+ * All handlers delegate to ManagerService.
+ */
 const managerService = require('../services/manager.service');
 
+/** Returns the manager's active team and all current members. */
 const getTeam = async (req, res, next) => {
   try {
     const data = await managerService.getTeam(req.user.id);
@@ -9,6 +15,7 @@ const getTeam = async (req, res, next) => {
   }
 };
 
+/** Creates a new employee account and adds them to the manager's active team. Responds 201. */
 const createEmployee = async (req, res, next) => {
   try {
     const data = await managerService.createEmployee(req.user, req.body);
@@ -18,6 +25,7 @@ const createEmployee = async (req, res, next) => {
   }
 };
 
+/** Adds an existing unassigned employee to the manager's team. Responds 201. */
 const addTeamMember = async (req, res, next) => {
   try {
     const data = await managerService.addTeamMember(req.user, req.body);
@@ -27,6 +35,7 @@ const addTeamMember = async (req, res, next) => {
   }
 };
 
+/** Transfers tokens from the manager's personal balance to an employee in their team. */
 const giveTokens = async (req, res, next) => {
   try {
     const data = await managerService.giveTokens(req.user, req.body);
@@ -36,6 +45,7 @@ const giveTokens = async (req, res, next) => {
   }
 };
 
+/** Returns the manager's current token balance. */
 const getBalance = async (req, res, next) => {
   try {
     const data = await managerService.getBalance(req.user.id);
@@ -45,6 +55,7 @@ const getBalance = async (req, res, next) => {
   }
 };
 
+/** Returns employees in the manager's company who do not yet belong to any active team. */
 const getUnassignedCollaborators = async (req, res, next) => {
   try {
     const data = await managerService.getUnassignedCollaborators(req.user);
@@ -52,6 +63,7 @@ const getUnassignedCollaborators = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** Lists all scheduled allocation rules created by the authenticated manager. */
 const listScheduled = async (req, res, next) => {
   try {
     const data = await managerService.listScheduled(req.user.id);
@@ -59,6 +71,7 @@ const listScheduled = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** Creates a new recurring allocation rule from this manager to an employee in their team. Responds 201. */
 const createScheduled = async (req, res, next) => {
   try {
     const data = await managerService.createScheduled(req.user, req.body);
@@ -66,6 +79,7 @@ const createScheduled = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** Toggles a scheduled allocation rule between active and paused. */
 const toggleScheduled = async (req, res, next) => {
   try {
     const data = await managerService.toggleScheduled(req.user, req.params.id);
@@ -73,6 +87,7 @@ const toggleScheduled = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** Permanently deletes a scheduled allocation rule belonging to the authenticated manager. */
 const deleteScheduled = async (req, res, next) => {
   try {
     await managerService.deleteScheduled(req.user, req.params.id);

@@ -1,3 +1,15 @@
+/**
+ * companies.service.js — Business logic for company management.
+ *
+ * A company is the top-level entity in the PRIM'O hierarchy. This service handles creation,
+ * retrieval, updating, and deletion of companies, as well as the admin-only token grant
+ * operation. The remove function cascades the deletion to all associated users, redemptions,
+ * and transactions to maintain referential integrity without relying on DB-level cascades.
+ *
+ * The update function enforces that non-admin callers can only modify their own company.
+ * The getPublicById function exposes only the company name and is used unauthenticated
+ * during the QR-code employee registration flow.
+ */
 const { Op } = require('sequelize');
 const { Company } = require('../models');
 const sequelize = require('../config/database');
@@ -8,6 +20,11 @@ const httpError = (message, status) => {
   return err;
 };
 
+/**
+ * Creates a new company record. Throws 409 if another company already uses the same email.
+ * name, street, zip_code, city, and siret are required. email is optional but unique when present.
+ * Returns the created Company instance.
+ */
 const create = async ({ name, email, street, zip_code, city, siret }) => {
   if (email) {
     const existing = await Company.findOne({ where: { email } });
@@ -23,21 +40,41 @@ const create = async ({ name, email, street, zip_code, city, siret }) => {
   });
 };
 
+/**
+ * Fetches a company by its UUID. Throws 404 if the company does not exist.
+ * Returns the full Company record including Stripe subscription fields.
+ */
 const getById = async (id) => {
   const company = await Company.findByPk(id);
   if (!company) throw httpError('Company not found', 404);
   return company;
 };
 
-// Public — minimal, non-sensitive info for the QR-code registration flow
+/**
+ * Fetches minimal public information about a company — only its id and name.
+ * Used unauthenticated in the QR-code registration flow so an employee can confirm they are
+ * joining the right company before creating their account.
+ * Throws 404 if the company does not exist.
+ */
 const getPublicById = async (id) => {
   const company = await Company.findByPk(id, { attributes: ['id', 'name'] });
   if (!company) throw httpError('Company not found', 404);
   return { id: company.id, name: company.name };
 };
 
+/**
+ * Returns all companies ordered alphabetically by name. Admin-only operation.
+ */
 const list = async () => Company.findAll({ order: [['name', 'ASC']] });
 
+/**
+ * Updates a company's editable fields. Accessible by admins (any company) or employers (own company only).
+ * id is the UUID of the company to update. body may contain name, email, street, zip_code,
+ * city, siret, and feedback_enabled. requesterId and requesterRole are used to authorise
+ * non-admin updates — if the requester is not an admin, they must belong to the target company.
+ * Throws 404 if the company does not exist, 403 if a non-admin tries to modify another company.
+ * Returns the updated Company instance.
+ */
 const update = async (id, body, requesterId, requesterRole) => {
   const company = await Company.findByPk(id);
   if (!company) throw httpError('Company not found', 404);
@@ -59,6 +96,13 @@ const update = async (id, body, requesterId, requesterRole) => {
   return company;
 };
 
+/**
+ * Permanently deletes a company and all its associated data. Admin-only operation.
+ * id is the UUID of the company to delete. Throws 404 if it does not exist.
+ * Cascades deletion to: all redemptions made by company users, all token transactions
+ * involving company users or the company itself, all user records for the company, and finally
+ * the company record. The deletion order respects foreign-key constraints.
+ */
 const remove = async (id) => {
   const { User, TokenTransaction, Redemption } = require('../models');
   const company = await Company.findByPk(id);
@@ -79,6 +123,13 @@ const remove = async (id) => {
   await company.destroy();
 };
 
+/**
+ * Admin-only operation that adds tokens directly to a company's balance without a Stripe payment.
+ * companyId is the UUID of the company to top up. amount must be a positive integer.
+ * The balance increment and the corresponding 'admin_grant' TokenTransaction are committed
+ * atomically. Throws 404 if the company does not exist.
+ * Returns an object with company_id, the granted amount, and the new balance.
+ */
 const grantTokens = async (companyId, amount) => {
   const { TokenTransaction } = require('../models');
 

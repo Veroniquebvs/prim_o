@@ -1,3 +1,13 @@
+/**
+ * pages/admin/AdminVoucherDetail.tsx — Full voucher editor for the admin.
+ *
+ * Fetches a single voucher by :id and pre-fills all form fields. Allows editing partner name,
+ * title, promo code, token cost, category, and availability. Image management lets the admin
+ * add new images (up to 5, with local preview) and remove existing ones. Separate toggle
+ * buttons control the is_featured and is_weekly flags with instant API calls. Saving submits
+ * a multipart/form-data request that handles both updated metadata and any new image files.
+ * Voucher deletion navigates back to AdminBons.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';

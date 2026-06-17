@@ -1,3 +1,12 @@
+/**
+ * scripts/seed-demo-vouchers.js — Generates and inserts categorised demo vouchers with
+ * programmatically generated SVG placeholder images.
+ *
+ * For each voucher category a unique colour palette and emoji icon is used to produce an
+ * SVG image which is written to the uploads/ directory. The voucher record is then inserted
+ * with the relative image path. Skips inserting if a voucher with the same promo_code already
+ * exists. Requires DATABASE_URL in the .env file.
+ */
 require('dotenv').config();
 const fs   = require('fs');
 const path = require('path');

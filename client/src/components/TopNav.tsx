@@ -4,6 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 
 
+/**
+ * Desktop top navigation bar (hidden on mobile, shown on wider screens).
+ *
+ * Renders the PRIM'O brand, role-specific navigation links, a "Voir plus" dropdown
+ * containing secondary links and logout, and a right-side token balance display.
+ * Employers also see an 'Acheter' button and, when on /panier, a 'Valider le panier'
+ * button that dispatches a custom browser event consumed by the Panier page.
+ * The dropdown closes on outside clicks.
+ */
 export default function TopNav() {
   const { user, company, logout } = useAuth();
   const { count } = useCart();

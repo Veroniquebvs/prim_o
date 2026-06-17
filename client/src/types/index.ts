@@ -1,3 +1,11 @@
+/**
+ * types/index.ts — Shared TypeScript type definitions for the PRIM'O frontend.
+ *
+ * Mirrors the backend database schema and API response shapes. All API calls return data
+ * wrapped in ApiResponse<T>; error responses return ApiError. These types are used across
+ * services, pages, and components to ensure type safety at the call sites.
+ */
+
 export type UserRole = "employer" | "employee" | "admin" | "manager";
 
 export interface User {

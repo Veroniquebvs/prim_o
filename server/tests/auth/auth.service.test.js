@@ -1,3 +1,12 @@
+/**
+ * tests/auth/auth.service.test.js — Unit tests for AuthService.
+ *
+ * Mocks the User model and JWT environment variables. Tests cover:
+ * - register: duplicate email returns 409, successful creation returns safe user object
+ * - login: wrong password returns 401, missing user returns 401, valid credentials return tokens
+ * - getProfile: missing user returns 404, found user returns safe user object
+ * - refreshToken: invalid token returns 401, valid refresh token returns a new access token
+ */
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 

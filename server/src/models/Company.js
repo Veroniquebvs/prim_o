@@ -1,5 +1,24 @@
+/**
+ * models/Company.js — Sequelize model for the companies table.
+ *
+ * Represents an SME registered on the platform. A company is the top-level organisational
+ * unit: it has its own token balance (topped up via Stripe subscriptions) and owns a set of
+ * users (employer, manager, employee). Token allocations always debit the company balance first
+ * when an employer sends tokens directly, ensuring the company never overspends.
+ *
+ * The Stripe fields (stripe_customer_id, stripe_subscription_id, subscription_plan,
+ * subscription_status, subscription_next_billing) are populated by StripeService when the
+ * employer subscribes to a plan. They are nullable because companies may exist before any
+ * payment has been made.
+ *
+ * The feedback_enabled flag controls whether the public feedback feed is visible to employees.
+ */
 const { Model, DataTypes } = require('sequelize');
 
+/**
+ * Company model class. The initCompany function must be called with the Sequelize instance
+ * before the model can be used for database queries.
+ */
 class Company extends Model {
   // Space for future custom methods
 }

@@ -1,3 +1,10 @@
+/**
+ * services/company.service.ts — Client-side wrapper for the company management API.
+ *
+ * Provides full company CRUD, the public name lookup (used during QR-code registration),
+ * and the admin token grant operation. The getPublicById call requires no authentication
+ * and is used before login, so it does not need a Bearer token.
+ */
 import api from "./api";
 import type { Company, ApiResponse } from "../types";
 

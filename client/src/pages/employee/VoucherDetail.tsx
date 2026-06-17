@@ -1,3 +1,14 @@
+/**
+ * pages/employee/VoucherDetail.tsx — Full-page detail view for a single voucher.
+ *
+ * Fetches the voucher by the :id route param. If not found, shows a 404-style message.
+ * Displays the partner image (if available), title, category chip, token cost, user balance,
+ * and availability status. Authenticated users can redeem directly on this page or toggle the
+ * item in/out of their cart. Favorite toggle is also available.
+ *
+ * After redemption the promo code is displayed in a highlighted block, the voucher's available
+ * flag is set to false, and the balance is refreshed via AuthContext.
+ */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

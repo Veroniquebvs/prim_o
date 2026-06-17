@@ -1,5 +1,28 @@
+/**
+ * models/TokenTransaction.js — Sequelize model for the token_transactions table.
+ *
+ * Records every token movement in the system. Each row captures the sender (nullable for
+ * company-level operations such as Stripe top-ups or admin grants), the receiver (nullable
+ * for admin deductions), the company involved, the amount, and a type label that describes
+ * the business reason.
+ *
+ * Common type values:
+ *   'allocation'          — employer directly credits an employee
+ *   'employer_to_manager' — employer credits a manager's budget
+ *   'manager_to_employee' — manager credits an employee from their own budget
+ *   'purchase'            — Stripe subscription payment credited to company balance
+ *   'admin_grant'         — admin manually tops up a company
+ *   'admin_deduct'        — admin manually deducts from a company or employee
+ *   'scheduled_allocation'— automated allocation triggered by the cron job
+ *
+ * stripe_payment_id is only set for 'purchase' type rows.
+ */
 const { Model, DataTypes } = require('sequelize');
 
+/**
+ * TokenTransaction model class. The initTokenTransaction function must be called with the
+ * Sequelize instance before the model can be used for database queries.
+ */
 class TokenTransaction extends Model {
   // Space for future custom methods
 }

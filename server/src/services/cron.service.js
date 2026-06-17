@@ -1,8 +1,30 @@
+/**
+ * cron.service.js — Daily scheduled allocation job.
+ *
+ * Runs every day at 09:00 UTC using node-cron. Queries all active ScheduledAllocation rules
+ * whose next_run_at timestamp has passed and executes each transfer atomically:
+ *   - If the sender is a manager: debits from their personal token_balance.
+ *   - If the sender is an employer: debits from the company's token_balance.
+ *   - If the rule targets a specific receiver_id: transfers to that user only.
+ *   - If receiver_id is null: transfers to all active employees in the company,
+ *     excluding any user IDs listed in excluded_user_ids.
+ *
+ * Each individual transfer uses its own PostgreSQL transaction. A failure (e.g. insufficient
+ * balance) on one target does not roll back other targets in the same rule.
+ * After processing, next_run_at is advanced to the following occurrence.
+ *
+ * startCron is called once at server startup (from server.js) to register the job.
+ */
 const cron = require('node-cron');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { ScheduledAllocation, User, Company, TokenTransaction } = require('../models');
 
+/**
+ * Computes the next monthly run date for a given day-of-month.
+ * dayOfMonth is the target day (1–28). Returns a Date set to 09:00 UTC on the next
+ * occurrence of that day. If the date has already passed this month, advances to next month.
+ */
 function nextMonthly(dayOfMonth) {
   const now = new Date();
   const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), dayOfMonth, 9, 0, 0));
@@ -12,6 +34,12 @@ function nextMonthly(dayOfMonth) {
   return candidate;
 }
 
+/**
+ * Computes the next annual run date for a given day and month.
+ * dayOfMonth is the target day (1–28). month is 1-based (1 = January, 12 = December).
+ * Returns a Date set to 09:00 UTC on the next occurrence of that day in that month.
+ * If the date has already passed this year, advances to next year.
+ */
 function nextAnnual(dayOfMonth, month) {
   const now = new Date();
   // month is 1-based
@@ -22,6 +50,11 @@ function nextAnnual(dayOfMonth, month) {
   return candidate;
 }
 
+/**
+ * Fetches all due allocation rules and executes each transfer. Called by the cron job.
+ * Can also be invoked directly (e.g. in tests) via the exported runScheduledAllocations symbol.
+ * A rule is "due" when active = true and next_run_at <= now.
+ */
 async function runScheduledAllocations() {
   const due = await ScheduledAllocation.findAll({
     where: {
@@ -102,6 +135,11 @@ async function runScheduledAllocations() {
   }
 }
 
+/**
+ * Registers the recurring cron job. Must be called once at server startup after the database
+ * connection is established. The job fires every day at 09:00 UTC and calls
+ * runScheduledAllocations; any error is logged to stderr without crashing the process.
+ */
 function startCron() {
   // Exécution tous les jours à 09h00 UTC
   cron.schedule('0 9 * * *', () => {
