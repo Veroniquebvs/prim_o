@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
 import EmployeeDetail from './pages/employer/EmployeeDetail';
+import ManagerDetail from './pages/employer/ManagerDetail';
+import CollaborateurDetail from './pages/manager/CollaborateurDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBons from './pages/admin/AdminBons';
 import AdminStats from './pages/admin/AdminStats';
@@ -70,6 +72,17 @@ export default function App() {
           <Route path="/employer/employees/:id" element={
             <ProtectedRoute allowedRoles={['employer']}>
               <Layout><EmployeeDetail /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/employer/managers/:id" element={
+            <ProtectedRoute allowedRoles={['employer']}>
+              <Layout><ManagerDetail /></Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/manager/collaborateurs/:id" element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <Layout><CollaborateurDetail /></Layout>
             </ProtectedRoute>
           } />
 

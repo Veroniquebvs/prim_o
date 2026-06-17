@@ -1,4 +1,4 @@
-export type UserRole = "employer" | "employee" | "admin";
+export type UserRole = "employer" | "employee" | "admin" | "manager";
 
 export interface User {
   id: string;
@@ -84,6 +84,24 @@ export interface Redemption {
   promo_code: string;
   redeemed_at: string;
   voucher?: { id: string; title: string; partner: string; token_cost: number };
+}
+
+export interface TeamMember {
+  team_id: string;
+  user_id: string;
+  joined_at: string;
+  left_at: string | null;
+  user?: User;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  company_id: string;
+  manager_id: string;
+  dissolved_at: string | null;
+  created_at: string;
+  members?: TeamMember[];
 }
 
 export interface ApiResponse<T> {

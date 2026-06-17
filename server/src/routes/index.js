@@ -8,6 +8,8 @@ const companiesRoutes = require('./companies.routes');
 const uploadRoutes = require('./upload.routes');
 const favoritesRoutes = require('./favorites.routes');
 const scheduledRoutes = require('./scheduled.routes');
+const managerRoutes = require('./manager.routes');
+const employerRoutes = require('./employer.routes');
 
 const router = Router();
 
@@ -19,5 +21,7 @@ router.use('/companies', companiesRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/favorites', favoritesRoutes);
 router.use('/scheduled-allocations', scheduledRoutes);
+router.use('/manager', managerRoutes);
+router.use('/employer', employerRoutes);
 
 module.exports = router;

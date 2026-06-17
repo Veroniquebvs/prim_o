@@ -53,7 +53,7 @@ const initUser = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-          isIn: [['admin', 'employer', 'employee']], // Only allows these 3 exact roles
+          isIn: [['admin', 'employer', 'employee', 'manager']],
         },
       },
       // 7. Token Balance (Required, Integer for whole numbers)

@@ -853,3 +853,40 @@ Mot de passe pour tous les comptes : `admin123456789`
 | lea.simon@amazon-demo.fr | Amazon |
 | tom.laurent@amazon-demo.fr | Amazon |
 | jade.michel@amazon-demo.fr | Amazon |
+
+---
+
+## Comptes locaux Leclerc (Docker — développement)
+
+Mot de passe pour tous les comptes : `admin123`
+
+### Employeur
+| Email | Rôle | Entreprise |
+|---|---|---|
+| pierre.dupont@leclerc-demo.fr | employer | Leclerc |
+
+### Managers
+| Email | Rôle | Équipe |
+|---|---|---|
+| isabelle.bernard@leclerc.fr | manager | Équipe Drive |
+| sophie.martin@leclerc.fr | manager | Équipe Rayon Frais |
+| thomas.dubois@leclerc.fr | manager | Équipe Caisse |
+
+### Employés
+| Email | Rôle | Équipe |
+|---|---|---|
+| alexis.vincent@leclerc.fr | employee | Équipe Drive |
+| antoine.laurent@leclerc.fr | employee | Équipe Rayon Frais |
+| camille.michel@leclerc.fr | employee | Équipe Caisse |
+| chloe.simon@leclerc.fr | employee | Équipe Rayon Frais |
+| emma.leroy@leclerc.fr | employee | Équipe Rayon Frais |
+| hugo.bertrand@leclerc.fr | employee | Équipe Caisse |
+| ines.fournier@leclerc.fr | employee | Équipe Drive |
+| julie.girard@leclerc.fr | employee | Équipe Drive |
+| lea.david@leclerc.fr | employee | Équipe Caisse |
+| lucas.petit@leclerc.fr | employee | Équipe Rayon Frais |
+| manon.roux@leclerc.fr | employee | Équipe Caisse |
+| maxime.morel@leclerc.fr | employee | Équipe Drive |
+| nathan.moreau@leclerc.fr | employee | Équipe Rayon Frais |
+| raphael.garcia@leclerc.fr | employee | Équipe Caisse |
+| theo.andre@leclerc.fr | employee | Équipe Drive |

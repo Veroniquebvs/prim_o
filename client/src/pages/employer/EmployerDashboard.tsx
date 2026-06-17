@@ -9,6 +9,7 @@ import TransferForm from "../../components/TransferForm";
 import type { User, Company, ScheduledAllocation } from "../../types";
 import { PrintableQRCode } from "../../components/PrintableQRCode";
 import { fmtShort } from "../../utils/date";
+import { managerService } from "../../services/manager.service";
 
 const EMPTY_FORM = { first_name: "", name: "", email: "", password: "" };
 
@@ -31,6 +32,7 @@ export default function EmployerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<User[]>([]);
+  const [managers, setManagers] = useState<User[]>([]);
   const [pendingEmployees, setPendingEmployees] = useState<User[]>([]);
   const [entryDates, setEntryDates] = useState<Record<string, string>>({});
   const [company, setCompany] = useState<Company | null>(null);
@@ -58,12 +60,14 @@ export default function EmployerDashboard() {
         companyService.getById(user.company_id),
         userService.getPending(user.company_id),
         scheduledService.list(),
+        userService.getAll({ companyId: user.company_id, role: "manager" }),
       ]);
 
       setEmployees(results[0].data.data || []);
       setCompany((results[1] as any).data || results[1]);
       setPendingEmployees(results[2].data || []);
       setSchedRules(results[3] || []);
+      setManagers(results[4].data.data || []);
     } catch (err) {
       console.error("Erreur :", err);
     } finally {
@@ -210,7 +214,7 @@ export default function EmployerDashboard() {
         <div className="stat-card">
           <p className="stat-label">Équipe</p>
           <p className="stat-value">{employees.length}</p>
-          <p className="stat-sub">employé{employees.length !== 1 ? "s" : ""}</p>
+          <p className="stat-sub">collaborateur{employees.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
       {/* Feedback feed */}
@@ -219,12 +223,12 @@ export default function EmployerDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
             <div>
               <p style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 4 }}>
-                Fil d'activité pour les employés
+                Fil d'activité pour les collaborateurs
               </p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                 {company.feedback_enabled
-                  ? 'Vos employés voient les tokens reçus dans l\'entreprise en temps réel.'
-                  : 'Activez pour que vos employés voient l\'activité tokens de l\'entreprise.'}
+                  ? 'Vos collaborateurs voient les tokens reçus dans l\'entreprise en temps réel.'
+                  : 'Activez pour que vos collaborateurs voient l\'activité tokens de l\'entreprise.'}
               </p>
               {feedbackSaving && (
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Enregistrement…</p>
@@ -315,7 +319,7 @@ export default function EmployerDashboard() {
             {schedRules.map((r) => {
               const who = r.receiver
                 ? `${r.receiver.first_name} ${r.receiver.name}`
-                : "Tous les employés";
+                : "Tous les collaborateurs";
               const when = r.frequency === "monthly"
                 ? `Chaque mois, le ${r.day_of_month}`
                 : `Chaque année, le ${r.day_of_month} ${MONTHS[(r.month ?? 1) - 1]}`;
@@ -363,52 +367,38 @@ export default function EmployerDashboard() {
 
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Employés</h2>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { setCreateForm(EMPTY_FORM); setCreateError(""); setShowCreateModal(true); }}
-            >
-              + Créer un employé
-            </button>
+            <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Managers</h2>
           </div>
-          {employees.length === 0 ? (
-            <p className="empty-state">Aucun employé dans votre équipe.</p>
+          {managers.length === 0 ? (
+            <p className="empty-state">Aucun manager dans votre entreprise.</p>
           ) : (
-            <div
-              className="table-wrap"
-              style={{ maxHeight: 320, overflowY: "auto" }}
-            >
+            <div className="table-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
               <table className="table" style={{ minWidth: 0 }}>
                 <thead>
                   <tr>
                     <th style={{ padding: "7px 10px" }}>Nom</th>
                     <th style={{ padding: "7px 10px" }}>Email</th>
+                    <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(employees) &&
-                    employees.map((emp) => (
-                      <tr
-                        key={emp.id}
-                        onClick={() =>
-                          navigate(`/employer/employees/${emp.id}`)
-                        }
-                        style={{ cursor: "pointer" }}
-                      >
-                        <td style={{ fontWeight: 500, padding: "8px 10px" }}>
-                          {emp.first_name} {emp.name}
-                        </td>
-                        <td
-                          style={{
-                            color: "var(--text-muted)",
-                            padding: "8px 10px",
-                            fontSize: "0.82rem",
-                          }}
-                        >
-                          {emp.email}
-                        </td>
-                      </tr>
-                    ))}
+                  {managers.map((mgr) => (
+                    <tr
+                      key={mgr.id}
+                      onClick={() => navigate(`/employer/managers/${mgr.id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td style={{ fontWeight: 500, padding: "8px 10px" }}>
+                        {mgr.first_name} {mgr.name}
+                      </td>
+                      <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
+                        {mgr.email}
+                      </td>
+                      <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                        <span className="token-badge">{mgr.token_balance}</span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -425,13 +415,13 @@ export default function EmployerDashboard() {
 
             <form onSubmit={handleSubmitSched} noValidate>
               <div className="form-group">
-                <label className="form-label">Employé</label>
+                <label className="form-label">Collaborateur</label>
                 <select
                   className="form-select"
                   value={schedForm.receiver_id}
                   onChange={(e) => setSchedForm({ ...schedForm, receiver_id: e.target.value })}
                 >
-                  <option value="">Tous les employés</option>
+                  <option value="">Tous les collaborateurs</option>
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
                       {emp.first_name} {emp.name}
@@ -505,7 +495,7 @@ export default function EmployerDashboard() {
 
               {!schedForm.receiver_id && employees.length > 0 && (
                 <div className="form-group">
-                  <label className="form-label">Exclure des employés</label>
+                  <label className="form-label">Exclure des collaborateurs</label>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto", padding: "8px 12px", border: "1.5px solid var(--border)", borderRadius: "var(--radius)", background: "var(--card)" }}>
                     {employees.map((emp) => {
                       const excluded = schedForm.excluded_user_ids.includes(emp.id);
@@ -531,7 +521,7 @@ export default function EmployerDashboard() {
                   </div>
                   {schedForm.excluded_user_ids.length > 0 && (
                     <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>
-                      {schedForm.excluded_user_ids.length} employé{schedForm.excluded_user_ids.length > 1 ? "s" : ""} exclu{schedForm.excluded_user_ids.length > 1 ? "s" : ""}
+                      {schedForm.excluded_user_ids.length} collaborateur{schedForm.excluded_user_ids.length > 1 ? "s" : ""} exclu{schedForm.excluded_user_ids.length > 1 ? "s" : ""}
                     </p>
                   )}
                 </div>
@@ -575,7 +565,7 @@ export default function EmployerDashboard() {
       {showCreateModal && (
         <div className="emp-modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="emp-modal-title">Créer un employé</h2>
+            <h2 className="emp-modal-title">Créer un collaborateur</h2>
 
             <form onSubmit={handleCreateEmployee} noValidate>
               <div className="emp-modal-row">

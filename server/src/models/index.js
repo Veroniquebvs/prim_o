@@ -8,6 +8,8 @@ const { Voucher, initVoucher } = require('./Voucher');
 const { Redemption, initRedemption } = require('./Redemption');
 const { Favorite, initFavorite } = require('./Favorite');
 const { ScheduledAllocation, initScheduledAllocation } = require('./ScheduledAllocation');
+const { Team, initTeam } = require('./Team');
+const { TeamMember, initTeamMember } = require('./TeamMember');
 
 // 2. Initialize everything with the database instance
 initCompany(sequelize);
@@ -17,6 +19,8 @@ initVoucher(sequelize);
 initRedemption(sequelize);
 initFavorite(sequelize);
 initScheduledAllocation(sequelize);
+initTeam(sequelize);
+initTeamMember(sequelize);
 
 // 3. Define associations
 Company.hasMany(User, { foreignKey: 'company_id', as: 'users' });
@@ -52,6 +56,19 @@ ScheduledAllocation.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 User.hasMany(ScheduledAllocation, { foreignKey: 'receiver_id', as: 'received_scheduled_allocations' });
 ScheduledAllocation.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
 
+// Team associations
+Company.hasMany(Team, { foreignKey: 'company_id', as: 'teams' });
+Team.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+Team.belongsTo(User, { foreignKey: 'manager_id', as: 'manager' });
+User.hasMany(Team, { foreignKey: 'manager_id', as: 'managed_teams' });
+
+Team.hasMany(TeamMember, { foreignKey: 'team_id', as: 'members' });
+TeamMember.belongsTo(Team, { foreignKey: 'team_id', as: 'team' });
+
+TeamMember.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+User.hasMany(TeamMember, { foreignKey: 'user_id', as: 'team_memberships' });
+
 module.exports = {
   sequelize,
   Company,
@@ -61,4 +78,6 @@ module.exports = {
   Redemption,
   Favorite,
   ScheduledAllocation,
+  Team,
+  TeamMember,
 };

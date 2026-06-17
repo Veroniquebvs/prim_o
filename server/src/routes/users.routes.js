@@ -14,8 +14,8 @@ router.get(
   [
     query('role')
       .optional()
-      .isIn(['employer', 'employee', 'admin'])
-      .withMessage('role must be employer, employee or admin'),
+      .isIn(['employer', 'employee', 'admin', 'manager'])
+      .withMessage('role must be employer, employee, admin or manager'),
     query('companyId').optional().isUUID().withMessage('companyId must be a valid UUID'),
     validate,
   ],

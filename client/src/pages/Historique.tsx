@@ -173,7 +173,7 @@ export default function Historique() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Employé</th>
+                    <th>Collaborateur</th>
                     <th>Tokens</th>
                     <th>Motif</th>
                     <th>Date</th>
@@ -211,7 +211,7 @@ export default function Historique() {
           ) : (
             <ul className="feed-list">
               {feed.map((tx) => {
-                const name = tx.receiver?.first_name || tx.receiver?.name || 'Un employé';
+                const name = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
                 const isNew = newIds.has(tx.id);
                 return (
                   <li key={tx.id} className={`feed-item${isNew ? ' feed-item--new' : ''}`}>

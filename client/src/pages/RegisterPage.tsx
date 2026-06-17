@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
         {qrCompanyId ? (
           <>
-            <h1 className="auth-title">Créer votre compte employé</h1>
+            <h1 className="auth-title">Créer votre compte collaborateur</h1>
             <p className="auth-subtitle">
               Vous rejoignez{' '}
               <strong>{qrCompanyName || '…'}</strong>
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                 value={role}
                 onChange={(e) => setRole(e.target.value as Role)}
               >
-                <option value="employee">Employé</option>
+                <option value="employee">Collaborateur</option>
                 <option value="employer">Employeur</option>
               </select>
             </div>

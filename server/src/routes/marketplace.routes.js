@@ -64,7 +64,7 @@ router.post(
   marketplaceController.redeem
 );
 
-router.get('/orders', verifyToken, roleGuard('employee'), marketplaceController.listOrders);
+router.get('/orders', verifyToken, roleGuard('employee', 'manager'), marketplaceController.listOrders);
 
 /* ── Admin-only endpoints ── */
 router.get('/admin/vouchers', verifyToken, roleGuard('admin'), marketplaceController.adminListVouchers);

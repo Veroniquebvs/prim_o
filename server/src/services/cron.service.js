@@ -52,17 +52,27 @@ async function runScheduledAllocations() {
       if (!receiver) continue;
       const t = await sequelize.transaction();
       try {
-        const company = await Company.findOne({
-          where: { id: rule.company_id },
-          lock: true,
-          transaction: t,
-        });
-        if (!company || company.token_balance < rule.amount) {
-          await t.rollback();
-          continue;
+        const sender = await User.findByPk(rule.sender_id, { lock: true, transaction: t });
+
+        if (sender && sender.role === 'manager') {
+          if (sender.token_balance < rule.amount) {
+            await t.rollback();
+            continue;
+          }
+          await sender.decrement('token_balance', { by: rule.amount, transaction: t });
+        } else {
+          const company = await Company.findOne({
+            where: { id: rule.company_id },
+            lock: true,
+            transaction: t,
+          });
+          if (!company || company.token_balance < rule.amount) {
+            await t.rollback();
+            continue;
+          }
+          await company.decrement('token_balance', { by: rule.amount, transaction: t });
         }
 
-        await company.decrement('token_balance', { by: rule.amount, transaction: t });
         await receiver.increment('token_balance', { by: rule.amount, transaction: t });
 
         await TokenTransaction.create(

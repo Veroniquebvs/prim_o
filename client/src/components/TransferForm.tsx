@@ -59,7 +59,7 @@ function ConfirmModal({
           Confirmer le don
         </p>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 20, lineHeight: 1.5 }}>
-          Vous allez allouer des tokens à cet employé.<br />Cette action est irréversible.
+          Vous allez allouer des tokens à ce collaborateur.<br />Cette action est irréversible.
         </p>
 
         {/* Récap */}
@@ -169,18 +169,18 @@ export default function TransferForm({ employees, onSuccess }: Props) {
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Employé</label>
+            <label className="form-label">Collaborateur</label>
             <select
               className="form-select"
               value={receiverId}
               onChange={(e) => setReceiverId(e.target.value)}
               required
             >
-              <option value="">Sélectionner un employé…</option>
+              <option value="">Sélectionner un collaborateur…</option>
               {Array.isArray(employees) &&
                 employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.name} — {emp.token_balance} tokens
+                    {emp.first_name} {emp.name} — {emp.token_balance} tokens
                   </option>
                 ))}
             </select>
