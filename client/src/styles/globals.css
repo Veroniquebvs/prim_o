@@ -2326,3 +2326,85 @@ iframe[src*="stripe"][title*="Stripe"],
 a[href*="stripe.com/about"][target="_blank"] {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   POUR TOI — Hero sections
+═══════════════════════════════════════════════════════════ */
+.pour-toi-hero {
+  margin: 0 calc(-1 * var(--page-px)) 28px;
+  padding: 28px var(--page-px) 36px;
+  background: linear-gradient(160deg, var(--primary) 0%, #007a74 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.pour-toi-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 2px, transparent 2px, transparent 18px);
+  pointer-events: none;
+}
+
+.manager-hero {
+  margin: 0 calc(-1 * var(--page-px)) 28px;
+  padding: 28px var(--page-px) 32px;
+  background: linear-gradient(160deg, #1b2345 0%, #0d1228 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.manager-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 2px, transparent 2px, transparent 18px);
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .pour-toi-hero,
+  .manager-hero {
+    margin: 0 -32px 32px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pour-toi-hero,
+  .manager-hero {
+    margin: 0 -40px 32px;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* Collaborator card (manager view) */
+.collab-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.collab-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 161, 154, 0.1);
+  border-color: rgba(0, 161, 154, 0.3);
+}
+
+/* Activity item (employee view) */
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--primary-light);
+  border-radius: 12px;
+  padding: 12px 14px;
+}

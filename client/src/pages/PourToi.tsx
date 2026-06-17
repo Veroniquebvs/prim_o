@@ -1,28 +1,60 @@
-/**
- * pages/PourToi.tsx — Personalised home page, rendered differently per role.
- *
- * For employees: shows three curated voucher carousels (trending, most-favorited, this week's offers)
- * plus the user's redeemed voucher history. Voucher ordering uses is_featured/is_weekly flags and
- * aggregate favorite_count to rank items. Redemption deducts tokens client-side and refreshes the
- * balance via AuthContext.
- *
- * For managers: shows a manager dashboard with a token give form (with confirmation step), a team
- * member list (with add-existing or create-new collaborator flows), scheduled automatic allocation
- * rules management, and redeemed voucher history. Data is fetched in parallel via Promise.allSettled
- * so a single failing endpoint does not block the rest.
- *
- * The default export switches between ManagerPourToi and EmployeePourToi based on user.role.
- */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
 import { managerService } from '../services/manager.service';
+import { userService } from '../services/user.service';
 import { useFavorites } from '../hooks/useFavorites';
 import { useCart } from '../hooks/useCart';
 import { resolveImageUrl } from '../utils/imageUrl';
-import type { Voucher, Redemption, Team, ScheduledAllocation, User } from '../types';
+import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
+
+/* ── Gold coin SVG ── */
+function CoinSVG({ size = 100 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 8px 24px rgba(176,120,0,0.45))' }}>
+      <circle cx="60" cy="60" r="56" fill="url(#coinBase)" />
+      <circle cx="60" cy="60" r="53" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="44" fill="url(#coinInner)" />
+      <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <text x="60" y="70" textAnchor="middle" fontSize="30" fontWeight="800" fontFamily="Poppins,sans-serif" fill="rgba(255,255,255,0.85)">P</text>
+      <defs>
+        <radialGradient id="coinBase" cx="38%" cy="32%" r="72%">
+          <stop offset="0%" stopColor="#FFE566" />
+          <stop offset="50%" stopColor="#F0A800" />
+          <stop offset="100%" stopColor="#A06000" />
+        </radialGradient>
+        <radialGradient id="coinInner" cx="42%" cy="38%" r="68%">
+          <stop offset="0%" stopColor="#FFD740" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#C88000" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* ── Team bar chart ── */
+function TeamBarChart({ members }: { members: User[] }) {
+  const max = Math.max(...members.map((m) => m.token_balance), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {members.map((m) => (
+        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 72, fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {m.first_name}
+          </div>
+          <div style={{ flex: 1, background: 'var(--border)', borderRadius: 999, height: 8, overflow: 'hidden' }}>
+            <div style={{ width: `${(m.token_balance / max) * 100}%`, minWidth: m.token_balance > 0 ? 8 : 0, height: '100%', background: 'var(--primary)', borderRadius: 999, transition: 'width 0.6s ease' }} />
+          </div>
+          <div style={{ width: 36, fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', flexShrink: 0, textAlign: 'right' }}>
+            {m.token_balance}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ── Icons ── */
 function IconHeart({ filled }: { filled: boolean }) {
@@ -169,29 +201,37 @@ function ManagerPourToi() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
-  const [team, setTeam]                   = useState<Team | null>(null);
-  const [orders, setOrders]               = useState<Redemption[]>([]);
-  const [schedRules, setSchedRules]       = useState<ScheduledAllocation[]>([]);
-  const [available, setAvailable]         = useState<User[]>([]);
-  const [loading, setLoading]             = useState(true);
+  const [team, setTeam]               = useState<Team | null>(null);
+  const [orders, setOrders]           = useState<Redemption[]>([]);
+  const [schedRules, setSchedRules]   = useState<ScheduledAllocation[]>([]);
+  const [available, setAvailable]     = useState<User[]>([]);
+  const [loading, setLoading]         = useState(true);
 
-  /* Give tokens form */
-  const [receiverId, setReceiverId]       = useState('');
-  const [giveAmount, setGiveAmount]       = useState('');
-  const [giveReason, setGiveReason]       = useState('');
-  const [giving, setGiving]               = useState(false);
-  const [giveError, setGiveError]         = useState('');
-  const [giveSuccess, setGiveSuccess]     = useState('');
-  const [pendingGive, setPendingGive]     = useState<{ member: User; amount: number; reason: string } | null>(null);
+  /* Quick send per collaborator */
+  const [quickMember, setQuickMember]   = useState<User | null>(null);
+  const [quickAmount, setQuickAmount]   = useState('');
+  const [quickReason, setQuickReason]   = useState('');
+  const [quickGiving, setQuickGiving]   = useState(false);
+  const [quickError, setQuickError]     = useState('');
+  const [quickSuccess, setQuickSuccess] = useState('');
+
+  /* Give tokens form (generic) */
+  const [receiverId, setReceiverId]     = useState('');
+  const [giveAmount, setGiveAmount]     = useState('');
+  const [giveReason, setGiveReason]     = useState('');
+  const [giving, setGiving]             = useState(false);
+  const [giveError, setGiveError]       = useState('');
+  const [giveSuccess, setGiveSuccess]   = useState('');
+  const [pendingGive, setPendingGive]   = useState<{ member: User; amount: number; reason: string } | null>(null);
 
   /* Add collaborator panel */
-  const [addMode, setAddMode]             = useState<'none'|'existing'|'create'>('none');
-  const [addingId, setAddingId]           = useState('');
-  const [addingLoad, setAddingLoad]       = useState(false);
-  const [addError, setAddError]           = useState('');
-  const [createForm, setCreateForm]       = useState({ first_name: '', name: '', email: '', password: '' });
-  const [createLoad, setCreateLoad]       = useState(false);
-  const [createError, setCreateError]     = useState('');
+  const [addMode, setAddMode]           = useState<'none'|'existing'|'create'>('none');
+  const [addingId, setAddingId]         = useState('');
+  const [addingLoad, setAddingLoad]     = useState(false);
+  const [addError, setAddError]         = useState('');
+  const [createForm, setCreateForm]     = useState({ first_name: '', name: '', email: '', password: '' });
+  const [createLoad, setCreateLoad]     = useState(false);
+  const [createError, setCreateError]   = useState('');
 
   /* Scheduled allocation modal */
   const [showSchedModal, setShowSchedModal] = useState(false);
@@ -217,7 +257,23 @@ function ManagerPourToi() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  /* Token give */
+  /* Quick send (from collaborator card) */
+  async function handleQuickSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!quickMember) return;
+    setQuickGiving(true); setQuickError('');
+    try {
+      await managerService.giveTokens(quickMember.id, parseInt(quickAmount) || 0, quickReason || undefined);
+      setQuickSuccess(`${quickAmount} tokens envoyés à ${quickMember.first_name} !`);
+      setQuickAmount(''); setQuickReason('');
+      refreshUser(); fetchAll();
+      setTimeout(() => { setQuickMember(null); setQuickSuccess(''); }, 1800);
+    } catch (err: any) {
+      setQuickError(err?.response?.data?.error ?? 'Erreur lors de l\'envoi.');
+    } finally { setQuickGiving(false); }
+  }
+
+  /* Generic give form */
   function handleGiveSubmit(e: React.FormEvent) {
     e.preventDefault();
     setGiveError(''); setGiveSuccess('');
@@ -234,15 +290,14 @@ function ManagerPourToi() {
       setGiveSuccess(`${pendingGive.amount} tokens envoyés à ${pendingGive.member.first_name}.`);
       setReceiverId(''); setGiveAmount(''); setGiveReason('');
       setPendingGive(null);
-      refreshUser();
-      fetchAll();
+      refreshUser(); fetchAll();
     } catch (err: any) {
       setGiveError(err?.response?.data?.error ?? 'Erreur lors du don.');
       setPendingGive(null);
     } finally { setGiving(false); }
   }
 
-  /* Add existing collaborator */
+  /* Add collaborator */
   async function handleAddExisting(e: React.FormEvent) {
     e.preventDefault();
     if (!addingId) return;
@@ -256,7 +311,6 @@ function ManagerPourToi() {
     } finally { setAddingLoad(false); }
   }
 
-  /* Create new collaborator */
   async function handleCreateCollaborator(e: React.FormEvent) {
     e.preventDefault();
     setCreateLoad(true); setCreateError('');
@@ -287,7 +341,7 @@ function ManagerPourToi() {
       setShowSchedModal(false);
       setSchedForm(EMPTY_SCHED);
     } catch (err: any) {
-      setSchedError(err?.response?.data?.error ?? "Erreur lors de la création.");
+      setSchedError(err?.response?.data?.error ?? 'Erreur lors de la création.');
     } finally { setSchedLoading(false); }
   }
 
@@ -309,178 +363,163 @@ function ManagerPourToi() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
-        <h1>Mon espace manager</h1>
-      </div>
-
-      {/* Solde */}
-      <div className="grid-3" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
-          <p className="stat-label">Mon solde tokens</p>
-          <p className="stat-value">{user?.token_balance ?? 0}</p>
-          <p className="stat-sub">à distribuer à mon équipe</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Mon équipe</p>
-          <p className="stat-value">{members.length}</p>
-          <p className="stat-sub">membre{members.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Attributions auto</p>
-          <p className="stat-value">{schedRules.filter((r) => r.active).length}</p>
-          <p className="stat-sub">règle{schedRules.filter((r) => r.active).length !== 1 ? 's' : ''} active{schedRules.filter((r) => r.active).length !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
-
-      <div className="grid-2">
-        {/* Don de tokens */}
-        <div className="card">
-          <h2 style={{ marginBottom: 20, fontSize: '1rem', fontWeight: 600 }}>Donner des tokens</h2>
-
-          {pendingGive ? (
-            <div>
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '16px 20px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Destinataire</span>
-                  <span style={{ fontWeight: 700 }}>{pendingGive.member.first_name} {pendingGive.member.name}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Montant</span>
-                  <span className="token-badge" style={{ fontSize: '1rem' }}>{pendingGive.amount}</span>
-                </div>
-                {pendingGive.reason && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>Motif</span>
-                    <span style={{ fontSize: '0.85rem', textAlign: 'right' }}>{pendingGive.reason}</span>
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setPendingGive(null)} disabled={giving}>Annuler</button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleGiveConfirm} disabled={giving}>{giving ? 'Envoi…' : 'Confirmer'}</button>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleGiveSubmit}>
-              <div className="form-group">
-                <label className="form-label">Membre de l'équipe</label>
-                <select className="form-select" value={receiverId} onChange={(e) => setReceiverId(e.target.value)} required>
-                  <option value="">Sélectionner un membre…</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.first_name} {m.name} — {m.token_balance} tokens</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Montant</label>
-                <input className="form-input" type="number" min={1} value={giveAmount} onChange={(e) => setGiveAmount(e.target.value)} placeholder="ex. 20" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Motif (facultatif)</label>
-                <input className="form-input" type="text" value={giveReason} onChange={(e) => setGiveReason(e.target.value)} placeholder="ex. Excellent accueil client" />
-              </div>
-              {giveError && <p className="form-error">{giveError}</p>}
-              {giveSuccess && <p className="form-success">{giveSuccess}</p>}
-              <button type="submit" className="btn btn-primary btn-full" disabled={giving}>Donner</button>
-            </form>
-          )}
-        </div>
-
-        {/* Liste des membres */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
-              Mon équipe
-              {team && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: 8 }}>{team.name}</span>}
-            </h2>
-            <button className="btn btn-primary btn-sm" onClick={() => { setAddMode(addMode === 'none' ? 'existing' : 'none'); setAddError(''); setCreateError(''); }}>
-              + Ajouter
-            </button>
+      {/* ── Dark hero ── */}
+      <div className="manager-hero">
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Brand + team name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+            <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.02em' }}>prim'O</span>
+            {team?.name && (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '1rem' }}>·</span>
+                <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.88rem', fontWeight: 500 }}>{team.name}</span>
+              </>
+            )}
           </div>
 
-          {addMode !== 'none' && (
-            <div style={{ marginBottom: 16, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-              {/* Toggle */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <button type="button" onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
-                  className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                  Depuis la liste
-                </button>
-                <button type="button" onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
-                  className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                  Créer un collaborateur
-                </button>
-              </div>
-
-              {addMode === 'existing' && (
-                <form onSubmit={handleAddExisting}>
-                  {available.length === 0 ? (
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Aucun collaborateur disponible sans équipe.</p>
-                  ) : (
-                    <>
-                      <select className="form-select" value={addingId} onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 10 }}>
-                        <option value="">Sélectionner un collaborateur…</option>
-                        {available.map((u) => (
-                          <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
-                        ))}
-                      </select>
-                      {addError && <p className="form-error">{addError}</p>}
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
-                        {addingLoad ? 'Ajout…' : 'Ajouter à l\'équipe'}
-                      </button>
-                    </>
-                  )}
-                </form>
-              )}
-
-              {addMode === 'create' && (
-                <form onSubmit={handleCreateCollaborator}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                    <input className="form-input" type="text" placeholder="Prénom" value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
-                    <input className="form-input" type="text" placeholder="Nom" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
-                  </div>
-                  <input className="form-input" type="email" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} required style={{ marginBottom: 10 }} />
-                  <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} required style={{ marginBottom: 10 }} />
-                  {createError && <p className="form-error">{createError}</p>}
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
-                    {createLoad ? 'Création…' : 'Créer et ajouter à l\'équipe'}
-                  </button>
-                </form>
-              )}
+          {/* Stock + coin row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', marginBottom: 6, fontWeight: 500 }}>Mon solde tokens</p>
+              <p style={{ color: '#ffffff', fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em' }}>
+                {user?.token_balance ?? 0}
+              </p>
+              <p style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600, marginTop: 6 }}>Tokens stock</p>
             </div>
-          )}
+            <CoinSVG size={96} />
+          </div>
 
-          {members.length === 0 ? (
-            <p className="empty-state">Aucun collaborateur dans votre équipe.</p>
-          ) : (
-            <div className="table-wrap" style={{ maxHeight: 280, overflowY: 'auto' }}>
-              <table className="table" style={{ minWidth: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Nom</th>
-                    <th style={{ textAlign: 'right' }}>Tokens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((m) => (
-                    <tr
-                      key={m.id}
-                      onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td style={{ fontWeight: 500 }}>{m.first_name} {m.name}</td>
-                      <td style={{ textAlign: 'right' }}><span className="token-badge">{m.token_balance}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Stat pills */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
+            <div style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>Équipe</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>{members.length}</span>
             </div>
-          )}
+            <div style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>Auto actives</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>{schedRules.filter((r) => r.active).length}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Attributions automatiques */}
-      <div className="card" style={{ marginTop: 24 }}>
+      {/* ── Mes collaborateurs ── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>Mes collaborateurs</h2>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => { setAddMode(addMode === 'none' ? 'existing' : 'none'); setAddError(''); setCreateError(''); }}
+          >
+            + Ajouter
+          </button>
+        </div>
+
+        {/* Add panel */}
+        {addMode !== 'none' && (
+          <div style={{ marginBottom: 16, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <button type="button" onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
+                className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+                Depuis la liste
+              </button>
+              <button type="button" onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
+                className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+                Créer un collaborateur
+              </button>
+            </div>
+
+            {addMode === 'existing' && (
+              <form onSubmit={handleAddExisting}>
+                {available.length === 0 ? (
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Aucun collaborateur disponible sans équipe.</p>
+                ) : (
+                  <>
+                    <select className="form-select" value={addingId} onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 10 }}>
+                      <option value="">Sélectionner un collaborateur…</option>
+                      {available.map((u) => (
+                        <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
+                      ))}
+                    </select>
+                    {addError && <p className="form-error">{addError}</p>}
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
+                      {addingLoad ? 'Ajout…' : 'Ajouter à l\'équipe'}
+                    </button>
+                  </>
+                )}
+              </form>
+            )}
+
+            {addMode === 'create' && (
+              <form onSubmit={handleCreateCollaborator}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <input className="form-input" type="text" placeholder="Prénom" value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
+                  <input className="form-input" type="text" placeholder="Nom" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
+                </div>
+                <input className="form-input" type="email" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} required style={{ marginBottom: 10 }} />
+                <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} required style={{ marginBottom: 10 }} />
+                {createError && <p className="form-error">{createError}</p>}
+                <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
+                  {createLoad ? 'Création…' : 'Créer et ajouter à l\'équipe'}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {members.length === 0 ? (
+          <p className="empty-state">Aucun collaborateur dans votre équipe.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {members.map((m) => (
+              <div
+                key={m.id}
+                className="collab-card"
+                onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                  background: 'var(--primary-light)', color: 'var(--primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.88rem', fontWeight: 700,
+                }}>
+                  {(m.first_name[0] ?? '').toUpperCase()}{(m.name[0] ?? '').toUpperCase()}
+                </div>
+
+                {/* Name + balance */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 3 }}>{m.first_name} {m.name}</p>
+                  <span className="token-badge" style={{ fontSize: '0.72rem' }}>{m.token_balance} tkn</span>
+                </div>
+
+                {/* Send button */}
+                <button
+                  className="btn btn-primary btn-sm"
+                  style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess('');
+                  }}
+                >
+                  + Envoyer
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Distribution chart ── */}
+      {members.length > 1 && (
+        <div className="card" style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 16 }}>Distribution tokens</h2>
+          <TeamBarChart members={members} />
+        </div>
+      )}
+
+      {/* ── Attributions automatiques ── */}
+      <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: schedRules.length > 0 ? 16 : 0 }}>
           <div>
             <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>Attributions automatiques</p>
@@ -517,8 +556,8 @@ function ManagerPourToi() {
         )}
       </div>
 
-      {/* Bons d'achat utilisés */}
-      <div style={{ marginTop: 28 }}>
+      {/* ── Bons d'achat utilisés ── */}
+      <div style={{ marginTop: 8, marginBottom: 28 }}>
         <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
         {orders.length === 0 ? (
           <div className="card"><p className="empty-state">Tu n'as pas encore racheté de bon.</p></div>
@@ -538,7 +577,67 @@ function ManagerPourToi() {
         )}
       </div>
 
-      {/* Modal création attribution automatique */}
+      {/* ── Quick send modal ── */}
+      {quickMember && (
+        <div className="emp-modal-overlay" onClick={() => { setQuickMember(null); setQuickError(''); setQuickSuccess(''); }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Receiver identity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, flexShrink: 0 }}>
+                {(quickMember.first_name[0] ?? '').toUpperCase()}{(quickMember.name[0] ?? '').toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{quickMember.first_name} {quickMember.name}</p>
+                <span className="token-badge" style={{ fontSize: '0.72rem' }}>{quickMember.token_balance} tkn actuels</span>
+              </div>
+            </div>
+
+            {quickSuccess ? (
+              <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
+                <p style={{ fontSize: '1.5rem', marginBottom: 8 }}>🎉</p>
+                <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.95rem' }}>{quickSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleQuickSend}>
+                <div className="form-group">
+                  <label className="form-label">Montant de tokens</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={1}
+                    value={quickAmount}
+                    onChange={(e) => setQuickAmount(e.target.value)}
+                    placeholder="ex. 20"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Motif (facultatif)</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={quickReason}
+                    onChange={(e) => setQuickReason(e.target.value)}
+                    placeholder="ex. Excellent accueil client"
+                  />
+                </div>
+                {quickError && <p className="form-error">{quickError}</p>}
+                <div className="emp-modal-actions">
+                  <button type="button" className="btn btn-outline" onClick={() => { setQuickMember(null); setQuickError(''); }} disabled={quickGiving}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={quickGiving || !quickAmount}>
+                    {quickGiving ? 'Envoi…' : 'Envoyer'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Scheduled allocation modal ── */}
       {showSchedModal && (
         <div className="emp-modal-overlay" onClick={() => setShowSchedModal(false)}>
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
@@ -603,29 +702,33 @@ function ManagerPourToi() {
   );
 }
 
-/* ── Page ── */
+/* ── Page switch ── */
 export default function PourToi() {
   const { user } = useAuth();
   if (user?.role === 'manager') return <ManagerPourToi />;
   return <EmployeePourToi />;
 }
 
+/* ── Employee view ── */
 function EmployeePourToi() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
-  const [vouchers, setVouchers]     = useState<Voucher[]>([]);
-  const [orders, setOrders]         = useState<Redemption[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [redeeming, setRedeeming]   = useState<string | null>(null);
-  const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
-  const { isFavorite, toggle } = useFavorites();
+  const [vouchers, setVouchers]         = useState<Voucher[]>([]);
+  const [orders, setOrders]             = useState<Redemption[]>([]);
+  const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [redeeming, setRedeeming]       = useState<string | null>(null);
+  const [promoCodes, setPromoCodes]     = useState<Record<string, string>>({});
+  const { isFavorite, toggle }          = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
       marketplaceService.getItems().then(setVouchers).catch(() => {}),
       marketplaceService.getOrders().then(setOrders).catch(() => {}),
+      userService.getHistory(user.id).then(setTransactions).catch(() => {}),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   async function handleRedeem(voucher: Voucher) {
     setRedeeming(voucher.id);
@@ -649,9 +752,13 @@ function EmployeePourToi() {
 
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
+  /* Recent received transactions */
+  const recentReceived = transactions
+    .filter((tx) => tx.receiver_id === user?.id)
+    .slice(0, 6);
+
   const available = vouchers.filter((v) => v.available);
 
-  /* Offres du moment : plus favorisées d'abord, puis plus récentes */
   const populaires = [...available]
     .sort((a, b) =>
       (b.favorite_count ?? 0) - (a.favorite_count ?? 0) ||
@@ -659,7 +766,6 @@ function EmployeePourToi() {
     )
     .slice(0, 8);
 
-  /* Favoris : featured admin d'abord, puis les plus aimés pour compléter jusqu'à 50 */
   const featured = available.filter((v) => v.is_featured);
   const featuredIds = new Set(featured.map((v) => v.id));
   const heartedFill = available
@@ -667,7 +773,6 @@ function EmployeePourToi() {
     .sort((a, b) => (b.favorite_count ?? 0) - (a.favorite_count ?? 0));
   const topFavoris = [...featured, ...heartedFill].slice(0, 50);
 
-  /* Offres de la semaine : marquées is_weekly par l'admin, ou ajoutées il y a moins de 7 jours */
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const weeklyPinned = available.filter((v) => v.is_weekly);
@@ -678,15 +783,81 @@ function EmployeePourToi() {
     ...recentFill.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
   ];
 
-  const fmt = fmtShort;
-
   return (
     <div>
-      <div className="page-header page-header--centered">
-        <h1>Tes offres et tes bons d'achat</h1>
+      {/* ── Teal hero ── */}
+      <div className="pour-toi-hero">
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500, marginBottom: 2 }}>prim'O</p>
+          <h1 style={{ color: '#ffffff', fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.02em', marginBottom: 28 }}>
+            Bonjour, {user?.first_name} !
+          </h1>
+
+          {/* Coin */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <CoinSVG size={114} />
+          </div>
+
+          {/* Balance bubble */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: 999,
+              padding: '16px 48px',
+              textAlign: 'center',
+              boxShadow: '0 6px 32px rgba(0,0,0,0.18)',
+            }}>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>{balance}</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: 5 }}>Tokens dispos</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Carousel offres du moment */}
+      {/* ── Activité récente ── */}
+      {recentReceived.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+            Activité récente
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {recentReceived.map((tx) => {
+              const initials = tx.sender
+                ? ((tx.sender.first_name[0] ?? '') + (tx.sender.name[0] ?? '')).toUpperCase()
+                : 'P';
+              const senderName = tx.sender
+                ? `${tx.sender.first_name} ${tx.sender.name}`
+                : 'prim\'O';
+              return (
+                <div key={tx.id} className="activity-item">
+                  {/* Avatar */}
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                    background: 'var(--primary)', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.8rem', fontWeight: 700,
+                  }}>
+                    {initials}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, fontSize: '0.88rem' }}>{senderName}</p>
+                    {tx.reason && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 1 }}>{tx.reason}</p>}
+                  </div>
+                  <span style={{
+                    background: 'var(--primary)', color: '#fff',
+                    borderRadius: 999, padding: '4px 12px',
+                    fontSize: '0.82rem', fontWeight: 700, flexShrink: 0,
+                  }}>
+                    +{tx.amount} tkn
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Carousels ── */}
       <CarouselRow
         title="Offres du moment"
         vouchers={populaires}
@@ -700,7 +871,6 @@ function EmployeePourToi() {
         onCartToggle={cartToggle}
       />
 
-      {/* Favoris globaux */}
       <CarouselRow
         title="❤️ Favoris"
         vouchers={topFavoris}
@@ -714,7 +884,6 @@ function EmployeePourToi() {
         onCartToggle={cartToggle}
       />
 
-      {/* Offres de la semaine */}
       <CarouselRow
         title="🆕 Les offres de la semaine"
         vouchers={newThisWeek}
@@ -728,8 +897,8 @@ function EmployeePourToi() {
         onCartToggle={cartToggle}
       />
 
-      {/* Bons déjà achetés */}
-      <div style={{ marginTop: 28 }}>
+      {/* ── Bons déjà achetés ── */}
+      <div style={{ marginTop: 8, marginBottom: 28 }}>
         <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
         {orders.length === 0 ? (
           <div className="card">
@@ -740,19 +909,11 @@ function EmployeePourToi() {
             {orders.map((order) => (
               <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>
-                    {order.voucher?.partner ?? '—'}
-                  </p>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    {order.voucher?.title ?? '—'}
-                  </p>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                    {fmt(order.redeemed_at)}
-                  </p>
+                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.redeemed_at)}</p>
                 </div>
-                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>
-                  {order.promo_code}
-                </span>
+                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
               </div>
             ))}
           </div>
