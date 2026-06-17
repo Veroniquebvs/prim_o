@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TopNav from './TopNav';
 import BottomNav from './BottomNav';
@@ -17,7 +17,7 @@ export default function Layout({ children }: Props) {
 
       {/* Mobile only — sticky brand bar */}
       <header className="top-bar">
-        <span className="top-bar-brand">PRIM'O</span>
+        <Link to="/pour-toi" className="top-bar-brand">PRIM'O</Link>
 
         {user && (
           <div className="top-bar-right">
