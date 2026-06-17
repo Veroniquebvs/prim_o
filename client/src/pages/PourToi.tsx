@@ -351,19 +351,12 @@ function ManagerPourToi() {
     <div>
       {/* ══ Dark hero ══ */}
       <div className="manager-hero">
-        {/* Brand + team name — top row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.02em' }}>
-            prim'O
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
           </span>
-          {team?.name && (
-            <>
-              <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '1rem' }}>·</span>
-              <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.88rem', fontWeight: 500 }}>
-                {team.name}
-              </span>
-            </>
-          )}
         </div>
 
         {/* Two-column: left = avatar placeholder, right = coin + stock */}
@@ -371,168 +364,132 @@ function ManagerPourToi() {
           {/* Left — avatar area (client will provide asset) */}
           <div style={{ flex: 1 }} />
 
-          {/* Right — coin + token count */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
-            <CoinSVG size={88} />
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, marginBottom: 4 }}>
-                Mon solde tokens
-              </p>
-              <p style={{ color: '#ffffff', fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em' }}>
+          {/* Right — coin + token count window */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, transform: 'translateY(55px)' }}>
+            {team?.name && (
+              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 4, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                {team.name}
+              </span>
+            )}
+            {/* Token Image from client/public/icons */}
+            <img 
+              src="/icons/token-logo-SF.png" 
+              alt="Token" 
+              style={{ width: '140px', height: '140px', objectFit: 'contain', filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.4))', zIndex: 2, marginBottom: '-20px' }} 
+            />
+            <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 24px 10px 24px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '180px' }}>
+              <p style={{ color: '#ffffff', fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
                 {user?.token_balance ?? 0}
               </p>
-              <p style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600, marginTop: 5 }}>
+              <p style={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
                 Tokens stock
               </p>
             </div>
           </div>
         </div>
-
-        {/* Stat pills — bottom row */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 999, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>Équipe</span>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>{members.length}</span>
-          </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 999, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>Auto actives</span>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>
-              {schedRules.filter((r) => r.active).length}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* ══ Mes collaborateurs ══ */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>Mes collaborateurs</h2>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => { setAddMode(addMode === 'none' ? 'existing' : 'none'); setAddError(''); setCreateError(''); }}
-          >
-            + Ajouter
-          </button>
+      <div style={{ marginBottom: 28, marginTop: 55 }}>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Mes collaborateurs</h2>
         </div>
 
-        {/* Add panel */}
-        {addMode !== 'none' && (
-          <div style={{ marginBottom: 16, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <button type="button"
-                onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
-                className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                Depuis la liste
-              </button>
-              <button type="button"
-                onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
-                className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                Créer un collaborateur
-              </button>
-            </div>
-
-            {addMode === 'existing' && (
-              <form onSubmit={handleAddExisting}>
-                {available.length === 0 ? (
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Aucun collaborateur disponible sans équipe.
-                  </p>
-                ) : (
-                  <>
-                    <select className="form-select" value={addingId}
-                      onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 10 }}>
-                      <option value="">Sélectionner un collaborateur…</option>
-                      {available.map((u) => (
-                        <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
-                      ))}
-                    </select>
-                    {addError && <p className="form-error">{addError}</p>}
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
-                      {addingLoad ? 'Ajout…' : "Ajouter à l'équipe"}
-                    </button>
-                  </>
-                )}
-              </form>
-            )}
-
-            {addMode === 'create' && (
-              <form onSubmit={handleCreateCollaborator}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                  <input className="form-input" type="text" placeholder="Prénom"
-                    value={createForm.first_name}
-                    onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
-                  <input className="form-input" type="text" placeholder="Nom"
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
-                </div>
-                <input className="form-input" type="email" placeholder="Email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  required style={{ marginBottom: 10 }} />
-                <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)"
-                  value={createForm.password}
-                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  required style={{ marginBottom: 10 }} />
-                {createError && <p className="form-error">{createError}</p>}
-                <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
-                  {createLoad ? 'Création…' : "Créer et ajouter à l'équipe"}
-                </button>
-              </form>
-            )}
-          </div>
-        )}
-
+        {/* List of collaborators */}
         {members.length === 0 ? (
-          <p className="empty-state">Aucun collaborateur dans votre équipe.</p>
+          <p className="empty-state" style={{ marginBottom: 24 }}>Aucun collaborateur dans votre équipe.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {members.map((m) => (
               <div
                 key={m.id}
-                className="collab-card"
+                className="manager-collab-row"
                 onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
+                style={{ cursor: 'pointer' }}
               >
-                {/* Avatar */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                  background: 'var(--primary-light)', color: 'var(--primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.88rem', fontWeight: 700,
-                }}>
-                  {(m.first_name[0] ?? '').toUpperCase()}{(m.name[0] ?? '').toUpperCase()}
+                <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.88rem', fontWeight: 700, marginRight: 12 }}>
+                    {(m.first_name[0] ?? '').toUpperCase()}{(m.name[0] ?? '').toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#666' }}>Collaborateur</p>
+                  </div>
                 </div>
-
-                {/* Name + balance */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 3 }}>
-                    {m.first_name} {m.name}
-                  </p>
-                  <span className="token-badge" style={{ fontSize: '0.72rem' }}>{m.token_balance} tkn</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{m.token_balance} tkn</span>
+                  <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>+ Envoyer</button>
                 </div>
-
-                {/* Quick send button */}
-                <button
-                  className="btn btn-primary btn-sm"
-                  style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setQuickMember(m);
-                    setQuickAmount(''); setQuickReason('');
-                    setQuickError(''); setQuickSuccess('');
-                  }}
-                >
-                  + Envoyer
-                </button>
               </div>
             ))}
           </div>
         )}
+
+        {/* Add Panel (Window below collaborators) */}
+        <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 16 }}>Ajouter à l'équipe</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button type="button"
+              onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
+              className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+              Depuis la liste
+            </button>
+            <button type="button"
+              onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
+              className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+              Créer un profil
+            </button>
+          </div>
+
+          {addMode === 'existing' && (
+            <form onSubmit={handleAddExisting}>
+              {available.length === 0 ? (
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Aucun collaborateur disponible sans équipe.
+                </p>
+              ) : (
+                <>
+                  <select className="form-select" value={addingId}
+                    onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 12 }}>
+                    <option value="">Sélectionner un collaborateur…</option>
+                    {available.map((u) => (
+                      <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
+                    ))}
+                  </select>
+                  {addError && <p className="form-error">{addError}</p>}
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
+                    {addingLoad ? 'Ajout…' : "Ajouter à l'équipe"}
+                  </button>
+                </>
+              )}
+            </form>
+          )}
+
+          {addMode === 'create' && (
+            <form onSubmit={handleCreateCollaborator}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <input className="form-input" type="text" placeholder="Prénom"
+                  value={createForm.first_name}
+                  onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
+                <input className="form-input" type="text" placeholder="Nom"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
+              </div>
+              <input className="form-input" type="email" placeholder="Email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                required style={{ marginBottom: 12 }} />
+              <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                required style={{ marginBottom: 12 }} />
+              {createError && <p className="form-error">{createError}</p>}
+              <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
+                {createLoad ? 'Création…' : "Créer et ajouter à l'équipe"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* ══ Distribution chart ══ */}
