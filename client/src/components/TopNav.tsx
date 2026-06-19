@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 
@@ -42,13 +42,8 @@ export default function TopNav() {
   return (
     <header className={`top-nav ${isManager ? 'top-nav--manager' : ''} ${isManager && !isPourToi ? 'no-shadow' : ''}`}>
       <div className="top-nav-inner">
-        {/* Brand - hidden on Pour Toi */}
-        {!isPourToi && (
-          <span className="brand-manager" style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginRight: 24, flexShrink: 0 }}>
-            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.2rem', color: 'var(--text)', letterSpacing: '0.5px' }}>prim'</span>
-            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '4.4rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
-          </span>
-        )}
+        {/* Brand */}
+        <Link to="/pour-toi" className="top-nav-brand">PRIM'O</Link>
 
         {/* Nav links + Voir plus (à gauche) */}
         <nav className="top-nav-links">

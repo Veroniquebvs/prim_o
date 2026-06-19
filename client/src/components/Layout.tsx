@@ -1,4 +1,6 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+
 import { useAuth } from '../context/AuthContext';
 import TopNav from './TopNav';
 import BottomNav from './BottomNav';
@@ -23,20 +25,28 @@ export default function Layout({ children }: Props) {
     <div className="app-layout">
       <TopNav />
 
-      {/* Mobile only — sticky brand bar (hidden on hero pages) */}
-      {!isHeroPage && (
-        <header className={`top-bar ${isPourToi ? 'top-bar--manager' : ''} ${!isPourToi ? 'no-shadow' : ''}`}>
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: 2, flex: 1, visibility: isPourToi ? 'hidden' : 'visible' }}>
-            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.8rem', color: 'var(--text)', letterSpacing: '0.5px' }}>prim'</span>
-            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '4rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
-          </span>
+      {/* Mobile only — sticky brand bar */}
+      <header className="top-bar">
+        <Link to="/pour-toi" className="top-bar-brand">PRIM'O</Link>
 
-          {user && (
-            <div className="top-bar-right">
-              <div className="top-bar-tokens top-bar-tokens--large">
-                <img src="/icons/token-logo-SF.png" alt="Token" style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                <span>{user.role === 'employer' ? (company?.token_balance ?? '…') : (user.token_balance ?? 0)}</span>
-              </div>
+        {user && (
+          <div className="top-bar-right">
+            {user.role === 'employer' && (
+              <button
+                className="top-bar-buy"
+                onClick={() => navigate('/abonnement')}
+                aria-label="Acheter des tokens"
+              >
+                + Acheter
+              </button>
+            )}
+            <div className="top-bar-tokens">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="11" fill="#F5C518" />
+                <circle cx="12" cy="12" r="9" fill="#F5C518" stroke="#E6A800" strokeWidth="1" />
+                <text x="12" y="16.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="12" fill="#1A7A1A">P</text>
+              </svg>
+              <span>{user.role === 'employer' ? (company?.token_balance ?? '…') : (user.token_balance ?? 0)}</span>
             </div>
           )}
         </header>

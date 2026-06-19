@@ -4,6 +4,16 @@ import { useAuth } from '../../context/AuthContext';
 import { companyService } from '../../services/company.service';
 import type { Company } from '../../types';
 
+const EMPTY_COMPANY_FORM = {
+  name: '',
+  email: '',
+  street: '',
+  zip_code: '',
+  city: '',
+  siret: '',
+};
+
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -17,6 +27,13 @@ export default function AdminDashboard() {
   const [granting, setGranting]             = useState(false);
   const [grantError, setGrantError]         = useState('');
   const [grantSuccess, setGrantSuccess]     = useState('');
+
+  /* Créer une entreprise */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_COMPANY_FORM);
+  const [createError, setCreateError] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
+
 
   useEffect(() => {
     companyService
@@ -47,6 +64,31 @@ export default function AdminDashboard() {
       setGranting(false);
     }
   }
+
+  async function handleCreateCompany(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateError('');
+    setCreateLoading(true);
+    try {
+      const payload = {
+        name: createForm.name,
+        email: createForm.email || undefined,
+        street: createForm.street,
+        zip_code: createForm.zip_code,
+        city: createForm.city,
+        siret: createForm.siret,
+      };
+      const newCompany = await companyService.create(payload);
+      setCompanies(prev => [newCompany, ...prev]);
+      setShowCreateModal(false);
+      setCreateForm(EMPTY_COMPANY_FORM);
+    } catch (err: any) {
+      setCreateError(err?.response?.data?.error ?? "Erreur lors de la création de l'entreprise.");
+    } finally {
+      setCreateLoading(false);
+    }
+  }
+
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
@@ -101,7 +143,59 @@ export default function AdminDashboard() {
           <p className="stat-label">Tokens en circulation</p>
           <p className="stat-value">{totalTokens}</p>
         </div>
+        <div
+          className="stat-card"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            border: '2px dashed var(--primary)',
+            background: 'rgba(0, 161, 154, 0.03)',
+            transition: 'all 0.15s ease',
+          }}
+          onClick={() => {
+            setCreateForm(EMPTY_COMPANY_FORM);
+            setCreateError('');
+            setShowCreateModal(true);
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 161, 154, 0.08)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 161, 154, 0.03)';
+            e.currentTarget.style.transform = '';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ width: 26, height: 26, color: 'var(--primary)', marginBottom: 6 }}
+            >
+              {/* Building outline */}
+              <path d="M3 21h18" />
+              <path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16" />
+              {/* Windows */}
+              <path d="M9 7h1" />
+              <path d="M9 11h1" />
+              <path d="M9 15h1" />
+              {/* Plus badge on side */}
+              <path d="M18 10h4" />
+              <path d="M20 8v4" />
+            </svg>
+            <p className="stat-label" style={{ margin: 0, fontWeight: 600, color: 'var(--primary)' }}>
+              Créer une entreprise
+            </p>
+          </div>
+        </div>
       </div>
+
 
       {/* Donner des tokens */}
       <div className="card" style={{ marginBottom: 20 }}>
@@ -182,6 +276,114 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <div className="emp-modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="emp-modal-title">Créer une entreprise</h2>
+
+            <form onSubmit={handleCreateCompany} noValidate>
+              <div className="form-group">
+                <label className="form-label">Nom de l'entreprise *</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="ex : Acme Corp"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email de contact (optionnel)</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="contact@acme.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">SIRET (14 chiffres, optionnel)</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  maxLength={14}
+                  placeholder="12345678901234"
+                  value={createForm.siret}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setCreateForm({ ...createForm, siret: val });
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Adresse (optionnelle)</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="Rue, avenue..."
+                  value={createForm.street}
+                  onChange={(e) => setCreateForm({ ...createForm, street: e.target.value })}
+                  style={{ marginBottom: 12 }}
+                />
+                <div className="emp-modal-row">
+                  <div>
+                    <input
+                      className="form-input"
+                      type="text"
+                      maxLength={5}
+                      placeholder="CP (5 chiffres)"
+                      value={createForm.zip_code}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setCreateForm({ ...createForm, zip_code: val });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      className="form-input"
+                      type="text"
+                      placeholder="Ville"
+                      value={createForm.city}
+                      onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {createError && <p className="form-error">{createError}</p>}
+
+              <div className="emp-modal-actions">
+                <button
+                  type="button"
+                  style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={createLoading}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  Retour
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={createLoading}
+                >
+                  {createLoading ? "Création…" : "Créer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

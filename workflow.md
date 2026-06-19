@@ -558,6 +558,209 @@ Cette branche améliore le processus d'onboarding des salariés en permettant au
 
 ---
 
+## [feature/entry_date] - Gestion de la date d'entrée des salariés 11/06/26 (Vero)
+
+### Description
+
+Cette branche ajoute la gestion de la date d'entrée des salariés afin de permettre aux employeurs de renseigner cette information lors de la validation d'un nouveau collaborateur et de la modifier ultérieurement depuis sa fiche détaillée.
+
+Elle renforce également la sécurité des accès entre entreprises en limitant la consultation et la modification des utilisateurs à leur propre société.
+
+### Modifications apportées
+
+#### 1. Backend (`users.service.js`)
+
+- Renforcement de l'isolation multi-entreprises via `company_id`.
+
+- Modification des méthodes :
+  - `getById(id, companyId)`
+  - `update(id, body, companyId)`
+  - `activateUser(id, companyId, entry_date)`
+
+- Remplacement des recherches par identifiant seul (`findByPk`) par des recherches sécurisées :
+
+```js
+where: {
+  id,
+  company_id: companyId
+}
+```
+
+#### 2. Backend (`users.controller.js`)
+
+- Transmission systématique de `req.user.company_id` aux services concernés.
+- Adaptation de `activateUser()` afin de recevoir :
+
+```json
+{
+  "entry_date": "YYYY-MM-DD"
+}
+```
+
+- Mise à jour de la route de validation des salariés pour enregistrer simultanément :
+  - le changement de statut (`pending → active`) ;
+  - la date d'entrée.
+
+#### 3. Backend (`users.routes.js`)
+
+- Ajout de la validation :
+
+```js
+body("entry_date").optional().isISO8601();
+```
+
+- Création de la route :
+
+```http
+PATCH /users/:id/entry-date
+```
+
+permettant la modification ultérieure de la date d'entrée.
+
+#### 4. EmployerDashboard.tsx
+
+- Ajout d'un champ calendrier pour chaque salarié en attente de validation.
+- Mise en place d'un état local :
+
+```ts
+const [entryDates, setEntryDates] = useState<Record<string, string>>({});
+```
+
+- Transmission de la date sélectionnée lors de la validation :
+
+```ts
+userService.activate(id, entryDates[id]);
+```
+
+#### 5. user.service.ts
+
+- Modification de :
+
+```ts
+activate(id, entry_date?)
+```
+
+afin d'envoyer :
+
+```ts
+{
+  entry_date;
+}
+```
+
+- Ajout de la méthode :
+
+```ts
+updateEntryDate(id, entry_date);
+```
+
+pour communiquer avec :
+
+```http
+PATCH /users/:id/entry-date
+```
+
+#### 6. EmployeeDetail.tsx
+
+- Ajout d'une section « Date d'entrée » sur la fiche salarié.
+- Possibilité pour l'employeur :
+  - de visualiser la date d'entrée actuelle ;
+  - de la modifier ;
+  - de sauvegarder les changements directement depuis l'interface.
+
+### Notes de test & validation
+
+- Vérification de la transmission correcte de `entry_date` entre le frontend et le backend.
+
+- Validation du changement de statut d'un salarié (`pending → active`).
+
+- Contrôle de la persistance de la date d'entrée après rechargement de la page.
+
+- Vérification des protections multi-entreprises :
+  - consultation d'un salarié ;
+  - modification d'un salarié ;
+  - activation d'un salarié.
+
+- Correction d'une erreur de syntaxe dans `users.routes.js` (virgule manquante dans la route `PATCH /:id/activate`).
+
+### État actuel
+
+- Branche stable.
+- Date d'entrée enregistrée lors de l'activation d'un salarié.
+- Modification ultérieure possible depuis la fiche détaillée.
+- Isolation des données entre entreprises renforcée.
+- Backend et frontend synchronisés.
+
+---
+
+## Déploiement Render & Vercel — 11/06/26 (fait par Loïc)
+
+**Mise en production de l'application**
+
+- Fork du dépôt de Véronique et déploiement à partir du fork
+- Déploiement du backend sur **Render**
+- Déploiement du frontend sur **Vercel**
+
+---
+
+### 🗓️ 15 Juin 2026 : Optimisations UI/UX et corrections de logique
+
+**Objectifs :** Améliorer l'interface utilisateur (UI) du catalogue et sécuriser les calculs financiers côté employeur.
+
+#### 🎨 Interface Utilisateur (UI/UX) - 15/06/26 (fait par Véro)
+*   **Alignement des titres :** Centralisation des titres de page pour une meilleure lisibilité et uniformité visuelle.
+*   **Bouton "Retour" :** 
+    *   Refonte du style : passage en fond blanc avec texte contrasté.
+    *   Positionnement fixe à droite dans le header pour une meilleure ergonomie mobile/desktop.
+*   **Style des offres :** Restructuration visuelle des cartes d'offres :
+    *   Amélioration de la hiérarchie typographique (titre mis en avant, description plus lisible).
+    *   Ajustement des espacements (padding/margin) pour aérer le contenu.
+
+#### ⚙️ Logique & Backend
+*   **Correction du panier :**
+    *   Audit et correction de l'algorithme de calcul du solde total du panier côté employeur.
+    *   Assurance de la cohérence des totaux lors de l'ajout/suppression d'offres.
+
+---
+
+## UX, polissage & intégration Stripe complète — 16/06/26 (fait par Loïc)
+
+**Polissage UI**
+
+- Suppression de la fenêtre "Solde disponible" redondante sur la page Panier (déjà affiché en haut à droite)
+- Remplacement du cadran horloge par un logo token Prim'O (cercle jaune `#F5C518` + lettre **P** verte) dans la TopNav desktop et la barre mobile (`Layout.tsx`)
+- Alignement à gauche du titre "Détail de l'offre" sur `VoucherDetail.tsx`
+- Correction du style des boutons ← Retour sur les pages "Voir plus" (Paramètres, Mes informations, Mot de passe, CGU, Aide, Nous noter) : `.page-header .back-btn` unifié dans `globals.css` — transparent, texte blanc, `margin-left: auto`
+- Ajout d'un bouton ← Retour (chevron vert + `var(--primary)`) dans les modales "Attribution automatique" et "Créer un employé" sur `EmployerDashboard`
+- Remplacement de l'ID entreprise par le nom de l'entreprise dans la modale "Créer un employé"
+- Suppression de la fenêtre "Solde actuel" redondante sur la page Abonnement
+
+**Page de chargement (SplashScreen)**
+
+- Création de `SplashScreen.tsx` : fond blanc, logo centré, dégradé vert léger en haut
+- Branché sur `ProtectedRoute` (remplace le texte "Chargement…")
+- Logo `logo_page-chargement.png` copié dans `public/` pour accès direct
+
+**Œil afficher/masquer le mot de passe**
+
+- Ajout d'un toggle œil sur le champ mot de passe de `LoginPage.tsx`
+- SVG œil barré / ouvert selon l'état, couleur `var(--text-muted)`
+
+**Intégration Stripe complète (abonnements mensuels récurrents)**
+
+- Migration de `PaymentIntent` vers **Stripe Subscription** (vrai prélèvement mensuel automatique)
+- Backend `stripe.service.js` : `createOrUpdateSubscription()` — crée un Stripe Customer + Subscription avec `price_data` inline, annule l'ancien abonnement si changement de plan
+- Backend : nouveau webhook `invoice.payment_succeeded` (remplace `payment_intent.succeeded`) — crédit des tokens via transaction PostgreSQL atomique
+- Nouveaux endpoints : `POST /api/tokens/subscribe` (planId) · `GET /api/tokens/subscription`
+- Modèle `Company` : 5 nouvelles colonnes (`stripe_customer_id`, `stripe_subscription_id`, `subscription_plan`, `subscription_status`, `subscription_next_billing`) — ajout automatique via `sync({ alter: true })`
+- Frontend `Abonnement.tsx` : 4 états — chargement · abonnement actif (plan + date prochain prélèvement + changement de plan) · sélection · paiement · succès
+- Polling du solde toutes les 2 s après paiement (le webhook crédite de façon asynchrone)
+- `PaymentElement` configuré : carte bancaire uniquement (`payment_method_types: ['card']`, `wallets: { link: 'never' }`)
+- `docker-compose.yml` : `env_file: ./client/.env` pour injecter `VITE_STRIPE_PUBLIC_KEY` dans le conteneur frontend
+- Masquage du badge test-mode Stripe via CSS global (`#stripe-badge-iframe`)
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.

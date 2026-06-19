@@ -97,8 +97,14 @@ a:hover {
   font-weight: 800;
   color: var(--primary);
   letter-spacing: -0.03em;
+  text-decoration: none;
   flex: 1;
 }
+
+.top-bar-brand:hover {
+  text-decoration: none;
+}
+
 
 .top-bar-right {
   display: flex;
@@ -181,6 +187,11 @@ a:hover {
   flex-shrink: 0;
   margin-right: 24px;
 }
+
+.top-nav-brand:hover {
+  text-decoration: none;
+}
+
 
 .top-nav-links {
   display: flex;
