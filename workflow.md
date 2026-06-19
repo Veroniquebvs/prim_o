@@ -785,66 +785,6 @@ docker compose up --build
 
 ---
 
-## Lancer Stripe en développement local
-
-Cette procédure est nécessaire à chaque session de test du paiement. La Stripe CLI fait le pont entre les événements Stripe et ton serveur local.
-
-### Prérequis (une seule fois)
-
-```bash
-# Installation de la CLI (WSL2 / Linux)
-curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
-sudo apt update && sudo apt install stripe
-
-# Connexion au compte Stripe (valide 90 jours)
-stripe login
-```
-
-### À chaque session de test
-
-**Terminal 1 — Docker (backend + frontend)**
-```bash
-docker compose up --build
-```
-
-**Terminal 2 — Stripe CLI (à garder ouvert pendant les tests)**
-```bash
-stripe listen --events invoice.payment_succeeded --forward-to localhost:5000/api/tokens/webhook
-```
-
-La CLI affiche au démarrage :
-```
-> Ready! Your webhook signing secret is whsec_abc123...
-```
-
-Copie ce secret dans `server/.env` si ce n'est pas déjà fait :
-```
-STRIPE_WEBHOOK_SECRET=whsec_abc123...
-```
-
-Puis redémarre le backend pour qu'il prenne en compte le nouveau secret.
-
-### Carte de test Stripe
-
-| Champ | Valeur |
-|---|---|
-| Numéro | `4242 4242 4242 4242` |
-| Date d'expiration | N'importe quelle date future (ex: `12/26`) |
-| CVC | N'importe quels 3 chiffres (ex: `123`) |
-| Code postal | N'importe quels 5 chiffres (ex: `75001`) |
-
-### En production
-
-Le `stripe listen` **n'est pas nécessaire en production**. Configurer l'URL de webhook directement dans le dashboard Stripe :
-
-1. [dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks) → **Ajouter un endpoint**
-2. URL : `https://ton-domaine.com/api/tokens/webhook`
-3. Événement : `invoice.payment_succeeded`
-4. Copier le `whsec_...` généré → variable d'environnement `STRIPE_WEBHOOK_SECRET` sur Render
-
----
-
 ## Comptes de démonstration (base Render — production)
 
 Mot de passe pour tous les comptes : `admin123456789`
@@ -861,7 +801,33 @@ Mot de passe pour tous les comptes : `admin123456789`
 | marie.garcia@aldi-demo.fr | Aldi |
 | paul.thomas@amazon-demo.fr | Amazon |
 
-### Employés
+### Managers (Leclerc — seed local, mot de passe : `admin123`)
+| Email | Équipe |
+|---|---|
+| sophie.martin@leclerc.fr | Équipe Rayon Frais |
+| thomas.dubois@leclerc.fr | Équipe Caisse |
+| isabelle.bernard@leclerc.fr | Équipe Drive |
+
+### Employés (Leclerc — seed local, mot de passe : `admin123`)
+| Email | Équipe |
+|---|---|
+| lucas.petit@leclerc.fr | Rayon Frais |
+| emma.leroy@leclerc.fr | Rayon Frais |
+| nathan.moreau@leclerc.fr | Rayon Frais |
+| chloe.simon@leclerc.fr | Rayon Frais |
+| antoine.laurent@leclerc.fr | Rayon Frais |
+| camille.michel@leclerc.fr | Caisse |
+| raphael.garcia@leclerc.fr | Caisse |
+| lea.david@leclerc.fr | Caisse |
+| hugo.bertrand@leclerc.fr | Caisse |
+| manon.roux@leclerc.fr | Caisse |
+| alexis.vincent@leclerc.fr | Drive |
+| ines.fournier@leclerc.fr | Drive |
+| maxime.morel@leclerc.fr | Drive |
+| julie.girard@leclerc.fr | Drive |
+| theo.andre@leclerc.fr | Drive |
+
+### Employés (base Render — production, mot de passe : `admin123456789`)
 | Email | Entreprise |
 |---|---|
 | sophie.martin@leclerc-demo.fr | Leclerc |
@@ -874,39 +840,38 @@ Mot de passe pour tous les comptes : `admin123456789`
 | tom.laurent@amazon-demo.fr | Amazon |
 | jade.michel@amazon-demo.fr | Amazon |
 
+
 ---
 
-## Comptes locaux Leclerc (Docker — développement)
+## Session du 17 Juin 2026 — Refonte UI Pages Manager & Employé
 
-Mot de passe pour tous les comptes : `admin123`
+**Auteur :** Loïc Cerqueira  
+**Branche :** `feat/front`
 
-### Employeur
-| Email | Rôle | Entreprise |
-|---|---|---|
-| pierre.dupont@leclerc-demo.fr | employer | Leclerc |
+### Objectif
+Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manager)** et **Pour Toi (Employé)**.
 
-### Managers
-| Email | Rôle | Équipe |
-|---|---|---|
-| isabelle.bernard@leclerc.fr | manager | Équipe Drive |
-| sophie.martin@leclerc.fr | manager | Équipe Rayon Frais |
-| thomas.dubois@leclerc.fr | manager | Équipe Caisse |
+### Modifications effectuées
 
-### Employés
-| Email | Rôle | Équipe |
-|---|---|---|
-| alexis.vincent@leclerc.fr | employee | Équipe Drive |
-| antoine.laurent@leclerc.fr | employee | Équipe Rayon Frais |
-| camille.michel@leclerc.fr | employee | Équipe Caisse |
-| chloe.simon@leclerc.fr | employee | Équipe Rayon Frais |
-| emma.leroy@leclerc.fr | employee | Équipe Rayon Frais |
-| hugo.bertrand@leclerc.fr | employee | Équipe Caisse |
-| ines.fournier@leclerc.fr | employee | Équipe Drive |
-| julie.girard@leclerc.fr | employee | Équipe Drive |
-| lea.david@leclerc.fr | employee | Équipe Caisse |
-| lucas.petit@leclerc.fr | employee | Équipe Rayon Frais |
-| manon.roux@leclerc.fr | employee | Équipe Caisse |
-| maxime.morel@leclerc.fr | employee | Équipe Drive |
-| nathan.moreau@leclerc.fr | employee | Équipe Rayon Frais |
-| raphael.garcia@leclerc.fr | employee | Équipe Caisse |
-| theo.andre@leclerc.fr | employee | Équipe Drive |
+#### `client/src/pages/PourToi.tsx`
+- **Hero Manager** (dark navy) : logo prim'O en Pacifico, pièce `token-logo-SF.png`, fenêtre stock tokens fond gris foncé avec contour blanc et `translateY(55px)` pour chevaucher la coupure bleu/blanc, nom d'équipe au-dessus de l'image
+- **Hero Employé** (teal) : greeting "Bonjour, [Prénom] !", pièce centrée, bulle blanche avec solde tokens
+- **Layout 2 colonnes** dans les deux heroes : gauche réservée aux avatars (fournis par le client), droite avec pièce + solde
+- **Fil d'activité** : récupération via `userService.getHistory()` des derniers tokens reçus (page employé)
+- **Carousels** : offres du moment, favoris, nouveautés (page employé)
+- **Cards collaborateurs** : avatar (initiales), nom, solde tkn, bouton "+ Envoyer" (page manager)
+- **Quick send modal** : envoi instantané de tokens depuis une card collaborateur
+- **Panneau Ajouter/Créer** collaborateur avec deux modes : "Depuis la liste" / "Créer un profil"
+
+#### `client/src/components/Layout.tsx`
+- Ajout détection des "hero pages" (`/pour-toi`, `/employer/dashboard`)
+- Sur ces pages : masquage de la `top-bar` mobile (blanc avec tokens) pour que le hero couvre toute la largeur dès le haut
+
+#### `client/src/styles/globals.css`
+- Classes `.pour-toi-hero` et `.manager-hero` : gradients teal/navy, responsive
+- Suppression des rayures diagonales (`::before`)
+- Classe `.app-main--hero` : `padding-top: 0` pour coller le hero au bord supérieur
+- Classes `.collab-card` et `.activity-item`
+
+#### Infrastructure Docker
+- Résolution du bug `Cannot find module 'vite-plugin-pwa'` : volume anonyme `node_modules` obsolète → `docker compose rm -f client` + `docker volume prune -f` + `docker compose build --no-cache client`

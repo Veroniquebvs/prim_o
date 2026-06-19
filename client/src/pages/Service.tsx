@@ -35,7 +35,7 @@ export default function Service() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Aide</h1>
           <p>Besoin d'assistance ?</p>

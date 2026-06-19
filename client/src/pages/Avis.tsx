@@ -7,7 +7,7 @@ export default function Avis() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Nous noter</h1>
         </div>

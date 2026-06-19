@@ -45,6 +45,8 @@ export default function EmployerDashboard() {
   const [createError, setCreateError] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
 
+  const [showAddManagerModal, setShowAddManagerModal] = useState(false);
+
   const [schedRules, setSchedRules] = useState<ScheduledAllocation[]>([]);
   const [showSchedModal, setShowSchedModal] = useState(false);
   const [editingSchedId, setEditingSchedId] = useState<string | null>(null);
@@ -195,22 +197,92 @@ export default function EmployerDashboard() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
-        <h1>
-          Tableau de bord
-          <br />
-          {company?.name || "Chargement..."}
-        </h1>
+      {/* ══ Employer hero ══ */}
+      <div className="employer-hero-banner">
+        {/* Two-column layout */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          
+          {/* Left: Brand */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: '24px' }}>
+              <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
+              <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
+            </div>
+          </div>
+
+          {/* Right: QR Code + Token count */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* QR Code Trigger with blinking arrows */}
+            <div style={{ zIndex: 10, marginTop: '16px', marginBottom: '8px', position: 'relative' }}>
+              <div style={{ 
+                position: 'absolute', 
+                top: -24, 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                color: '#ffffff', 
+                fontSize: '0.8rem', 
+                fontWeight: 'normal', 
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span className="blinking-arrows">{'>>'}</span>
+                CLICK HERE
+                <span className="blinking-arrows">{'<<'}</span>
+              </div>
+              {company && (
+                <PrintableQRCode companyId={company.id} companyName={company.name} />
+              )}
+            </div>
+
+            {/* Token count window */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 4, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                {company?.name || "Chargement..."}
+              </span>
+              <img 
+                src="/icons/token-logo-SF.png" 
+                alt="Token" 
+                style={{ width: '100px', height: '100px', objectFit: 'contain', filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.15))', zIndex: 2, marginBottom: '-16px' }} 
+              />
+              <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '12px 16px 8px 16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '140px' }}>
+                <p style={{ color: '#ffffff', fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
+                  {company?.token_balance ?? 0}
+                </p>
+                <p style={{ color: '#ffffff', fontSize: '0.75rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
+                  Tokens stock
+                </p>
+              </div>
+
+              <button
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  marginTop: 12,
+                  marginBottom: '-46px', // This makes it stick out by half its height
+                  borderRadius: 999,
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate('/abonnement')}
+              >
+                + Acheter
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" style={{ marginTop: 65 }}>{error}</p>}
 
-      <div className="grid-3" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
-          <p className="stat-label">Budget tokens</p>
-          <p className="stat-value">{company?.token_balance ?? 0}</p>
-          <p className="stat-sub">tokens à distribuer</p>
-        </div>
+      <div style={{ marginBottom: 28, marginTop: error ? 0 : 65 }}>
         <div className="stat-card">
           <p className="stat-label">Équipe</p>
           <p className="stat-value">{employees.length + managers.length}</p>
@@ -221,6 +293,7 @@ export default function EmployerDashboard() {
           </p>
         </div>
       </div>
+
       {/* Feedback feed */}
       {company && (
         <div className="card" style={{ marginBottom: 24 }}>
@@ -249,12 +322,6 @@ export default function EmployerDashboard() {
         </div>
       )}
 
-      {/* QRCode */}
-      {company && (
-        <div style={{ marginBottom: "24px" }}>
-          <PrintableQRCode companyId={company.id} companyName={company.name} />
-        </div>
-      )}
 
       {/* SECTION FOR EMPLOYEES ON WAITING LIST */}
       {pendingEmployees.length > 0 && (
@@ -374,6 +441,13 @@ export default function EmployerDashboard() {
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Managers</h2>
+            <button
+              className="btn btn-outline btn-sm"
+              style={{ fontSize: "0.8rem", padding: "4px 10px" }}
+              onClick={() => setShowAddManagerModal(true)}
+            >
+              + Ajouter
+            </button>
           </div>
           {managers.length === 0 ? (
             <p className="empty-state">Aucun manager dans votre entreprise.</p>
@@ -704,6 +778,54 @@ export default function EmployerDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showAddManagerModal && (
+        <div className="emp-modal-overlay" onClick={() => setShowAddManagerModal(false)}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="emp-modal-title">Ajouter un Manager</h2>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: 16 }}>
+              Sélectionnez un collaborateur existant pour le promouvoir au rôle de Manager. Il pourra alors gérer une équipe et distribuer des tokens.
+            </p>
+            {employees.length === 0 ? (
+              <p className="empty-state" style={{ marginBottom: 20 }}>Aucun collaborateur disponible.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto", marginBottom: 20 }}>
+                {[...employees].sort((a, b) => a.name.localeCompare(b.name)).map(emp => (
+                  <div key={emp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "var(--card)" }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: "0.9rem" }}>{emp.first_name} {emp.name}</p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{emp.email}</p>
+                    </div>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={async () => {
+                        try {
+                          await managerService.promoteToManager(emp.id);
+                          setShowAddManagerModal(false);
+                          fetchData();
+                        } catch {
+                          alert("Erreur lors de la promotion.");
+                        }
+                      }}
+                    >
+                      Promouvoir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="emp-modal-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ width: "100%" }}
+                onClick={() => setShowAddManagerModal(false)}
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

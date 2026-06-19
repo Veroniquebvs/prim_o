@@ -3,11 +3,72 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
 import { managerService } from '../services/manager.service';
+import { userService } from '../services/user.service';
 import { useFavorites } from '../hooks/useFavorites';
 import { useCart } from '../hooks/useCart';
 import { resolveImageUrl } from '../utils/imageUrl';
-import type { Voucher, Redemption, Team, ScheduledAllocation, User } from '../types';
+import { getCategory, getCategoryColor } from '../utils/category';
+import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
+
+/* ── Gold coin SVG ── */
+function CoinSVG({ size = 100 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ filter: 'drop-shadow(0 8px 24px rgba(176,120,0,0.45))' }}>
+      <circle cx="60" cy="60" r="56" fill="url(#coinBase)" />
+      <circle cx="60" cy="60" r="53" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="44" fill="url(#coinInner)" />
+      <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <text x="60" y="70" textAnchor="middle" fontSize="30" fontWeight="800"
+        fontFamily="Poppins,sans-serif" fill="rgba(255,255,255,0.85)">P</text>
+      <defs>
+        <radialGradient id="coinBase" cx="38%" cy="32%" r="72%">
+          <stop offset="0%" stopColor="#FFE566" />
+          <stop offset="50%" stopColor="#F0A800" />
+          <stop offset="100%" stopColor="#A06000" />
+        </radialGradient>
+        <radialGradient id="coinInner" cx="42%" cy="38%" r="68%">
+          <stop offset="0%" stopColor="#FFD740" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#C88000" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* ── Team bar chart ── */
+function TeamBarChart({ members }: { members: User[] }) {
+  const max = Math.max(...members.map((m) => m.token_balance), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {members.map((m) => (
+        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 72, fontSize: '0.75rem', fontWeight: 600,
+            color: 'var(--text-muted)', flexShrink: 0,
+            textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {m.first_name}
+          </div>
+          <div style={{ flex: 1, background: 'var(--border)', borderRadius: 999, height: 8, overflow: 'hidden' }}>
+            <div style={{
+              width: `${(m.token_balance / max) * 100}%`,
+              minWidth: m.token_balance > 0 ? 8 : 0,
+              height: '100%',
+              background: 'var(--primary)',
+              borderRadius: 999,
+              transition: 'width 0.6s ease',
+            }} />
+          </div>
+          <div style={{ width: 36, fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', flexShrink: 0, textAlign: 'right' }}>
+            {m.token_balance}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ── Icons ── */
 function IconHeart({ filled }: { filled: boolean }) {
@@ -52,11 +113,12 @@ function VoucherCard({
 }) {
   const navigate = useNavigate();
   const imgSrc = resolveImageUrl(voucher.images?.[0]);
+  const catColor = getCategoryColor(getCategory(voucher));
 
   return (
     <div
       className="voucher-card-carousel"
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', backgroundColor: catColor.light }}
       onClick={() => navigate(`/catalogue/offre/${voucher.id}`)}
       role="button"
       tabIndex={0}
@@ -68,8 +130,11 @@ function VoucherCard({
         </div>
       ) : (
         <div className="voucher-card-image voucher-card-image--placeholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 28, height: 28, color: 'var(--text-muted)' }}>
-            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+            style={{ width: 28, height: 28, color: 'var(--text-muted)' }}>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
           </svg>
         </div>
       )}
@@ -149,34 +214,35 @@ function CarouselRow({
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const EMPTY_SCHED = { receiver_id: '', amount: '' as string | number, label: '', frequency: 'monthly' as 'monthly' | 'annual', day_of_month: '', month: 1 };
 
-/* ── Manager view ── */
+/* ════════════════════════════════════════════════════════════
+   MANAGER VIEW
+════════════════════════════════════════════════════════════ */
 function ManagerPourToi() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
-  const [team, setTeam]                   = useState<Team | null>(null);
-  const [orders, setOrders]               = useState<Redemption[]>([]);
-  const [schedRules, setSchedRules]       = useState<ScheduledAllocation[]>([]);
-  const [available, setAvailable]         = useState<User[]>([]);
-  const [loading, setLoading]             = useState(true);
+  const [team, setTeam]             = useState<Team | null>(null);
+  const [orders, setOrders]         = useState<Redemption[]>([]);
+  const [schedRules, setSchedRules] = useState<ScheduledAllocation[]>([]);
+  const [available, setAvailable]   = useState<User[]>([]);
+  const [loading, setLoading]       = useState(true);
 
-  /* Give tokens form */
-  const [receiverId, setReceiverId]       = useState('');
-  const [giveAmount, setGiveAmount]       = useState('');
-  const [giveReason, setGiveReason]       = useState('');
-  const [giving, setGiving]               = useState(false);
-  const [giveError, setGiveError]         = useState('');
-  const [giveSuccess, setGiveSuccess]     = useState('');
-  const [pendingGive, setPendingGive]     = useState<{ member: User; amount: number; reason: string } | null>(null);
+  /* Quick send per collaborator card */
+  const [quickMember, setQuickMember]   = useState<User | null>(null);
+  const [quickAmount, setQuickAmount]   = useState('');
+  const [quickReason, setQuickReason]   = useState('');
+  const [quickGiving, setQuickGiving]   = useState(false);
+  const [quickError, setQuickError]     = useState('');
+  const [quickSuccess, setQuickSuccess] = useState('');
 
   /* Add collaborator panel */
-  const [addMode, setAddMode]             = useState<'none'|'existing'|'create'>('none');
-  const [addingId, setAddingId]           = useState('');
-  const [addingLoad, setAddingLoad]       = useState(false);
-  const [addError, setAddError]           = useState('');
-  const [createForm, setCreateForm]       = useState({ first_name: '', name: '', email: '', password: '' });
-  const [createLoad, setCreateLoad]       = useState(false);
-  const [createError, setCreateError]     = useState('');
+  const [addMode, setAddMode]       = useState<'none'|'existing'|'create'>('none');
+  const [addingId, setAddingId]     = useState('');
+  const [addingLoad, setAddingLoad] = useState(false);
+  const [addError, setAddError]     = useState('');
+  const [createForm, setCreateForm] = useState({ first_name: '', name: '', email: '', password: '' });
+  const [createLoad, setCreateLoad] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   /* Scheduled allocation modal */
   const [showSchedModal, setShowSchedModal] = useState(false);
@@ -202,29 +268,20 @@ function ManagerPourToi() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  /* Token give */
-  function handleGiveSubmit(e: React.FormEvent) {
+  /* Quick send */
+  async function handleQuickSend(e: React.FormEvent) {
     e.preventDefault();
-    setGiveError(''); setGiveSuccess('');
-    const member = members.find((m) => m.id === receiverId);
-    if (!member) return;
-    setPendingGive({ member, amount: Number(giveAmount), reason: giveReason });
-  }
-
-  async function handleGiveConfirm() {
-    if (!pendingGive) return;
-    setGiving(true);
+    if (!quickMember) return;
+    setQuickGiving(true); setQuickError('');
     try {
-      await managerService.giveTokens(pendingGive.member.id, pendingGive.amount, pendingGive.reason || undefined);
-      setGiveSuccess(`${pendingGive.amount} tokens envoyés à ${pendingGive.member.first_name}.`);
-      setReceiverId(''); setGiveAmount(''); setGiveReason('');
-      setPendingGive(null);
-      refreshUser();
-      fetchAll();
+      await managerService.giveTokens(quickMember.id, parseInt(quickAmount) || 0, quickReason || undefined);
+      setQuickSuccess(`${quickAmount} tokens envoyés à ${quickMember.first_name} !`);
+      setQuickAmount(''); setQuickReason('');
+      refreshUser(); fetchAll();
+      setTimeout(() => { setQuickMember(null); setQuickSuccess(''); }, 1800);
     } catch (err: any) {
-      setGiveError(err?.response?.data?.error ?? 'Erreur lors du don.');
-      setPendingGive(null);
-    } finally { setGiving(false); }
+      setQuickError(err?.response?.data?.error ?? "Erreur lors de l'envoi.");
+    } finally { setQuickGiving(false); }
   }
 
   /* Add existing collaborator */
@@ -237,7 +294,7 @@ function ManagerPourToi() {
       setAddingId(''); setAddMode('none');
       await fetchAll();
     } catch (err: any) {
-      setAddError(err?.response?.data?.error ?? 'Erreur lors de l\'ajout.');
+      setAddError(err?.response?.data?.error ?? "Erreur lors de l'ajout.");
     } finally { setAddingLoad(false); }
   }
 
@@ -255,7 +312,7 @@ function ManagerPourToi() {
     } finally { setCreateLoad(false); }
   }
 
-  /* Scheduled */
+  /* Scheduled allocations */
   async function handleSubmitSched(e: React.FormEvent) {
     e.preventDefault();
     setSchedError(''); setSchedLoading(true);
@@ -272,7 +329,7 @@ function ManagerPourToi() {
       setShowSchedModal(false);
       setSchedForm(EMPTY_SCHED);
     } catch (err: any) {
-      setSchedError(err?.response?.data?.error ?? "Erreur lors de la création.");
+      setSchedError(err?.response?.data?.error ?? 'Erreur lors de la création.');
     } finally { setSchedLoading(false); }
   }
 
@@ -294,187 +351,171 @@ function ManagerPourToi() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
-        <h1>Mon espace manager</h1>
-      </div>
-
-      {/* Solde */}
-      <div className="grid-3" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
-          <p className="stat-label">Mon solde tokens</p>
-          <p className="stat-value">{user?.token_balance ?? 0}</p>
-          <p className="stat-sub">à distribuer à mon équipe</p>
+      {/* ══ Dark hero ══ */}
+      <div className="manager-hero">
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
+          </span>
         </div>
-        <div className="stat-card">
-          <p className="stat-label">Mon équipe</p>
-          <p className="stat-value">{members.length}</p>
-          <p className="stat-sub">membre{members.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Attributions auto</p>
-          <p className="stat-value">{schedRules.filter((r) => r.active).length}</p>
-          <p className="stat-sub">règle{schedRules.filter((r) => r.active).length !== 1 ? 's' : ''} active{schedRules.filter((r) => r.active).length !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
 
-      <div className="grid-2">
-        {/* Don de tokens */}
-        <div className="card">
-          <h2 style={{ marginBottom: 20, fontSize: '1rem', fontWeight: 600 }}>Donner des tokens</h2>
+        {/* Two-column: left = avatar placeholder, right = coin + stock */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Left — avatar area (client will provide asset) */}
+          <div style={{ flex: 1 }} />
 
-          {pendingGive ? (
-            <div>
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '16px 20px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Destinataire</span>
-                  <span style={{ fontWeight: 700 }}>{pendingGive.member.first_name} {pendingGive.member.name}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Montant</span>
-                  <span className="token-badge" style={{ fontSize: '1rem' }}>{pendingGive.amount}</span>
-                </div>
-                {pendingGive.reason && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>Motif</span>
-                    <span style={{ fontSize: '0.85rem', textAlign: 'right' }}>{pendingGive.reason}</span>
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setPendingGive(null)} disabled={giving}>Annuler</button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleGiveConfirm} disabled={giving}>{giving ? 'Envoi…' : 'Confirmer'}</button>
-              </div>
+          {/* Right — coin + token count window */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, transform: 'translateY(55px)' }}>
+            {team?.name && (
+              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 4, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                {team.name}
+              </span>
+            )}
+            {/* Token Image from client/public/icons */}
+            <img 
+              src="/icons/token-logo-SF.png" 
+              alt="Token" 
+              style={{ width: '140px', height: '140px', objectFit: 'contain', filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.4))', zIndex: 2, marginBottom: '-20px' }} 
+            />
+            <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 24px 10px 24px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '180px' }}>
+              <p style={{ color: '#ffffff', fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
+                {user?.token_balance ?? 0}
+              </p>
+              <p style={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
+                Tokens stock
+              </p>
             </div>
-          ) : (
-            <form onSubmit={handleGiveSubmit}>
-              <div className="form-group">
-                <label className="form-label">Membre de l'équipe</label>
-                <select className="form-select" value={receiverId} onChange={(e) => setReceiverId(e.target.value)} required>
-                  <option value="">Sélectionner un membre…</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.first_name} {m.name} — {m.token_balance} tokens</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Montant</label>
-                <input className="form-input" type="number" min={1} value={giveAmount} onChange={(e) => setGiveAmount(e.target.value)} placeholder="ex. 20" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Motif (facultatif)</label>
-                <input className="form-input" type="text" value={giveReason} onChange={(e) => setGiveReason(e.target.value)} placeholder="ex. Excellent accueil client" />
-              </div>
-              {giveError && <p className="form-error">{giveError}</p>}
-              {giveSuccess && <p className="form-success">{giveSuccess}</p>}
-              <button type="submit" className="btn btn-primary btn-full" disabled={giving}>Donner</button>
-            </form>
-          )}
+          </div>
+        </div>
+      </div>
+
+      {/* ══ Mes collaborateurs ══ */}
+      <div style={{ marginBottom: 28, marginTop: 55 }}>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Mes collaborateurs</h2>
         </div>
 
-        {/* Liste des membres */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
-              Mon équipe
-            </h2>
-            <button className="btn btn-primary btn-sm" onClick={() => { setAddMode(addMode === 'none' ? 'existing' : 'none'); setAddError(''); setCreateError(''); }}>
-              + Ajouter
+        {/* List of collaborators */}
+        {members.length === 0 ? (
+          <p className="empty-state" style={{ marginBottom: 24 }}>Aucun collaborateur dans votre équipe.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+            {members.map((m) => (
+              <div
+                key={m.id}
+                className="manager-collab-row"
+                onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.88rem', fontWeight: 700, marginRight: 12 }}>
+                    {(m.first_name[0] ?? '').toUpperCase()}{(m.name[0] ?? '').toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#666' }}>Collaborateur</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{m.token_balance} tkn</span>
+                  <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>+ Envoyer</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Panel (Window below collaborators) */}
+        <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 16 }}>Ajouter à l'équipe</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button type="button"
+              onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
+              className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+              Depuis la liste
+            </button>
+            <button type="button"
+              onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
+              className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
+              Créer un profil
             </button>
           </div>
 
-          {addMode !== 'none' && (
-            <div style={{ marginBottom: 16, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-              {/* Toggle */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <button type="button" onClick={() => { setAddMode('existing'); setAddError(''); setCreateError(''); }}
-                  className={addMode === 'existing' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                  Depuis la liste
-                </button>
-                <button type="button" onClick={() => { setAddMode('create'); setAddError(''); setCreateError(''); }}
-                  className={addMode === 'create' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}>
-                  Créer un collaborateur
-                </button>
-              </div>
-
-              {addMode === 'existing' && (
-                <form onSubmit={handleAddExisting}>
-                  {available.length === 0 ? (
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Aucun collaborateur disponible sans équipe.</p>
-                  ) : (
-                    <>
-                      <select className="form-select" value={addingId} onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 10 }}>
-                        <option value="">Sélectionner un collaborateur…</option>
-                        {available.map((u) => (
-                          <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
-                        ))}
-                      </select>
-                      {addError && <p className="form-error">{addError}</p>}
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
-                        {addingLoad ? 'Ajout…' : 'Ajouter à l\'équipe'}
-                      </button>
-                    </>
-                  )}
-                </form>
-              )}
-
-              {addMode === 'create' && (
-                <form onSubmit={handleCreateCollaborator}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                    <input className="form-input" type="text" placeholder="Prénom" value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
-                    <input className="form-input" type="text" placeholder="Nom" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
-                  </div>
-                  <input className="form-input" type="email" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} required style={{ marginBottom: 10 }} />
-                  <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} required style={{ marginBottom: 10 }} />
-                  {createError && <p className="form-error">{createError}</p>}
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
-                    {createLoad ? 'Création…' : 'Créer et ajouter à l\'équipe'}
+          {addMode === 'existing' && (
+            <form onSubmit={handleAddExisting}>
+              {available.length === 0 ? (
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Aucun collaborateur disponible sans équipe.
+                </p>
+              ) : (
+                <>
+                  <select className="form-select" value={addingId}
+                    onChange={(e) => setAddingId(e.target.value)} required style={{ marginBottom: 12 }}>
+                    <option value="">Sélectionner un collaborateur…</option>
+                    {available.map((u) => (
+                      <option key={u.id} value={u.id}>{u.first_name} {u.name} — {u.email}</option>
+                    ))}
+                  </select>
+                  {addError && <p className="form-error">{addError}</p>}
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={addingLoad || !addingId}>
+                    {addingLoad ? 'Ajout…' : "Ajouter à l'équipe"}
                   </button>
-                </form>
+                </>
               )}
-            </div>
+            </form>
           )}
 
-          {members.length === 0 ? (
-            <p className="empty-state">Aucun collaborateur dans votre équipe.</p>
-          ) : (
-            <div className="table-wrap" style={{ maxHeight: 280, overflowY: 'auto' }}>
-              <table className="table" style={{ minWidth: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Prénom & Nom</th>
-                    <th>Date d'entrée</th>
-                    <th style={{ textAlign: 'right' }}>Tokens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((m) => (
-                    <tr
-                      key={m.id}
-                      onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td style={{ fontWeight: 500 }}>{m.first_name} {m.name}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                        {m.entry_date ? fmtShort(m.entry_date) : <span style={{ fontStyle: 'italic' }}>Non renseignée</span>}
-                      </td>
-                      <td style={{ textAlign: 'right' }}><span className="token-badge">{m.token_balance}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {addMode === 'create' && (
+            <form onSubmit={handleCreateCollaborator}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <input className="form-input" type="text" placeholder="Prénom"
+                  value={createForm.first_name}
+                  onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} required />
+                <input className="form-input" type="text" placeholder="Nom"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} required />
+              </div>
+              <input className="form-input" type="email" placeholder="Email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                required style={{ marginBottom: 12 }} />
+              <input className="form-input" type="password" placeholder="Mot de passe (min. 8 car.)"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                required style={{ marginBottom: 12 }} />
+              {createError && <p className="form-error">{createError}</p>}
+              <button type="submit" className="btn btn-primary btn-sm" disabled={createLoad}>
+                {createLoad ? 'Création…' : "Créer et ajouter à l'équipe"}
+              </button>
+            </form>
           )}
         </div>
       </div>
 
-      {/* Attributions automatiques */}
-      <div className="card" style={{ marginTop: 24 }}>
+      {/* ══ Distribution chart ══ */}
+      {members.length > 1 && (
+        <div className="card" style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 16 }}>Distribution tokens</h2>
+          <TeamBarChart members={members} />
+        </div>
+      )}
+
+      {/* ══ Attributions automatiques ══ */}
+      <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: schedRules.length > 0 ? 16 : 0 }}>
           <div>
             <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>Attributions automatiques</p>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>Tokens attribués automatiquement à un membre à date récurrente.</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Tokens attribués automatiquement à un membre à date récurrente.
+            </p>
           </div>
-          <button className="btn btn-primary btn-sm" style={{ flexShrink: 0, marginLeft: 12 }} onClick={() => { setSchedForm(EMPTY_SCHED); setSchedError(''); setShowSchedModal(true); }}>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ flexShrink: 0, marginLeft: 12 }}
+            onClick={() => { setSchedForm(EMPTY_SCHED); setSchedError(''); setShowSchedModal(true); }}
+          >
             + Créer
           </button>
         </div>
@@ -496,8 +537,11 @@ function ManagerPourToi() {
                       {when} — {r.label || 'sans motif'} · Prochaine : {fmtShort(r.next_run_at)}
                     </p>
                   </div>
-                  <button role="switch" aria-checked={r.active} onClick={() => handleToggleSched(r.id)} className={`param-toggle ${r.active ? 'param-toggle--on' : ''}`} style={{ flexShrink: 0 }} />
-                  <button onClick={() => handleDeleteSched(r.id)} style={{ color: 'var(--danger)', fontSize: '1.1rem', padding: '0 4px', flexShrink: 0 }} aria-label="Supprimer">×</button>
+                  <button role="switch" aria-checked={r.active} onClick={() => handleToggleSched(r.id)}
+                    className={`param-toggle ${r.active ? 'param-toggle--on' : ''}`} style={{ flexShrink: 0 }} />
+                  <button onClick={() => handleDeleteSched(r.id)}
+                    style={{ color: 'var(--danger)', fontSize: '1.1rem', padding: '0 4px', flexShrink: 0 }}
+                    aria-label="Supprimer">×</button>
                 </div>
               );
             })}
@@ -505,8 +549,8 @@ function ManagerPourToi() {
         )}
       </div>
 
-      {/* Bons d'achat utilisés */}
-      <div style={{ marginTop: 28 }}>
+      {/* ══ Bons d'achat utilisés ══ */}
+      <div style={{ marginBottom: 28 }}>
         <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
         {orders.length === 0 ? (
           <div className="card"><p className="empty-state">Tu n'as pas encore racheté de bon.</p></div>
@@ -526,7 +570,61 @@ function ManagerPourToi() {
         )}
       </div>
 
-      {/* Modal création attribution automatique */}
+      {/* ══ Quick send modal ══ */}
+      {quickMember && (
+        <div className="emp-modal-overlay" onClick={() => { setQuickMember(null); setQuickError(''); setQuickSuccess(''); }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'var(--primary-light)', color: 'var(--primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem', fontWeight: 700, flexShrink: 0,
+              }}>
+                {(quickMember.first_name[0] ?? '').toUpperCase()}{(quickMember.name[0] ?? '').toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{quickMember.first_name} {quickMember.name}</p>
+                <span className="token-badge" style={{ fontSize: '0.72rem' }}>{quickMember.token_balance} tkn actuels</span>
+              </div>
+            </div>
+
+            {quickSuccess ? (
+              <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
+                <p style={{ fontSize: '1.5rem', marginBottom: 8 }}>🎉</p>
+                <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.95rem' }}>{quickSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleQuickSend}>
+                <div className="form-group">
+                  <label className="form-label">Montant de tokens</label>
+                  <input className="form-input" type="number" min={1} value={quickAmount}
+                    onChange={(e) => setQuickAmount(e.target.value)}
+                    placeholder="ex. 20" required autoFocus />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Motif (facultatif)</label>
+                  <input className="form-input" type="text" value={quickReason}
+                    onChange={(e) => setQuickReason(e.target.value)}
+                    placeholder="ex. Excellent accueil client" />
+                </div>
+                {quickError && <p className="form-error">{quickError}</p>}
+                <div className="emp-modal-actions">
+                  <button type="button" className="btn btn-outline"
+                    onClick={() => { setQuickMember(null); setQuickError(''); }} disabled={quickGiving}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={quickGiving || !quickAmount}>
+                    {quickGiving ? 'Envoi…' : 'Envoyer'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ Scheduled allocation modal ══ */}
       {showSchedModal && (
         <div className="emp-modal-overlay" onClick={() => setShowSchedModal(false)}>
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
@@ -534,7 +632,8 @@ function ManagerPourToi() {
             <form onSubmit={handleSubmitSched} noValidate>
               <div className="form-group">
                 <label className="form-label">Membre de l'équipe</label>
-                <select className="form-select" value={schedForm.receiver_id} onChange={(e) => setSchedForm({ ...schedForm, receiver_id: e.target.value })} required>
+                <select className="form-select" value={schedForm.receiver_id}
+                  onChange={(e) => setSchedForm({ ...schedForm, receiver_id: e.target.value })} required>
                   <option value="">Sélectionner un membre…</option>
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>{m.first_name} {m.name}</option>
@@ -544,12 +643,15 @@ function ManagerPourToi() {
               <div className="emp-modal-row">
                 <div className="form-group">
                   <label className="form-label">Tokens</label>
-                  <input className="form-input" type="text" inputMode="numeric" placeholder="Ex : 10" value={schedForm.amount}
-                    onChange={(e) => setSchedForm({ ...schedForm, amount: e.target.value.replace(/[^0-9]/g, '') })} required />
+                  <input className="form-input" type="text" inputMode="numeric" placeholder="Ex : 10"
+                    value={schedForm.amount}
+                    onChange={(e) => setSchedForm({ ...schedForm, amount: e.target.value.replace(/[^0-9]/g, '') })}
+                    required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Fréquence</label>
-                  <select className="form-select" value={schedForm.frequency} onChange={(e) => setSchedForm({ ...schedForm, frequency: e.target.value as 'monthly' | 'annual' })}>
+                  <select className="form-select" value={schedForm.frequency}
+                    onChange={(e) => setSchedForm({ ...schedForm, frequency: e.target.value as 'monthly' | 'annual' })}>
                     <option value="monthly">Mensuelle</option>
                     <option value="annual">Annuelle</option>
                   </select>
@@ -558,13 +660,19 @@ function ManagerPourToi() {
               <div className="emp-modal-row">
                 <div className="form-group">
                   <label className="form-label">Jour du mois</label>
-                  <input className="form-input" type="text" inputMode="numeric" placeholder="Ex : 1" value={schedForm.day_of_month}
-                    onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v === '' || (parseInt(v) >= 1 && parseInt(v) <= 28)) setSchedForm({ ...schedForm, day_of_month: v }); }} required />
+                  <input className="form-input" type="text" inputMode="numeric" placeholder="Ex : 1"
+                    value={schedForm.day_of_month}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^0-9]/g, '');
+                      if (v === '' || (parseInt(v) >= 1 && parseInt(v) <= 28))
+                        setSchedForm({ ...schedForm, day_of_month: v });
+                    }} required />
                 </div>
                 {schedForm.frequency === 'annual' && (
                   <div className="form-group">
                     <label className="form-label">Mois</label>
-                    <select className="form-select" value={schedForm.month} onChange={(e) => setSchedForm({ ...schedForm, month: parseInt(e.target.value) })}>
+                    <select className="form-select" value={schedForm.month}
+                      onChange={(e) => setSchedForm({ ...schedForm, month: parseInt(e.target.value) })}>
                       {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                     </select>
                   </div>
@@ -572,16 +680,23 @@ function ManagerPourToi() {
               </div>
               <div className="form-group">
                 <label className="form-label">Motif (optionnel)</label>
-                <input className="form-input" type="text" placeholder="Ex : Prime mensuelle…" value={schedForm.label} onChange={(e) => setSchedForm({ ...schedForm, label: e.target.value })} />
+                <input className="form-input" type="text" placeholder="Ex : Prime mensuelle…"
+                  value={schedForm.label}
+                  onChange={(e) => setSchedForm({ ...schedForm, label: e.target.value })} />
               </div>
               {schedError && <p className="form-error">{schedError}</p>}
               <div className="emp-modal-actions">
-                <button type="button" style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}
-                  onClick={() => setShowSchedModal(false)} disabled={schedLoading}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}><polyline points="15 18 9 12 15 6" /></svg>
+                <button type="button" onClick={() => setShowSchedModal(false)} disabled={schedLoading}
+                  style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
                   Retour
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={schedLoading}>{schedLoading ? 'Enregistrement…' : 'Créer'}</button>
+                <button type="submit" className="btn btn-primary" disabled={schedLoading}>
+                  {schedLoading ? 'Enregistrement…' : 'Créer'}
+                </button>
               </div>
             </form>
           </div>
@@ -591,29 +706,37 @@ function ManagerPourToi() {
   );
 }
 
-/* ── Page ── */
+/* ════════════════════════════════════════════════════════════
+   PAGE SWITCH
+════════════════════════════════════════════════════════════ */
 export default function PourToi() {
   const { user } = useAuth();
   if (user?.role === 'manager') return <ManagerPourToi />;
   return <EmployeePourToi />;
 }
 
+/* ════════════════════════════════════════════════════════════
+   EMPLOYEE VIEW
+════════════════════════════════════════════════════════════ */
 function EmployeePourToi() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
-  const [vouchers, setVouchers]     = useState<Voucher[]>([]);
-  const [orders, setOrders]         = useState<Redemption[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [redeeming, setRedeeming]   = useState<string | null>(null);
-  const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
-  const { isFavorite, toggle } = useFavorites();
+  const [vouchers, setVouchers]         = useState<Voucher[]>([]);
+  const [orders, setOrders]             = useState<Redemption[]>([]);
+  const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [redeeming, setRedeeming]       = useState<string | null>(null);
+  const [promoCodes, setPromoCodes]     = useState<Record<string, string>>({});
+  const { isFavorite, toggle }          = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
       marketplaceService.getItems().then(setVouchers).catch(() => {}),
       marketplaceService.getOrders().then(setOrders).catch(() => {}),
+      userService.getHistory(user.id).then(setTransactions).catch(() => {}),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   async function handleRedeem(voucher: Voucher) {
     setRedeeming(voucher.id);
@@ -637,9 +760,13 @@ function EmployeePourToi() {
 
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
+  /* Last 6 received transactions */
+  const recentReceived = transactions
+    .filter((tx) => tx.receiver_id === user?.id)
+    .slice(0, 6);
+
   const available = vouchers.filter((v) => v.available);
 
-  /* Offres du moment : plus favorisées d'abord, puis plus récentes */
   const populaires = [...available]
     .sort((a, b) =>
       (b.favorite_count ?? 0) - (a.favorite_count ?? 0) ||
@@ -647,7 +774,6 @@ function EmployeePourToi() {
     )
     .slice(0, 8);
 
-  /* Favoris : featured admin d'abord, puis les plus aimés pour compléter jusqu'à 50 */
   const featured = available.filter((v) => v.is_featured);
   const featuredIds = new Set(featured.map((v) => v.id));
   const heartedFill = available
@@ -655,7 +781,6 @@ function EmployeePourToi() {
     .sort((a, b) => (b.favorite_count ?? 0) - (a.favorite_count ?? 0));
   const topFavoris = [...featured, ...heartedFill].slice(0, 50);
 
-  /* Offres de la semaine : marquées is_weekly par l'admin, ou ajoutées il y a moins de 7 jours */
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const weeklyPinned = available.filter((v) => v.is_weekly);
@@ -666,58 +791,90 @@ function EmployeePourToi() {
     ...recentFill.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
   ];
 
-  const fmt = fmtShort;
-
   return (
     <div>
-      <div className="page-header page-header--centered">
-        <h1>Tes offres et tes bons d'achat</h1>
+      {/* ══ Teal hero ══ */}
+      <div className="pour-toi-hero">
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
+          </span>
+        </div>
+
+        {/* Two-column: left = avatar placeholder, right = coin + stock */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Left — avatar area (client will provide asset) */}
+          <div style={{ flex: 1 }} />
+
+          {/* Right — coin + token count window */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, transform: 'translateY(55px)' }}>
+            <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 4, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              Bonjour, {user?.first_name} !
+            </span>
+            {/* Token Image from client/public/icons */}
+            <img 
+              src="/icons/token-logo-SF.png" 
+              alt="Token" 
+              style={{ width: '140px', height: '140px', objectFit: 'contain', filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.4))', zIndex: 2, marginBottom: '-20px' }} 
+            />
+            <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 24px 10px 24px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '180px' }}>
+              <p style={{ color: '#ffffff', fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
+                {balance}
+              </p>
+              <p style={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
+                Tokens stock
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Carousel offres du moment */}
-      <CarouselRow
-        title="Offres du moment"
-        vouchers={populaires}
-        onRedeem={handleRedeem}
-        redeeming={redeeming}
-        promoCodes={promoCodes}
-        userBalance={balance}
-        isFavorite={isFavorite}
-        onToggle={toggle}
-        isInCart={isInCart}
-        onCartToggle={cartToggle}
-      />
+      {/* ══ Feedback instantané ══ */}
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 16 }}>Feedback instantané</h2>
+        {recentReceived.length === 0 ? (
+          <div className="card" style={{ padding: '20px', textAlign: 'center' }}>
+            <p className="empty-state">Vous n'avez pas encore reçu de tokens récemment.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {recentReceived.map((tx) => {
+              const senderName = tx.sender
+                ? `${tx.sender.first_name} ${tx.sender.name}`
+                : "prim'O";
+              return (
+                <div key={tx.id} style={{
+                  background: '#ffffff', borderRadius: '16px', padding: '16px 20px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 16
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(26, 122, 26, 0.1)', color: 'var(--primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 24, height: 24 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>
+                      Vous avez gagné {tx.amount} Tokens !
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                      Envoyé par {senderName} {tx.reason ? ` - "${tx.reason}"` : ''}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      {/* Favoris globaux */}
-      <CarouselRow
-        title="❤️ Favoris"
-        vouchers={topFavoris}
-        onRedeem={handleRedeem}
-        redeeming={redeeming}
-        promoCodes={promoCodes}
-        userBalance={balance}
-        isFavorite={isFavorite}
-        onToggle={toggle}
-        isInCart={isInCart}
-        onCartToggle={cartToggle}
-      />
-
-      {/* Offres de la semaine */}
-      <CarouselRow
-        title="🆕 Les offres de la semaine"
-        vouchers={newThisWeek}
-        onRedeem={handleRedeem}
-        redeeming={redeeming}
-        promoCodes={promoCodes}
-        userBalance={balance}
-        isFavorite={isFavorite}
-        onToggle={toggle}
-        isInCart={isInCart}
-        onCartToggle={cartToggle}
-      />
-
-      {/* Bons déjà achetés */}
-      <div style={{ marginTop: 28 }}>
+      {/* ══ Bons déjà achetés ══ */}
+      <div style={{ marginBottom: 28 }}>
         <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
         {orders.length === 0 ? (
           <div className="card">
@@ -728,19 +885,11 @@ function EmployeePourToi() {
             {orders.map((order) => (
               <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>
-                    {order.voucher?.partner ?? '—'}
-                  </p>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    {order.voucher?.title ?? '—'}
-                  </p>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                    {fmt(order.redeemed_at)}
-                  </p>
+                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.redeemed_at)}</p>
                 </div>
-                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>
-                  {order.promo_code}
-                </span>
+                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
               </div>
             ))}
           </div>

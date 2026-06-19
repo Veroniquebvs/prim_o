@@ -13,6 +13,7 @@ export default function Panier() {
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, { code: string; redeemed_at: string }>>({});
   const [error, setError] = useState('');
+  const isManager = user?.role === 'manager' || user?.role === 'employer' || user?.role === 'employee';
 
   useEffect(() => {
     marketplaceService.getItems().then(setAllVouchers).finally(() => setLoading(false));
@@ -62,7 +63,7 @@ export default function Panier() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
+      <div className={`page-header page-header--centered ${isManager ? 'page-header--manager' : ''}`}>
         <h1>Vos bons d'achat sauvegardés</h1>
       </div>
 
@@ -149,11 +150,12 @@ export default function Panier() {
         );
         return (
           <button
-            className="btn btn-primary btn-full panier-desktop-hidden"
+            className="btn btn-primary btn-full"
             style={{
               marginTop: 16,
               opacity: canBuy ? 1 : 0.45,
               cursor: canBuy ? 'pointer' : 'not-allowed',
+              borderRadius: '999px',
             }}
             disabled={!canBuy}
             onClick={handleRedeemAll}

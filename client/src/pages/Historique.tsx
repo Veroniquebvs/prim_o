@@ -13,6 +13,7 @@ type Tab = 'tokens' | 'achats' | 'equipe';
 
 export default function Historique() {
   const { user, company } = useAuth();
+  const isManager = user?.role === 'manager' || user?.role === 'employee' || user?.role === 'employer';
   const [tab, setTab] = useState<Tab>('tokens');
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -211,7 +212,7 @@ export default function Historique() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
+      <div className={`page-header page-header--centered ${isManager ? 'page-header--manager' : ''}`}>
         <h1>Suivi de vos tokens et de vos échanges</h1>
       </div>
 

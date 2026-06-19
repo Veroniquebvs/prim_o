@@ -12,7 +12,7 @@ router.get('/items', verifyToken, marketplaceController.listItems);
 router.get(
   '/items/:id',
   verifyToken,
-  roleGuard('employee', 'admin', 'employer'),
+  roleGuard('employee', 'admin', 'employer', 'manager'),
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   marketplaceController.getItem
 );
@@ -59,7 +59,7 @@ router.delete(
 router.post(
   '/redeem',
   verifyToken,
-  roleGuard('employee'),
+  roleGuard('employee', 'manager', 'employer'),
   [body('voucher_id').isUUID().withMessage('voucher_id must be a valid UUID'), validate],
   marketplaceController.redeem
 );

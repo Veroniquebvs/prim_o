@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -7,31 +7,7 @@ import { useCart } from '../../hooks/useCart';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import { VOUCHER_CATEGORIES } from '../../types';
 import type { Voucher } from '../../types';
-
-const CAROUSEL_MAX = 20;
-
-function getCategory(v: Voucher): string {
-  return v.category
-    ? v.category.charAt(0).toUpperCase() + v.category.slice(1)
-    : 'Autres';
-}
-
-/* Sélectionne jusqu'à `max` offres : d'abord les plus aimées, puis les plus récentes */
-function pickCarouselItems(items: Voucher[], max = CAROUSEL_MAX): Voucher[] {
-  const withHearts = items
-    .filter((v) => (v.favorite_count ?? 0) > 0)
-    .sort((a, b) => (b.favorite_count ?? 0) - (a.favorite_count ?? 0));
-
-  if (withHearts.length >= max) return withHearts.slice(0, max);
-
-  const usedIds = new Set(withHearts.map((v) => v.id));
-  const recentFill = items
-    .filter((v) => !usedIds.has(v.id))
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, max - withHearts.length);
-
-  return [...withHearts, ...recentFill];
-}
+import { getCategory, getCategoryColor } from '../../utils/category';
 
 /* ── Icons ── */
 function IconHeart({ filled }: { filled: boolean }) {
@@ -40,22 +16,6 @@ function IconHeart({ filled }: { filled: boolean }) {
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       style={{ width: 16, height: 16 }}>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
-}
-function IconChevronRight() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-function IconChevronLeft() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-      <polyline points="15 18 9 12 15 6" />
     </svg>
   );
 }
@@ -83,10 +43,12 @@ function VoucherCard({
     else navigate(`/catalogue/offre/${voucher.id}`);
   }
 
+  const catColor = getCategoryColor(getCategory(voucher));
+
   return (
     <div
       className="voucher-card-carousel"
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', backgroundColor: catColor.light }}
       onClick={openDetail}
       role="button"
       tabIndex={0}
@@ -135,83 +97,14 @@ function VoucherCard({
   );
 }
 
-/* ── Carousel row ── */
-function CarouselRow({
-  title, vouchers, onRedeem, redeeming, promoCodes, userBalance, isFavorite, onToggle, categorySlug, isInCart, onCartToggle, onEdit,
-}: {
-  title: string;
-  vouchers: Voucher[];
-  onRedeem: (v: Voucher) => void;
-  redeeming: string | null;
-  promoCodes: Record<string, string>;
-  userBalance: number;
-  isFavorite: (id: string) => boolean;
-  onToggle: (id: string) => void;
-  categorySlug?: string;
-  isInCart: (id: string) => boolean;
-  onCartToggle: (id: string) => void;
-  onEdit?: (id: string) => void;
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
-  function scroll(dir: 'left' | 'right') {
-    scrollRef.current?.scrollBy({ left: dir === 'right' ? 220 : -220, behavior: 'smooth' });
-  }
-
-  if (vouchers.length === 0) return null;
-
-  return (
-    <div className="carousel-section">
-      <div className="carousel-header">
-        <h2 className="carousel-title">{title}</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {categorySlug && (
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => navigate(`/catalogue/categorie/${encodeURIComponent(categorySlug)}`)}
-              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-            >
-              Plus d'offres
-            </button>
-          )}
-          <div className="carousel-controls">
-            <button className="carousel-btn" onClick={() => scroll('left')} aria-label="Précédent">
-              <IconChevronLeft />
-            </button>
-            <button className="carousel-btn" onClick={() => scroll('right')} aria-label="Suivant">
-              <IconChevronRight />
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="carousel-track" ref={scrollRef}>
-        {vouchers.map((v) => (
-          <VoucherCard
-            key={v.id}
-            voucher={v}
-            onRedeem={onRedeem}
-            redeeming={redeeming === v.id}
-            promoCode={promoCodes[v.id]}
-            canAfford={userBalance >= v.token_cost}
-            saved={isFavorite(v.id)}
-            onToggle={onToggle}
-            inCart={isInCart(v.id)}
-            onCartToggle={onCartToggle}
-            onEdit={onEdit}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ── Page ── */
 export default function Catalogue() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
+  const isManager = user?.role === 'manager' || user?.role === 'employee' || user?.role === 'employer';
   const handleEdit = isAdmin ? (id: string) => navigate(`/admin/bons/${id}`) : undefined;
+  
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -220,9 +113,12 @@ export default function Catalogue() {
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  
   const { isFavorite, toggle } = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     marketplaceService.getItems().then(setVouchers).finally(() => setLoading(false));
@@ -238,6 +134,29 @@ export default function Catalogue() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  /* Réinitialise la page lors d'un changement de filtre */
+  useEffect(() => {
+    setPage(1);
+    if (carouselRef.current) {
+      carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  }, [search, activeCategory]);
+
+  const handleScroll = () => {
+    if (!carouselRef.current) return;
+    const scrollLeft = carouselRef.current.scrollLeft;
+    const width = carouselRef.current.clientWidth;
+    // Ajoute une petite tolérance pour éviter les sauts au début
+    const newPage = Math.round(scrollLeft / width) + 1;
+    if (newPage !== page) setPage(newPage);
+  };
+
+  const scrollToPage = (p: number) => {
+    if (!carouselRef.current) return;
+    const width = carouselRef.current.clientWidth;
+    carouselRef.current.scrollTo({ left: (p - 1) * width, behavior: 'smooth' });
+  };
 
   const applySuggestion = useCallback((partner: string) => {
     setSearch(partner);
@@ -296,23 +215,36 @@ export default function Catalogue() {
     return matchSearch && matchCat;
   });
 
-  /* "Populaires" : 20 offres max, sélectionnées par cœurs puis récence */
-  const populaires = pickCarouselItems(
-    vouchers.filter((v) => v.available),
-    CAROUSEL_MAX
-  );
+  /* "Populaires" : toutes les offres triées par popularité puis récence */
+  const populaires = [...vouchers]
+    .filter((v) => v.available)
+    .sort((a, b) => {
+      const heartsA = a.favorite_count ?? 0;
+      const heartsB = b.favorite_count ?? 0;
+      if (heartsB !== heartsA) return heartsB - heartsA;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   const showSearch = !!search || !!activeCategory;
+  const itemsToDisplay = showSearch ? filtered : populaires;
+
+  const PAGE_SIZE = 15;
+  const totalPages = Math.ceil(itemsToDisplay.length / PAGE_SIZE) || 1;
+  const pages = [];
+  for (let i = 0; i < totalPages; i++) {
+    pages.push(itemsToDisplay.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
+  }
 
   return (
     <div>
-      <div className="page-header page-header--centered">
+      <div className={`page-header page-header--centered ${isManager ? 'page-header--manager' : ''}`}>
         <h1>Échangez vos tokens contre des bons d'achat</h1>
       </div>
 
       <div ref={searchWrapperRef} style={{ marginBottom: 14, position: 'relative' }}>
         <input
           className="form-input"
+          style={{ borderRadius: '999px', paddingLeft: '20px' }}
           type="search"
           placeholder="Rechercher un bon ou un partenaire…"
           value={search}
@@ -321,37 +253,51 @@ export default function Catalogue() {
           onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
           autoComplete="off"
         />
-        {showSuggestions && partnerSuggestions.length > 0 && (
+        {showSearch && showSuggestions && search.trim().length > 0 && (
           <ul className="search-suggestions">
-            {partnerSuggestions.map((partner) => (
-              <li
-                key={partner}
-                className="search-suggestion-item"
-                onMouseDown={(e) => { e.preventDefault(); applySuggestion(partner); }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  style={{ width: 14, height: 14, flexShrink: 0, color: 'var(--text-muted)' }}>
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                {partner}
+            {partnerSuggestions.length > 0 ? (
+              partnerSuggestions.map((partner) => (
+                <li
+                  key={partner}
+                  className="search-suggestion-item"
+                  onMouseDown={(e) => { e.preventDefault(); applySuggestion(partner); }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    style={{ width: 14, height: 14, flexShrink: 0, color: 'var(--text-muted)' }}>
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  {partner}
+                </li>
+              ))
+            ) : (
+              <li className="search-suggestion-item" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
+                Aucun partenaire trouvé
               </li>
-            ))}
+            )}
           </ul>
         )}
       </div>
 
       <div className="category-chips">
         <button
-          className={`category-chip ${!activeCategory ? 'category-chip--active' : ''}`}
+          style={{
+            '--cat-light': getCategoryColor('Tous').light,
+            '--cat-dark': getCategoryColor('Tous').dark,
+          } as React.CSSProperties}
+          className={`category-chip-colored ${!activeCategory ? 'active' : ''}`}
           onClick={() => setActiveCategory(null)}
         >
-          Tous
+          Populaires
         </button>
         {orderedCategories.map((cat) => (
           <button
             key={cat}
-            className={`category-chip ${activeCategory === cat ? 'category-chip--active' : ''}`}
+            style={{
+              '--cat-light': getCategoryColor(cat).light,
+              '--cat-dark': getCategoryColor(cat).dark,
+            } as React.CSSProperties}
+            className={`category-chip-colored ${activeCategory === cat ? 'active' : ''}`}
             onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
           >
             {cat}
@@ -361,64 +307,72 @@ export default function Catalogue() {
 
       {error && <p className="form-error" style={{ marginBottom: 12 }}>{error}</p>}
 
-      {showSearch ? (
-        filtered.length === 0 ? (
-          <p className="empty-state">Aucun bon trouvé.</p>
-        ) : (
-          <div className="grid-3">
-            {filtered.map((v) => (
-              <VoucherCard
-                key={v.id}
-                voucher={v}
-                onRedeem={handleRedeem}
-                redeeming={redeeming === v.id}
-                promoCode={promoCodes[v.id]}
-                canAfford={userBalance >= v.token_cost}
-                saved={isFavorite(v.id)}
-                onToggle={toggle}
-                inCart={isInCart(v.id)}
-                onCartToggle={cartToggle}
-                onEdit={handleEdit}
-              />
-            ))}
-          </div>
-        )
+      {itemsToDisplay.length === 0 ? (
+        <p className="empty-state">Aucun bon trouvé.</p>
       ) : (
         <>
-          <CarouselRow
-            title="⭐ Populaires"
-            vouchers={populaires}
-            onRedeem={handleRedeem}
-            redeeming={redeeming}
-            promoCodes={promoCodes}
-            userBalance={userBalance}
-            isFavorite={isFavorite}
-            onToggle={toggle}
-            isInCart={isInCart}
-            onCartToggle={cartToggle}
-            onEdit={handleEdit}
-          />
-          {orderedCategories.map((cat) => {
-            const catVouchers = vouchers.filter((v) => getCategory(v) === cat && v.available);
-            const slug = cat.toLowerCase();
-            return (
-              <CarouselRow
-                key={cat}
-                title={cat}
-                vouchers={pickCarouselItems(catVouchers, CAROUSEL_MAX)}
-                onRedeem={handleRedeem}
-                redeeming={redeeming}
-                promoCodes={promoCodes}
-                userBalance={userBalance}
-                isFavorite={isFavorite}
-                onToggle={toggle}
-                categorySlug={slug}
-                isInCart={isInCart}
-                onCartToggle={cartToggle}
-                onEdit={handleEdit}
-              />
-            );
-          })}
+          <div className="pages-carousel" ref={carouselRef} onScroll={handleScroll}>
+            {pages.map((pageVouchers, index) => {
+              const pageNum = index + 1;
+              // On affiche uniquement la page courante, la précédente et la suivante
+              const isVisible = Math.abs(pageNum - page) <= 1;
+
+              return (
+                <div className="page-slide" key={index}>
+                  {isVisible ? (
+                    pageVouchers.map((v) => (
+                      <VoucherCard
+                        key={v.id}
+                        voucher={v}
+                        onRedeem={handleRedeem}
+                        redeeming={redeeming === v.id}
+                        promoCode={promoCodes[v.id]}
+                        canAfford={userBalance >= v.token_cost}
+                        saved={isFavorite(v.id)}
+                        onToggle={toggle}
+                        inCart={isInCart(v.id)}
+                        onCartToggle={cartToggle}
+                        onEdit={handleEdit}
+                      />
+                    ))
+                  ) : (
+                    // Placeholder pour maintenir la hauteur et la largeur
+                    <div style={{ minHeight: '100vh', width: '100%' }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 28, paddingBottom: 28 }}>
+              <button
+                className="scroll-arrow scroll-arrow--left"
+                disabled={page === 1}
+                onClick={() => scrollToPage(page - 1)}
+                aria-label="Page précédente"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              
+              <div className="page-indicator">
+                {page} / {totalPages}
+              </div>
+
+              <button
+                className="scroll-arrow scroll-arrow--right"
+                disabled={page === totalPages}
+                onClick={() => scrollToPage(page + 1)}
+                aria-label="Page suivante"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -113,7 +113,7 @@ export default function MotDePasse() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Mot de passe</h1>
           <p>Sécurisez votre compte</p>

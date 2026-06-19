@@ -5,6 +5,7 @@ import { marketplaceService } from '../../services/marketplace.service';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useCart } from '../../hooks/useCart';
 import { resolveImageUrl } from '../../utils/imageUrl';
+import { getCategory, getCategoryColor } from '../../utils/category';
 import type { Voucher } from '../../types';
 
 const PAGE_SIZE = 30;
@@ -43,11 +44,12 @@ function VoucherCard({
 }) {
   const navigate = useNavigate();
   const imgSrc = resolveImageUrl(voucher.images?.[0]);
+  const catColor = getCategoryColor(getCategory(voucher));
 
   return (
     <div
       className="voucher-card-carousel"
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', backgroundColor: catColor.light }}
       onClick={() => navigate(`/catalogue/offre/${voucher.id}`)}
       role="button"
       tabIndex={0}
@@ -181,7 +183,7 @@ export default function CategorieDetail() {
       {pageVouchers.length === 0 ? (
         <p className="empty-state">Aucune offre dans cette catégorie.</p>
       ) : (
-        <div className="grid-3">
+        <div className="voucher-list">
           {pageVouchers.map((v) => (
             <VoucherCard
               key={v.id}

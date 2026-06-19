@@ -66,7 +66,7 @@ export default function Parameters() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Paramètres</h1>
           <p>Préférences et compte</p>

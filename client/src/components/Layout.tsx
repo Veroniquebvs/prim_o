@@ -1,4 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
+
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+
 import { useAuth } from '../context/AuthContext';
 import TopNav from './TopNav';
 import BottomNav from './BottomNav';
@@ -7,9 +9,17 @@ interface Props {
   children: React.ReactNode;
 }
 
+/* Pages where the hero fills from the very top — no mobile top-bar, no padding-top */
+const HERO_PAGES = ['/pour-toi', '/employer/dashboard'];
+
 export default function Layout({ children }: Props) {
   const { user, company } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isHeroPage = location.pathname === '/login' || HERO_PAGES.includes(location.pathname);
+  const isPourToi = location.pathname === '/pour-toi' || location.pathname === '/employer/dashboard';
+  const isManagerDesign = user?.role === 'manager' || user?.role === 'employee';
 
   return (
     <div className="app-layout">
@@ -42,7 +52,7 @@ export default function Layout({ children }: Props) {
         )}
       </header>
 
-      <main className="app-main">{children}</main>
+      <main className={`app-main${isHeroPage ? ' app-main--hero' : ''}`}>{children}</main>
 
       <BottomNav />
     </div>

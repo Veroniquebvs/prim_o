@@ -121,7 +121,7 @@ export default function FAQ() {
   return (
     <div>
       {/* Top bar with back button */}
-      <div className="faq-topbar" style={{ justifyContent: 'space-between' }}>
+      <div className="faq-topbar faq-topbar--clean" style={{ justifyContent: 'space-between' }}>
         <h1 className="faq-topbar-title">FAQ</h1>
         <button className="back-btn" onClick={() => navigate(from, { state: { reopenMenu: true } })}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

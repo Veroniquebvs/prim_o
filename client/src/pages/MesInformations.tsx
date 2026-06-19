@@ -50,7 +50,7 @@ export default function MesInformations() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Mes informations</h1>
           <p>Vos informations personnelles</p>

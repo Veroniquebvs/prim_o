@@ -46,7 +46,10 @@ export default function LoginPage() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <div className="auth-logo">PRIM'O</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: '24px' }}>
+          <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#000000', letterSpacing: '0.5px' }}>prim'</span>
+          <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '5rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
+        </div>
         <h1 className="auth-title">Connexion</h1>
         <p className="auth-subtitle">Content de vous revoir !</p>
 

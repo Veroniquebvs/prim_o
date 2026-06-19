@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -8,17 +8,15 @@ interface Props {
 }
 
 export const PrintableQRCode = ({ companyId, companyName }: Props) => {
+  const [isOpen, setIsOpen] = useState(false);
   const componentRef = useRef<HTMLDivElement>(null);
+  const registrationUrl = `${window.location.origin}/register?companyId=${companyId}`;
 
   // Fonction d'impression
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: `Inscription_${companyName}`,
   });
-
-  const registrationUrl = `${window.location.origin}/register?companyId=${companyId}`;
-  // Récupérer l'URL :
-  console.log("Voici ton lien à tester :", registrationUrl);
 
   // Fonction de téléchargement
   const downloadQRCode = () => {
@@ -44,42 +42,93 @@ export const PrintableQRCode = ({ companyId, companyName }: Props) => {
   };
 
   return (
-    <div style={{ marginTop: "20px" }}>
-      {/* Zone visible et imprimable */}
-      <div
-        ref={componentRef}
-        style={{
-          padding: "clamp(16px, 5vw, 50px)",
-          textAlign: "center",
-          fontFamily: "Arial, sans-serif",
+    <>
+      <style>{`
+        @keyframes pulse-scale {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.12); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+      {/* Icon Trigger */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        style={{ 
+          background: '#ffffff', padding: '8px', borderRadius: '14px', 
+          border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: '8px',
+          animation: 'pulse-scale 2s infinite ease-in-out'
         }}
+        title="Afficher le QR Code"
       >
-        <h1 style={{ textTransform: "uppercase", fontSize: "clamp(1.2rem, 4vw, 2rem)" }}>
-          {companyName}
-        </h1>
-        <h2 style={{ marginBottom: "24px", fontSize: "clamp(1rem, 3vw, 1.5rem)" }}>
-          Rejoignez notre équipe sur Prim'o
-        </h2>
+        <QRCodeSVG value={registrationUrl} size={48} />
+      </button>
 
-        {/* Le QR Code avec l'ID pour la fonction téléchargement */}
-        <div style={{ display: "inline-block", maxWidth: "100%" }}>
-          <QRCodeSVG id="qr-code-svg" value={registrationUrl} size={Math.min(240, window.innerWidth - 80)} />
+      {/* Popup Modal */}
+      {isOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          {/* Modal Window Card */}
+          <div style={{ 
+            background: '#fff', borderRadius: '24px', width: '100%', maxWidth: '440px', 
+            overflow: 'hidden', display: 'flex', flexDirection: 'column', 
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative' 
+          }}>
+            
+            {/* Close button */}
+            <button 
+              onClick={() => setIsOpen(false)} 
+              style={{ 
+                position: 'absolute', top: '16px', right: '16px', background: '#f1f5f9', 
+                border: 'none', borderRadius: '50%', width: 36, height: 36, 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                cursor: 'pointer', color: 'var(--text)' 
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+
+            {/* The Printable Area */}
+            <div ref={componentRef} style={{ padding: '40px 24px 24px 24px', textAlign: 'center', fontFamily: "'Inter', Arial, sans-serif" }}>
+              {/* Brand Logo inside the poster */}
+              <div style={{ marginBottom: 24 }}>
+                <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
+                  <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2rem', color: 'var(--text)', letterSpacing: '0.5px' }}>prim'</span>
+                  <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.8rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
+                </span>
+              </div>
+
+              <div style={{ display: "inline-block", padding: 16, background: '#fff', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 24 }}>
+                <QRCodeSVG id="qr-code-svg" value={registrationUrl} size={200} />
+              </div>
+
+              <h1 style={{ textTransform: "uppercase", fontSize: "1.6rem", fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
+                {companyName}
+              </h1>
+              <h2 style={{ marginBottom: "16px", fontSize: "1.1rem", color: 'var(--text-muted)', fontWeight: 500 }}>
+                Rejoignez notre équipe sur Prim'o
+              </h2>
+
+              <p style={{ marginTop: "8px", fontSize: "1.05rem", fontWeight: 700, color: 'var(--text)' }}>
+                Scannez ce QR Code pour vous inscrire
+              </p>
+            </div>
+
+            {/* Actions Area (NOT in contentRef so it doesn't print) */}
+            <div style={{ padding: '0 24px 32px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button onClick={() => handlePrint()} className="btn btn-primary" style={{ padding: '14px 0', fontSize: '1.05rem', borderRadius: 999, fontWeight: 700 }}>
+                Imprimer l'affiche
+              </button>
+              <button onClick={downloadQRCode} className="btn btn-outline" style={{ padding: '14px 0', fontSize: '1.05rem', borderRadius: 999, fontWeight: 700 }}>
+                Télécharger le QR Code
+              </button>
+            </div>
+          </div>
         </div>
-
-        <p style={{ marginTop: "16px", fontSize: "clamp(14px, 3vw, 18px)" }}>
-          Scannez ce QR Code pour vous inscrire
-        </p>
-      </div>
-
-      {/* Les boutons d'action */}
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap", justifyContent: "center" }}>
-        <button onClick={() => handlePrint()} className="btn btn-outline">
-          Imprimer l'affiche
-        </button>
-        <button onClick={downloadQRCode} className="btn btn-outline">
-          Télécharger le QR Code
-        </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 };

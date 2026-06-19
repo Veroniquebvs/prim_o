@@ -3,7 +3,6 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 
-
 export default function TopNav() {
   const { user, company, logout } = useAuth();
   const { count } = useCart();
@@ -13,7 +12,8 @@ export default function TopNav() {
   const dropRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === "admin";
-  const onPanier = location.pathname === '/panier';
+  const isManager = user?.role === "manager" || user?.role === "employee";
+  const isPourToi = location.pathname === '/pour-toi' || location.pathname === '/employer/dashboard';
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -40,7 +40,7 @@ export default function TopNav() {
     : (user?.token_balance ?? 0);
 
   return (
-    <header className="top-nav">
+    <header className={`top-nav ${isManager ? 'top-nav--manager' : ''} ${isManager && !isPourToi ? 'no-shadow' : ''}`}>
       <div className="top-nav-inner">
         {/* Brand */}
         <Link to="/pour-toi" className="top-nav-brand">PRIM'O</Link>
@@ -50,9 +50,7 @@ export default function TopNav() {
           {isAdmin ? (
             <>
               <NavLink to="/admin/stats"     className={({ isActive }) => link(isActive)}>Tableau de bord</NavLink>
-              <NavLink to="/admin/dashboard" className={({ isActive }) => link(isActive)}>Entreprises</NavLink>
-              <NavLink to="/admin/bons"      className={({ isActive }) => link(isActive)}>Bons d'achat</NavLink>
-              <NavLink to="/catalogue"       className={({ isActive }) => link(isActive)}>Catalogue</NavLink>
+              <NavLink to="/admin/users"     className={({ isActive }) => link(isActive)}>Utilisateurs</NavLink>
             </>
           ) : (
             <>
@@ -71,7 +69,7 @@ export default function TopNav() {
             </>
           )}
 
-          {/* Voir plus — déplacé ici à gauche */}
+          {/* Voir plus */}
           <div className="top-nav-more-wrap" ref={dropRef}>
             <button
               className="top-nav-more-btn"
@@ -120,35 +118,13 @@ export default function TopNav() {
           </div>
         </nav>
 
-        {/* Droite : balance tokens + Valider le panier */}
-        {user && (
+        {/* Droite : balance tokens */}
+        {user && !isPourToi && (
           <div className="top-nav-right">
-            {user?.role === 'employer' && (
-              <button
-                className="top-bar-buy"
-                onClick={() => navigate('/abonnement')}
-                aria-label="Acheter des tokens"
-              >
-                + Acheter
-              </button>
-            )}
-            <div className="top-bar-tokens">
-              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="11" fill="#F5C518" />
-                <circle cx="12" cy="12" r="9" fill="#F5C518" stroke="#E6A800" strokeWidth="1" />
-                <text x="12" y="16.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="12" fill="#1A7A1A">P</text>
-              </svg>
+            <div className={`top-bar-tokens ${isManager ? 'top-bar-tokens--large' : ''}`}>
+              <img src="/icons/token-logo-SF.png" alt="Token" style={{ width: 24, height: 24, objectFit: 'contain' }} />
               <span>{tokenBalance}</span>
             </div>
-            {onPanier && (
-              <button
-                className="btn btn-primary"
-                style={{ fontSize: '0.82rem', padding: '6px 16px', borderRadius: 8 }}
-                onClick={() => window.dispatchEvent(new CustomEvent('panier:validate'))}
-              >
-                Valider le panier
-              </button>
-            )}
           </div>
         )}
       </div>
