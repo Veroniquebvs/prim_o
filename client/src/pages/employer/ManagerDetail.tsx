@@ -23,6 +23,8 @@ export default function ManagerDetail() {
   const [history, setHistory] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [entryDate, setEntryDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [promoting, setPromoting] = useState(false);
   const [confirmDemote, setConfirmDemote] = useState(false);
@@ -38,6 +40,7 @@ export default function ManagerDetail() {
         setManager(teamData.manager);
         setTeam(teamData.team);
         setHistory(hist);
+        setEntryDate(teamData.manager.entry_date || "");
       })
       .catch(() => setError("Impossible de charger les données."))
       .finally(() => setLoading(false));
@@ -64,7 +67,7 @@ export default function ManagerDetail() {
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const tokensGiven = history
-    .filter((tx) => tx.sender_id === id && tx.type === "manager_to_employee")
+    .filter((tx) => tx.sender_id === id && tx.receiver_id)
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const teamMembers = team?.members ?? [];
@@ -111,6 +114,7 @@ export default function ManagerDetail() {
             { label: "Nom", value: manager.name },
             { label: "Email", value: manager.email },
             { label: "Équipe", value: team?.name ?? "Aucune équipe active" },
+            { label: "Membre depuis", value: manager.entry_date ? fmt(manager.entry_date) : fmt(manager.created_at) },
           ].map(({ label, value }) => (
             <div key={label} className="info-field-card">
               <span className="info-field-label">{label}</span>
@@ -118,6 +122,42 @@ export default function ManagerDetail() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Date d'entrée*/}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Date d'entrée
+        </h2>
+
+        <input
+          type="date"
+          value={entryDate}
+          onChange={(e) => setEntryDate(e.target.value)}
+          className="form-input"
+          style={{ width: 200 }}
+        />
+
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ marginTop: 10 }}
+          disabled={saving}
+          onClick={async () => {
+            try {
+              setSaving(true);
+              await userService.updateEntryDate(id!, entryDate);
+              const teamData = await managerService.getManagerTeam(id!);
+              setManager(teamData.manager);
+              setEntryDate(teamData.manager.entry_date || "");
+            } catch {
+              setError("Erreur lors de la mise à jour de la date d'entrée.");
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          {saving ? "Sauvegarde..." : "Mettre à jour"}
+        </button>
       </div>
 
       {/* Membres de l'équipe */}

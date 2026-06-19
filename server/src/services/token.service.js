@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { User, Company, TokenTransaction } = require('../models');
+const { User, Company, TokenTransaction, Team, TeamMember } = require('../models');
 
 const httpError = (message, status) => {
   const err = new Error(message);
@@ -60,11 +60,15 @@ const getBalance = async (userId) => {
   return { userId: user.id, token_balance: user.token_balance };
 };
 
-const listTransactions = async ({ userId, date, type } = {}) => {
+const listTransactions = async ({ userId, companyId, date, type } = {}) => {
   const where = {};
 
   if (userId) {
     where[Op.or] = [{ sender_id: userId }, { receiver_id: userId }];
+  }
+
+  if (companyId) {
+    where.company_id = companyId;
   }
 
   if (type) {
@@ -83,7 +87,35 @@ const listTransactions = async ({ userId, date, type } = {}) => {
     order: [['created_at', 'DESC']],
     include: [
       { model: User, as: 'sender', attributes: ['id', 'name', 'first_name', 'email'] },
-      { model: User, as: 'receiver', attributes: ['id', 'name', 'first_name', 'email'] },
+      {
+        model: User,
+        as: 'receiver',
+        attributes: ['id', 'name', 'first_name', 'email', 'role', 'entry_date'],
+        include: [
+          {
+            model: TeamMember,
+            as: 'team_memberships',
+            required: false,
+            where: { left_at: null },
+            include: [
+              {
+                model: Team,
+                as: 'team',
+                required: false,
+                where: { dissolved_at: null },
+                include: [
+                  {
+                    model: User,
+                    as: 'manager',
+                    attributes: ['id', 'first_name', 'name'],
+                    required: false,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     ],
   });
 };

@@ -213,8 +213,12 @@ export default function EmployerDashboard() {
         </div>
         <div className="stat-card">
           <p className="stat-label">Équipe</p>
-          <p className="stat-value">{employees.length}</p>
-          <p className="stat-sub">collaborateur{employees.length !== 1 ? "s" : ""}</p>
+          <p className="stat-value">{employees.length + managers.length}</p>
+          <p className="stat-sub">
+            {managers.length > 0
+              ? `${employees.length} collaborateur${employees.length !== 1 ? "s" : ""} et ${managers.length} manager${managers.length !== 1 ? "s" : ""}`
+              : `${employees.length} collaborateur${employees.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
       </div>
       {/* Feedback feed */}
@@ -247,7 +251,9 @@ export default function EmployerDashboard() {
 
       {/* QRCode */}
       {company && (
-        <PrintableQRCode companyId={company.id} companyName={company.name} />
+        <div style={{ marginBottom: "24px" }}>
+          <PrintableQRCode companyId={company.id} companyName={company.name} />
+        </div>
       )}
 
       {/* SECTION FOR EMPLOYEES ON WAITING LIST */}
@@ -363,7 +369,7 @@ export default function EmployerDashboard() {
       </div>
 
       <div className="grid-2">
-        <TransferForm employees={employees} onSuccess={fetchData} />
+        <TransferForm employees={[...employees, ...managers]} onSuccess={fetchData} />
 
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -377,7 +383,7 @@ export default function EmployerDashboard() {
                 <thead>
                   <tr>
                     <th style={{ padding: "7px 10px" }}>Nom</th>
-                    <th style={{ padding: "7px 10px" }}>Email</th>
+                    <th style={{ padding: "7px 10px" }}>Date d'entrée</th>
                     <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
                   </tr>
                 </thead>
@@ -392,7 +398,7 @@ export default function EmployerDashboard() {
                         {mgr.first_name} {mgr.name}
                       </td>
                       <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
-                        {mgr.email}
+                        {mgr.entry_date ? fmtShort(mgr.entry_date) : <span style={{ fontStyle: 'italic' }}>Non renseignée</span>}
                       </td>
                       <td style={{ padding: "8px 10px", textAlign: "right" }}>
                         <span className="token-badge">{mgr.token_balance}</span>
@@ -404,6 +410,52 @@ export default function EmployerDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Collaborateurs</h2>
+        </div>
+        {employees.length === 0 ? (
+          <p className="empty-state">Aucun collaborateur dans votre entreprise.</p>
+        ) : (
+          <div className="table-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
+            <table className="table" style={{ minWidth: 0 }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: "7px 10px" }}>Prénom & Nom</th>
+                  <th style={{ padding: "7px 10px" }}>Manager</th>
+                  <th style={{ padding: "7px 10px" }}>Date d'entrée</th>
+                  <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => (
+                  <tr
+                    key={emp.id}
+                    onClick={() => navigate(`/employer/employees/${emp.id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td style={{ fontWeight: 500, padding: "8px 10px" }}>
+                      {emp.first_name} {emp.name}
+                    </td>
+                    <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
+                      {emp.team_memberships?.[0]?.team?.manager
+                        ? `${emp.team_memberships[0].team.manager.first_name} ${emp.team_memberships[0].team.manager.name}`
+                        : "Aucun manager"}
+                    </td>
+                    <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
+                      {emp.entry_date ? fmtShort(emp.entry_date) : "—"}
+                    </td>
+                    <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                      <span className="token-badge">{emp.token_balance}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {showSchedModal && (

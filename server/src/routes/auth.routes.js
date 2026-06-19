@@ -14,8 +14,8 @@ router.post(
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('role')
-      .isIn(['employer', 'employee', 'admin'])
-      .withMessage('Role must be employer, employee or admin'),
+      .isIn(['employer', 'employee', 'admin', 'manager'])
+      .withMessage('Role must be employer, employee, admin or manager'),
     body('company_id').optional().isUUID().withMessage('company_id must be a valid UUID'),
     validate,
   ],

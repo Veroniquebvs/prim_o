@@ -10,6 +10,18 @@ export interface User {
   company_id: string | null;
   created_at: string;
   entry_date?: string | null;
+  team_memberships?: {
+    id: string;
+    team: {
+      id: string;
+      name: string;
+      manager: {
+        id: string;
+        first_name: string;
+        name: string;
+      } | null;
+    } | null;
+  }[];
 }
 
 export interface Company {
@@ -45,6 +57,20 @@ export interface TokenTransaction {
     name: string;
     first_name: string;
     email: string;
+    role?: string;
+    entry_date?: string | null;
+    team_memberships?: {
+      id: string;
+      team: {
+        id: string;
+        name: string;
+        manager: {
+          id: string;
+          first_name: string;
+          name: string;
+        } | null;
+      } | null;
+    }[];
   } | null;
 }
 

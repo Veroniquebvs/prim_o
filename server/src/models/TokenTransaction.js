@@ -34,8 +34,10 @@ const initTokenTransaction = (sequelize) => {
       sequelize,
       modelName: 'TokenTransaction',
       tableName: 'token_transactions',
-      timestamps: true, // Automatically handles created_at (timestamp from your image)
-      underscored: true, // Matches the snake_case format (stripe_payment_id, created_at)
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return TokenTransaction;

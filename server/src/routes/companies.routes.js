@@ -9,14 +9,13 @@ const router = Router();
 
 const companyBodyRules = [
   body('name').trim().notEmpty().withMessage('name is required'),
-  body('email').optional().isEmail().withMessage('valid email is required'),
-  body('street').optional().trim().notEmpty().withMessage('street must not be empty'),
+  body('email').isEmail().withMessage('valid email is required'),
+  body('street').trim().notEmpty().withMessage('street is required'),
   body('zip_code')
-    .optional()
     .isNumeric()
     .isLength({ min: 5, max: 5 })
     .withMessage('zip_code must be 5 digits'),
-  body('city').optional().trim().notEmpty().withMessage('city must not be empty'),
+  body('city').trim().notEmpty().withMessage('city is required'),
   body('siret')
     .optional()
     .isNumeric()

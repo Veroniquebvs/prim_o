@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   first_name    VARCHAR(255) NOT NULL,
   email         VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role          VARCHAR(50)  NOT NULL CHECK (role IN ('admin', 'employer', 'employee')),
+  role          VARCHAR(50)  NOT NULL CHECK (role IN ('admin', 'employer', 'employee', 'manager')),
   token_balance INTEGER NOT NULL DEFAULT 0,
   company_id    UUID REFERENCES companies(id) ON DELETE SET NULL,
   created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

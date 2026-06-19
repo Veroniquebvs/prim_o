@@ -192,6 +192,7 @@ async function runAll() {
     const res = await api('POST', '/api/companies', {
       name: 'Bad Corp', email: 'bad@corp.com',
       street: '1 Rue Test', zip_code: '123', city: 'Lyon',
+      siret: '12345678901234',
     });
     assertStatus(res, 400);
     return '400 zip_code invalide rejeté';
@@ -200,6 +201,7 @@ async function runAll() {
   await test('Validation — email manquant → 400', async () => {
     const res = await api('POST', '/api/companies', {
       name: 'No Email Corp', street: '1 Rue Test', zip_code: '75001', city: 'Paris',
+      siret: '12345678901234',
     });
     assertStatus(res, 400);
     return '400 email manquant rejeté';

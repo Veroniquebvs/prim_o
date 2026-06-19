@@ -18,7 +18,7 @@ export const tokenService = {
     return data.data.token_balance;
   },
 
-  async getTransactions(params?: { userId?: string; type?: string }): Promise<TokenTransaction[]> {
+  async getTransactions(params?: { userId?: string; companyId?: string; type?: string }): Promise<TokenTransaction[]> {
     const { data } = await api.get<ApiResponse<TokenTransaction[]>>('/tokens/transactions', { params });
     return data.data;
   },

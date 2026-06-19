@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";
+import { managerService } from "../../services/manager.service";
+import { useAuth } from "../../context/AuthContext";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 
@@ -23,6 +25,7 @@ function IconArrowLeft() {
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [employee, setEmployee] = useState<User | null>(null);
   const [history, setHistory] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,18 +34,49 @@ export default function EmployeeDetail() {
   const [error, setError] = useState("");
   const [entryDate, setEntryDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmPromote, setConfirmPromote] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [managers, setManagers] = useState<User[]>([]);
+  const [selectedManagerId, setSelectedManagerId] = useState<string>("");
+  const [savingManager, setSavingManager] = useState(false);
+
+  async function handlePromote() {
+    if (!id) return;
+    setPromoting(true);
+    try {
+      await managerService.promoteToManager(id);
+      navigate("/employer/dashboard");
+    } catch {
+      setError("Erreur lors de la promotion.");
+      setPromoting(false);
+      setConfirmPromote(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([userService.getById(id), userService.getHistory(id)])
-      .then(([emp, hist]) => {
+
+    const promises = [
+      userService.getById(id),
+      userService.getHistory(id),
+      currentUser?.company_id
+        ? userService.getAll({ companyId: currentUser.company_id, role: "manager" })
+        : Promise.resolve({ data: { data: [] } })
+    ] as const;
+
+    Promise.all(promises)
+      .then(([emp, hist, mgrsResult]) => {
         setEmployee(emp);
         setHistory(hist);
         setEntryDate(emp.entry_date || "");
+        const mgrList = (mgrsResult as any)?.data?.data || [];
+        setManagers(mgrList);
+        const activeMgrId = emp.team_memberships?.[0]?.team?.manager?.id || "";
+        setSelectedManagerId(activeMgrId);
       })
       .catch(() => setError("Impossible de charger les données."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, currentUser?.company_id]);
 
   async function handleDelete() {
     if (!id) return;
@@ -97,7 +131,7 @@ export default function EmployeeDetail() {
         <div className="stat-card">
           <p className="stat-label">Membre depuis</p>
           <p className="stat-value" style={{ fontSize: "1.1rem" }}>
-            {fmt(employee.created_at)}
+            {employee.entry_date ? fmt(employee.entry_date) : fmt(employee.created_at)}
           </p>
         </div>
       </div>
@@ -112,7 +146,7 @@ export default function EmployeeDetail() {
             { label: "Prénom", value: employee.first_name },
             { label: "Nom", value: employee.name },
             { label: "Email", value: employee.email },
-            { label: "Rôle", value: employee.role },
+            { label: "Rôle", value: employee.role === "employee" ? "Collaborateur" : employee.role === "manager" ? "Manager" : employee.role },
           ].map(({ label, value }) => (
             <div key={label} className="info-field-card">
               <span className="info-field-label">{label}</span>
@@ -155,6 +189,48 @@ export default function EmployeeDetail() {
         >
           {saving ? "Sauvegarde..." : "Mettre à jour"}
         </button>
+      </div>
+
+      {/* Manager associé */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Manager associé
+        </h2>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <select
+            value={selectedManagerId}
+            onChange={(e) => setSelectedManagerId(e.target.value)}
+            className="form-select"
+            style={{ width: 250, minWidth: 150 }}
+          >
+            <option value="">Aucun manager (Non assigné)</option>
+            {managers.map((mgr) => (
+              <option key={mgr.id} value={mgr.id}>
+                {mgr.first_name} {mgr.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={savingManager || selectedManagerId === (employee.team_memberships?.[0]?.team?.manager?.id || "")}
+            onClick={async () => {
+              try {
+                setSavingManager(true);
+                await userService.assignManager(id!, selectedManagerId || null);
+                const updated = await userService.getById(id!);
+                setEmployee(updated);
+                const activeMgrId = updated.team_memberships?.[0]?.team?.manager?.id || "";
+                setSelectedManagerId(activeMgrId);
+              } catch (err) {
+                setError("Erreur lors de l'attribution du manager.");
+              } finally {
+                setSavingManager(false);
+              }
+            }}
+          >
+            {savingManager ? "Enregistrement..." : "Valider l'attribution"}
+          </button>
+        </div>
       </div>
 
       {/* Historique des transactions */}
@@ -213,6 +289,73 @@ export default function EmployeeDetail() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Zone promotion */}
+      <div
+        className="card"
+        style={{
+          marginBottom: 20,
+          borderColor: "rgba(79, 70, 229, 0.3)",
+          background: "rgba(79, 70, 229, 0.02)",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "1rem",
+            fontWeight: 600,
+            marginBottom: 8,
+            color: "var(--primary)",
+          }}
+        >
+          Promouvoir en manager
+        </h2>
+        {!confirmPromote ? (
+          <>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "var(--text-muted)",
+                marginBottom: 14,
+              }}
+            >
+              Ce collaborateur pourra allouer des tokens aux autres salariés,
+              accéder à l'historique et créer des collaborateurs. Une équipe sera
+              automatiquement créée pour lui.
+            </p>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setConfirmPromote(true)}
+            >
+              Promouvoir en manager
+            </button>
+          </>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>
+              Confirmer la promotion de{" "}
+              <strong>
+                {employee.first_name} {employee.name}
+              </strong>{" "}
+              en tant que manager ?
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handlePromote}
+                disabled={promoting}
+              >
+                {promoting ? "Promotion…" : "Oui, promouvoir"}
+              </button>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setConfirmPromote(false)}
+              >
+                Annuler
+              </button>
+            </div>
           </div>
         )}
       </div>

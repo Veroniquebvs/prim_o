@@ -11,7 +11,7 @@ interface RegisterPayload {
   password: string;
   name: string;
   first_name: string;
-  role: "employer" | "employee";
+  role: "employer" | "employee" | "manager";
   company_id?: string;
 }
 

@@ -27,8 +27,10 @@ const initRedemption = (sequelize) => {
       sequelize,
       modelName: 'Redemption',
       tableName: 'redemptions',
-      timestamps: true, // Automatically handles created_at (mapping to your redeemed_at timestamp)
-      underscored: true, // Converted to snake_case format (promo_code, created_at)
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return Redemption;

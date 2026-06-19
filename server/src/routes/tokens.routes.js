@@ -32,6 +32,7 @@ router.get(
   verifyToken,
   [
     query('userId').optional().isUUID().withMessage('userId must be a valid UUID'),
+    query('companyId').optional().isUUID().withMessage('companyId must be a valid UUID'),
     query('date').optional().isISO8601().withMessage('date must be ISO 8601 format'),
     validate,
   ],

@@ -25,9 +25,7 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const initials = pending.employee.name
-    ? pending.employee.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "?";
+  const initials = `${pending.employee.first_name?.[0] || ""}${pending.employee.name?.[0] || ""}`.toUpperCase() || "?";
 
   return (
     <div
@@ -71,7 +69,7 @@ function ConfirmModal({
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Destinataire</span>
-            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{pending.employee.name}</span>
+            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{pending.employee.first_name} {pending.employee.name}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Montant</span>
@@ -136,7 +134,7 @@ export default function TransferForm({ employees, onSuccess }: Props) {
         amount: pending.amount,
         reason: pending.reason || undefined,
       });
-      setSuccess(`${pending.amount} tokens alloués à ${pending.employee.name}.`);
+      setSuccess(`${pending.amount} tokens alloués à ${pending.employee.first_name} ${pending.employee.name}.`);
       setReceiverId("");
       setAmount("");
       setReason("");
@@ -180,7 +178,7 @@ export default function TransferForm({ employees, onSuccess }: Props) {
               {Array.isArray(employees) &&
                 employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.first_name} {emp.name} — {emp.token_balance} tokens
+                    {emp.first_name} {emp.name} ({emp.role === "manager" ? "Manager" : "Collaborateur"}) — {emp.token_balance} tokens
                   </option>
                 ))}
             </select>

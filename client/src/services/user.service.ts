@@ -48,4 +48,8 @@ export const userService = {
       entry_date,
     });
   },
+
+  async assignManager(id: string, managerId: string | null): Promise<void> {
+    await api.patch(`/employer/employees/${id}/manager`, { managerId });
+  },
 };

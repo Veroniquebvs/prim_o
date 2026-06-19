@@ -79,8 +79,10 @@ const initUser = (sequelize) => {
       sequelize,
       modelName: 'User',
       tableName: 'users',
-      timestamps: true, // Automatically handles createdAt and updatedAt (timestamps)
-      underscored: true, // Converts camelCase to snake_case in DB (e.g., password_hash)
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return User;

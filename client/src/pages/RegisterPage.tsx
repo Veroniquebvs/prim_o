@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { companyService } from "../services/company.service";
 
-type Role = "employer" | "employee";
+type Role = "employer" | "employee" | "manager";
 
 export default function RegisterPage() {
   const { register, isAuthenticated, isLoading, user } = useAuth();
@@ -45,6 +45,8 @@ export default function RegisterPage() {
       return <Navigate to="/employer/dashboard" replace />;
     if (user.role === "admin")
       return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === "manager")
+      return <Navigate to="/pour-toi" replace />;
     return <Navigate to="/catalogue" replace />;
   }
 
@@ -78,6 +80,8 @@ export default function RegisterPage() {
 
       if (role === "employer") {
         navigate("/employer/dashboard", { replace: true });
+      } else if (role === "manager") {
+        navigate("/pour-toi", { replace: true });
       } else {
         navigate("/catalogue", { replace: true });
       }
@@ -123,6 +127,7 @@ export default function RegisterPage() {
                 onChange={(e) => setRole(e.target.value as Role)}
               >
                 <option value="employee">Collaborateur</option>
+                <option value="manager">Manager</option>
                 <option value="employer">Employeur</option>
               </select>
             </div>
@@ -255,7 +260,7 @@ export default function RegisterPage() {
           )}
 
           {/* Employee-specific fields */}
-          {role === "employee" && (
+          {(role === "employee" || role === "manager") && (
             <div className="form-group">
               <label className="form-label">Entreprise</label>
               {qrCompanyId ? (

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { companyService } from '../../services/company.service';
 import { userService } from '../../services/user.service';
 import { tokenService } from '../../services/token.service';
-import type { Company, User } from '../../types';
+import type { Company, User, TokenTransaction } from '../../types';
 import { fmt } from '../../utils/date';
 
 export default function AdminCompanyDetail() {
@@ -11,6 +11,7 @@ export default function AdminCompanyDetail() {
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [employees, setEmployees] = useState<User[]>([]);
+  const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -31,8 +32,13 @@ export default function AdminCompanyDetail() {
     Promise.all([
       companyService.getById(id),
       userService.getAll({ companyId: id, role: 'employee' }),
+      tokenService.getTransactions({ companyId: id }),
     ])
-      .then(([c, u]) => { setCompany(c); setEmployees((u as any).data?.data || []); })
+      .then(([c, u, txs]) => {
+        setCompany(c);
+        setEmployees((u as any).data?.data || []);
+        setTransactions(txs);
+      })
       .catch(() => setError('Impossible de charger les données.'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -54,12 +60,14 @@ export default function AdminCompanyDetail() {
         amount: Number(deductAmount),
         reason: deductReason || undefined,
       });
-      const [freshCompany, freshUsers] = await Promise.all([
+      const [freshCompany, freshUsers, freshTxs] = await Promise.all([
         companyService.getById(id),
         userService.getAll({ companyId: id, role: 'employee' }),
+        tokenService.getTransactions({ companyId: id }),
       ]);
       setCompany(freshCompany);
       setEmployees((freshUsers as any).data?.data || []);
+      setTransactions(freshTxs);
       setDeductMsg({ ok: true, text: `${deductAmount} tokens déduits avec succès.` });
       setDeductAmount('');
       setDeductReason('');
@@ -167,6 +175,12 @@ export default function AdminCompanyDetail() {
                 </td>
               </tr>
               <tr style={rowStyle}>
+                <td style={{ ...tdMuted, fontWeight: 700 }}>ID de l'entreprise (pour inscription)</td>
+                <td style={{ padding: '10px 16px', fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 600 }}>
+                  {company.id}
+                </td>
+              </tr>
+              <tr style={rowStyle}>
                 <td style={{ ...tdMuted, fontWeight: 700 }}>Email</td>
                 <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>{company.email || '—'}</td>
               </tr>
@@ -205,33 +219,37 @@ export default function AdminCompanyDetail() {
           </div>
         )}
 
-        {/* Employees */}
+        {/* Historique des tokens distribués */}
         <div>
-          <h2 className="faq-section-title">Employés ({empList.length})</h2>
+          <h2 className="faq-section-title">Historique des tokens distribués</h2>
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            {empList.length === 0 ? (
-              <p style={{ padding: 16, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucun employé enregistré.</p>
+            {transactions.filter(tx => tx.receiver_id !== null).length === 0 ? (
+              <p style={{ padding: 16, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucune distribution enregistrée.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Nom</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Email</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Date de distribution</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Motif</th>
                     <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Tokens</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {empList.map(u => (
-                    <tr key={u.id} style={rowStyle}>
-                      <td style={{ padding: '10px 16px', fontWeight: 600, fontSize: '0.875rem' }}>
-                        {u.first_name} {u.name}
-                      </td>
-                      <td style={tdMuted}>{u.email}</td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                        <span className="token-badge">{u.token_balance}</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {transactions
+                    .filter(tx => tx.receiver_id !== null)
+                    .map(tx => (
+                      <tr key={tx.id} style={rowStyle}>
+                        <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>
+                          {fmt(tx.created_at)}
+                        </td>
+                        <td style={tdMuted}>
+                          {tx.type === 'allocation' ? 'Sans motif' : (tx.type || 'Sans motif')}
+                        </td>
+                        <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                          <span className="token-badge">+{tx.amount}</span>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             )}

@@ -25,6 +25,21 @@ router.patch(
   employerController.changeRole
 );
 
+router.patch(
+  '/employees/:id/manager',
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('managerId').optional({ nullable: true }).custom((value) => {
+      if (value === null || value === '') return true;
+      const { isUUID } = require('validator');
+      if (!isUUID(value)) throw new Error('managerId must be a valid UUID');
+      return true;
+    }),
+    validate,
+  ],
+  employerController.assignManager
+);
+
 router.get('/allocations', employerController.listAllocations);
 
 router.post(

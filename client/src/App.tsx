@@ -42,6 +42,7 @@ function HomeRedirect() {
   if (!user) return <HomePage />;
   if (user.role === 'employer') return <Navigate to="/employer/dashboard" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === 'manager') return <Navigate to="/pour-toi" replace />;
   return <Navigate to="/catalogue" replace />;
 }
 

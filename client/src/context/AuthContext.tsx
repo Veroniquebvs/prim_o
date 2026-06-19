@@ -8,7 +8,7 @@ interface RegisterPayload {
   first_name: string;
   email: string;
   password: string;
-  role: 'employer' | 'employee';
+  role: 'employer' | 'employee' | 'manager';
   company_id?: string;
 }
 

@@ -21,10 +21,10 @@ const initCompany = (sequelize) => {
           notEmpty: true, // Prevents validation of empty strings ""
         },
       },
-      // 3. Company Email Address (optional for MVP self-onboarding)
+      // 3. Company Email Address (Required)
       email: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
         unique: true,
         validate: {
           isEmail: true,
@@ -50,7 +50,7 @@ const initCompany = (sequelize) => {
       // 5. SIRET Number (Optional, but must be exactly 14 characters if provided)
       siret: {
         type: DataTypes.STRING(14), // Limits the database column to 14 characters maximum
-        allowNull: false,
+        allowNull: true,
         validate: {
           isNumeric: true, // Ensures the string contains only numbers
           len: [14, 14], // Forces the length to be exactly 14 characters
@@ -81,6 +81,8 @@ const initCompany = (sequelize) => {
       tableName: 'companies',
       timestamps: true,
       underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return Company;

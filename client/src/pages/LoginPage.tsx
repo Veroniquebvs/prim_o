@@ -18,6 +18,8 @@ export default function LoginPage() {
       return <Navigate to="/employer/dashboard" replace />;
     if (user.role === "admin")
       return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === "manager")
+      return <Navigate to="/pour-toi" replace />;
     return <Navigate to="/catalogue" replace />;
   }
 
@@ -31,6 +33,8 @@ export default function LoginPage() {
         navigate("/employer/dashboard", { replace: true });
       else if (u.role === "admin")
         navigate("/admin/dashboard", { replace: true });
+      else if (u.role === "manager")
+        navigate("/pour-toi", { replace: true });
       else navigate("/catalogue", { replace: true });
     } catch {
       setError("Email ou mot de passe incorrect.");

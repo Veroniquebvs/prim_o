@@ -7,7 +7,7 @@ TRUNCATE TABLE redemptions, token_transactions, users, vouchers, companies RESTA
 
 -- 2. SEED COMPANIES
 -- email required (NOT NULL), address fields required
-INSERT INTO companies (id, name, email, street, zip_code, city, token_balance, created_at, updated_at)
+INSERT INTO companies (id, name, email, street, zip_code, city, siret, token_balance, created_at, updated_at)
 VALUES (
   'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
   'TechCorp Inc.',
@@ -15,6 +15,7 @@ VALUES (
   '12 Rue de la Paix',
   '75002',
   'Paris',
+  '12345678901234',
   5000,
   NOW(),
   NOW()

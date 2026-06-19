@@ -165,4 +165,61 @@ const getManagerTeam = async (employer, managerId) => {
   return { manager, team: team || null };
 };
 
-module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam };
+const assignManager = async (employer, targetId, managerId) => {
+  const target = await User.findOne({
+    where: { id: targetId, company_id: employer.company_id, role: 'employee' },
+  });
+  if (!target) throw httpError('Employee not found in your company', 404);
+
+  const t = await sequelize.transaction();
+  try {
+    // 1. Terminate current active team membership if exists
+    await TeamMember.update(
+      { left_at: new Date() },
+      { where: { user_id: targetId, left_at: null }, transaction: t }
+    );
+
+    // 2. If a managerId is provided, find the team and create the new membership
+    if (managerId) {
+      const manager = await User.findOne({
+        where: { id: managerId, company_id: employer.company_id, role: 'manager' },
+        transaction: t,
+      });
+      if (!manager) throw httpError('Manager not found in your company', 404);
+
+      let team = await Team.findOne({
+        where: { manager_id: managerId, dissolved_at: null },
+        transaction: t,
+      });
+
+      // If team doesn't exist, create it (just in case)
+      if (!team) {
+        team = await Team.create(
+          {
+            name: `Équipe de ${manager.first_name}`,
+            company_id: employer.company_id,
+            manager_id: managerId,
+          },
+          { transaction: t }
+        );
+      }
+
+      await TeamMember.create(
+        {
+          team_id: team.id,
+          user_id: targetId,
+          joined_at: new Date(),
+        },
+        { transaction: t }
+      );
+    }
+
+    await t.commit();
+    return { success: true };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
+module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam, assignManager };

@@ -1,5 +1,5 @@
 jest.mock('../../src/models', () => ({
-  User: { findAll: jest.fn(), findByPk: jest.fn() },
+  User: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
   TokenTransaction: { findAll: jest.fn() },
 }));
 
@@ -71,16 +71,17 @@ describe('list', () => {
 
 describe('getById', () => {
   it('returns the user without password_hash', async () => {
-    User.findByPk.mockResolvedValue(fakeUser);
-    const result = await getById('user-uuid');
+    User.findOne.mockResolvedValue(fakeUser);
+    const result = await getById('user-uuid', 'co-uuid');
     expect(result).toBe(fakeUser);
-    const call = User.findByPk.mock.calls[0];
-    expect(call[1].attributes.exclude).toContain('password_hash');
+    const call = User.findOne.mock.calls[0][0];
+    expect(call.attributes.exclude).toContain('password_hash');
+    expect(call.where).toEqual({ id: 'user-uuid', company_id: 'co-uuid' });
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
-    await expect(getById('ghost-uuid')).rejects.toMatchObject({ status: 404 });
+    User.findOne.mockResolvedValue(null);
+    await expect(getById('ghost-uuid', 'co-uuid')).rejects.toMatchObject({ status: 404 });
   });
 });
 
@@ -89,9 +90,9 @@ describe('getById', () => {
 describe('update', () => {
   it('updates allowed fields and strips password_hash from response', async () => {
     const user = { ...fakeUser, save: jest.fn().mockResolvedValue(undefined), toJSON: fakeUser.toJSON };
-    User.findByPk.mockResolvedValue(user);
+    User.findOne.mockResolvedValue(user);
 
-    const result = await update('user-uuid', { name: 'Smith', first_name: 'Jane' });
+    const result = await update('user-uuid', { name: 'Smith', first_name: 'Jane' }, 'co-uuid');
 
     expect(user.name).toBe('Smith');
     expect(user.first_name).toBe('Jane');
@@ -101,9 +102,9 @@ describe('update', () => {
 
   it('ignores sensitive fields (role, token_balance, company_id, password_hash)', async () => {
     const user = { ...fakeUser, save: jest.fn().mockResolvedValue(undefined), toJSON: fakeUser.toJSON };
-    User.findByPk.mockResolvedValue(user);
+    User.findOne.mockResolvedValue(user);
 
-    await update('user-uuid', { role: 'admin', token_balance: 9999, password_hash: 'evil' });
+    await update('user-uuid', { role: 'admin', token_balance: 9999, password_hash: 'evil' }, 'co-uuid');
 
     expect(user.role).toBe('employee');
     expect(user.token_balance).toBe(10);
@@ -111,8 +112,8 @@ describe('update', () => {
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
-    await expect(update('ghost-uuid', { name: 'X' })).rejects.toMatchObject({ status: 404 });
+    User.findOne.mockResolvedValue(null);
+    await expect(update('ghost-uuid', { name: 'X' }, 'co-uuid')).rejects.toMatchObject({ status: 404 });
   });
 });
 

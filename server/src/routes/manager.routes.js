@@ -38,6 +38,7 @@ router.post(
   [
     body('employee_id').isUUID().withMessage('employee_id must be a valid UUID'),
     body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
+    body('reason').optional().isString().trim(),
     validate,
   ],
   requireTeamScope,

@@ -296,13 +296,14 @@ export default function AdminDashboard() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Email de contact (optionnel)</label>
+                <label className="form-label">Email de contact *</label>
                 <input
                   className="form-input"
                   type="email"
                   placeholder="contact@acme.com"
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  required
                 />
               </div>
 
@@ -322,7 +323,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Adresse (optionnelle)</label>
+                <label className="form-label">Adresse *</label>
                 <input
                   className="form-input"
                   type="text"
@@ -330,6 +331,7 @@ export default function AdminDashboard() {
                   value={createForm.street}
                   onChange={(e) => setCreateForm({ ...createForm, street: e.target.value })}
                   style={{ marginBottom: 12 }}
+                  required
                 />
                 <div className="emp-modal-row">
                   <div>
@@ -343,6 +345,7 @@ export default function AdminDashboard() {
                         const val = e.target.value.replace(/[^0-9]/g, '');
                         setCreateForm({ ...createForm, zip_code: val });
                       }}
+                      required
                     />
                   </div>
                   <div>
@@ -352,6 +355,7 @@ export default function AdminDashboard() {
                       placeholder="Ville"
                       value={createForm.city}
                       onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
+                      required
                     />
                   </div>
                 </div>

@@ -376,7 +376,6 @@ function ManagerPourToi() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
               Mon équipe
-              {team && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: 8 }}>{team.name}</span>}
             </h2>
             <button className="btn btn-primary btn-sm" onClick={() => { setAddMode(addMode === 'none' ? 'existing' : 'none'); setAddError(''); setCreateError(''); }}>
               + Ajouter
@@ -442,7 +441,8 @@ function ManagerPourToi() {
               <table className="table" style={{ minWidth: 0 }}>
                 <thead>
                   <tr>
-                    <th>Nom</th>
+                    <th>Prénom & Nom</th>
+                    <th>Date d'entrée</th>
                     <th style={{ textAlign: 'right' }}>Tokens</th>
                   </tr>
                 </thead>
@@ -454,6 +454,9 @@ function ManagerPourToi() {
                       style={{ cursor: 'pointer' }}
                     >
                       <td style={{ fontWeight: 500 }}>{m.first_name} {m.name}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                        {m.entry_date ? fmtShort(m.entry_date) : <span style={{ fontStyle: 'italic' }}>Non renseignée</span>}
+                      </td>
                       <td style={{ textAlign: 'right' }}><span className="token-badge">{m.token_balance}</span></td>
                     </tr>
                   ))}

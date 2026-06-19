@@ -90,7 +90,7 @@ const addTeamMember = async (manager, { employee_id }) => {
   return { team_id: team.id, user_id: employee_id };
 };
 
-const giveTokens = async (manager, { employee_id, amount }) => {
+const giveTokens = async (manager, { employee_id, amount, reason }) => {
   if (!Number.isInteger(amount) || amount <= 0) {
     throw httpError('amount must be a positive integer', 400);
   }
@@ -114,7 +114,7 @@ const giveTokens = async (manager, { employee_id, amount }) => {
         receiver_id: employee_id,
         company_id: manager.company_id,
         amount,
-        type: 'manager_to_employee',
+        type: reason || 'manager_to_employee',
       },
       { transaction: t }
     );

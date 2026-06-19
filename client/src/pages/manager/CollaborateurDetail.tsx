@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../services/user.service";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
@@ -16,6 +17,7 @@ function IconArrowLeft() {
 export default function CollaborateurDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [collab, setCollab]   = useState<User | null>(null);
   const [history, setHistory] = useState<TokenTransaction[]>([]);
@@ -33,7 +35,7 @@ export default function CollaborateurDetail() {
   if (loading) return <div style={{ padding: 32, color: "var(--text-muted)" }}>Chargement…</div>;
   if (!collab)  return <div style={{ padding: 32, color: "var(--text-muted)" }}>Collaborateur introuvable. {error}</div>;
 
-  const tokensReceived = history.filter((tx) => tx.receiver_id === id && tx.type === "manager_to_employee")
+  const tokensReceived = history.filter((tx) => tx.receiver_id === id && tx.sender_id === user?.id)
     .reduce((s, tx) => s + tx.amount, 0);
 
   const initials = [collab.first_name, collab.name].map((w) => w?.[0] ?? "").join("").toUpperCase();

@@ -33,7 +33,8 @@ const safeUser = (user) => ({
 });
 
 const register = async ({ name, first_name, email, password, role, company_id }) => {
-  const { User } = require('../models');
+  const { User, Team } = require('../models');
+  const sequelize = require('../config/database');
   const existing = await User.findOne({ where: { email } });
   if (existing) {
     throw httpError('Email already in use', 409);
@@ -41,21 +42,37 @@ const register = async ({ name, first_name, email, password, role, company_id })
 
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  const user = await User.create({
-    name,
-    first_name,
-    email,
-    password_hash,
-    role,
-    token_balance: 0,
-    ...(company_id ? { company_id } : {}),
-  });
+  const t = await sequelize.transaction();
+  try {
+    const user = await User.create({
+      name,
+      first_name,
+      email,
+      password_hash,
+      role,
+      token_balance: 0,
+      ...(company_id ? { company_id } : {}),
+    }, { transaction: t });
 
-  return {
-    user: safeUser(user),
-    accessToken: createAccessToken(user),
-    refreshToken: createRefreshToken(user),
-  };
+    if (role === 'manager' && company_id) {
+      await Team.create({
+        name: `Équipe de ${first_name}`,
+        company_id,
+        manager_id: user.id,
+      }, { transaction: t });
+    }
+
+    await t.commit();
+
+    return {
+      user: safeUser(user),
+      accessToken: createAccessToken(user),
+      refreshToken: createRefreshToken(user),
+    };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 };
 
 const login = async ({ email, password }) => {

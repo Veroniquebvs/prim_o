@@ -14,6 +14,7 @@ const mockVoucher = {
   partner: 'Fnac',
   token_cost: 20,
   available: true,
+  promo_code: 'some-promo-code',
   update: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   destroy: jest.fn().mockResolvedValue(undefined),
