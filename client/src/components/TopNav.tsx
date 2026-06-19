@@ -40,7 +40,7 @@ export default function TopNav() {
     : (user?.token_balance ?? 0);
 
   return (
-    <header className={`top-nav ${isManager ? 'top-nav--manager' : ''} ${isManager && !isPourToi ? 'no-shadow' : ''}`}>
+    <header className={`top-nav ${isManager ? 'top-nav--manager' : ''} ${isManager && isPourToi ? 'top-nav--transparent' : ''} ${isManager && !isPourToi ? 'no-shadow' : ''}`}>
       <div className="top-nav-inner">
         {/* Brand */}
         <Link to="/pour-toi" className="top-nav-brand">PRIM'O</Link>

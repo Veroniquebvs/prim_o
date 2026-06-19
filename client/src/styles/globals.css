@@ -2269,21 +2269,21 @@ a:hover {
   text-decoration: none;
 }
 
-.top-nav--manager .top-nav-link {
+.top-nav--transparent.top-nav--manager .top-nav-link {
   color: rgba(255, 255, 255, 0.65);
 }
 
-.top-nav--manager .top-nav-link:hover {
+.top-nav--transparent.top-nav--manager .top-nav-link:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.top-nav--manager .top-nav-link--active {
+.top-nav--transparent.top-nav--manager .top-nav-link--active {
   color: #f0a800;
   background: rgba(240, 168, 0, 0.12);
 }
 
-.top-nav--manager .top-nav-link--active:hover {
+.top-nav--transparent.top-nav--manager .top-nav-link--active:hover {
   color: #f0a800;
   background: rgba(240, 168, 0, 0.18);
 }
