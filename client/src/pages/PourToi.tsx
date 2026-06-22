@@ -485,7 +485,6 @@ function ManagerPourToi() {
               Créer un profil
             </button>
           </div>
-        )}
 
           {addMode === 'existing' && (
             <form onSubmit={handleAddExisting}>
@@ -536,7 +535,7 @@ function ManagerPourToi() {
             </form>
           )}
         </div>
-      )}
+      </div>
 
       {/* ══ Distribution chart ══ */}
       {members.length > 1 && (

@@ -68,9 +68,9 @@ export default function Layout({ children }: Props) {
                 <span>{user.role === 'employer' ? (company?.token_balance ?? '…') : (user.token_balance ?? 0)}</span>
               </div>
             </div>
-          </div>
-        )}
-      </header>
+          )}
+        </header>
+      )}
 
       <main className={`app-main${isHeroPage ? ' app-main--hero' : ''}`}>{children}</main>
 
