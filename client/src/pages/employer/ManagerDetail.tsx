@@ -258,7 +258,7 @@ export default function ManagerDetail() {
                   return (
                     <tr key={tx.id}>
                       <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                        {fmt(tx.created_at)}
+                        {fmt(tx.createdAt || tx.created_at)}
                       </td>
                       <td>
                         <span

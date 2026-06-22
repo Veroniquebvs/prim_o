@@ -136,7 +136,7 @@ export default function CategorieDetail() {
       .then((all) => {
         const filtered = all
           .filter((v) => v.category === decodedCategory)
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          .sort((a, b) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime());
         setVouchers(filtered);
       })
       .finally(() => setLoading(false));

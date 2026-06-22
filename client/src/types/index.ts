@@ -18,6 +18,7 @@ export interface User {
   team_token_balance?: number;
   company_id: string | null;
   created_at: string;
+  createdAt?: string;
   entry_date?: string | null;
 }
 
@@ -32,6 +33,7 @@ export interface Company {
   email?: string;
   siret?: string;
   created_at: string;
+  createdAt?: string;
 }
 
 export interface TokenTransaction {
@@ -41,8 +43,10 @@ export interface TokenTransaction {
   amount: number;
   type: string;
   reason?: string;
+  company_id: string;
   stripe_payment_id?: string;
   created_at: string;
+  createdAt?: string;
   sender?: {
     id: string;
     name: string;
@@ -82,6 +86,7 @@ export interface Voucher {
   category: VoucherCategory | null;
   images: string[];
   created_at: string;
+  createdAt?: string;
   favorite_count?: number;
   is_featured?: boolean;
   is_weekly?: boolean;
@@ -93,6 +98,7 @@ export interface Redemption {
   voucher_id: string;
   promo_code: string;
   redeemed_at: string;
+  createdAt?: string;
   voucher?: { id: string; title: string; partner: string; token_cost: number };
 }
 
@@ -135,6 +141,7 @@ export interface AdminRedemption {
   promo_code: string;
   redeemed_at: string;
   created_at: string;
+  createdAt?: string;
   user: { id: string; first_name: string; name: string; email: string };
   voucher: { id: string; partner: string; title: string; token_cost: number };
 }

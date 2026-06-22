@@ -139,7 +139,7 @@ export default function Profil() {
                         {tx.reason}
                       </td>
                       <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                        {fmtShort(tx.created_at)}
+                        {fmtShort(tx.createdAt || tx.created_at)}
                       </td>
                     </tr>
                   ))}

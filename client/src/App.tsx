@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -83,14 +84,16 @@ function Wrap({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<HomeRedirect />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
+<<<<<<< Updated upstream
           {/* Employer-only */}
           <Route path="/employer/dashboard" element={
             <ProtectedRoute allowedRoles={['employer']}>
@@ -107,98 +110,117 @@ export default function App() {
               <Layout><ManagerDetail /></Layout>
             </ProtectedRoute>
           } />
+=======
+            {/* Employer-only */}
+            <Route path="/employer/dashboard" element={
+              <ProtectedRoute allowedRoles={['employer']}>
+                <Layout><EmployerDashboard /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employer/employees/:id" element={
+              <ProtectedRoute allowedRoles={['employer']}>
+                <Layout><EmployeeDetail /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employer/managers/:id" element={
+              <ProtectedRoute allowedRoles={['employer']}>
+                <Layout><ManagerDetail /></Layout>
+              </ProtectedRoute>
+            } />
+>>>>>>> Stashed changes
 
-          <Route path="/manager/collaborateurs/:id" element={
-            <ProtectedRoute allowedRoles={['manager']}>
-              <Layout><CollaborateurDetail /></Layout>
-            </ProtectedRoute>
-          } />
+            <Route path="/manager/collaborateurs/:id" element={
+              <ProtectedRoute allowedRoles={['manager']}>
+                <Layout><CollaborateurDetail /></Layout>
+              </ProtectedRoute>
+            } />
 
-          {/* Admin-only */}
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminDashboard /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/companies/:id" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminCompanyDetail /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminBons /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/:id" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminVoucherDetail /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/stats" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminStats /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/rachats" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminRachats /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/taux-rachat" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminTauxRachat /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/stat-rachats" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminStatRachats /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/stat-motifs" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout><AdminStatMotifs /></Layout>
-            </ProtectedRoute>
-          } />
+            {/* Admin-only */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminDashboard /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/companies/:id" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminCompanyDetail /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/bons" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminBons /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/bons/:id" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminVoucherDetail /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stats" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminStats /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/rachats" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminRachats /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/taux-rachat" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminTauxRachat /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stat-rachats" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminStatRachats /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stat-motifs" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><AdminStatMotifs /></Layout>
+              </ProtectedRoute>
+            } />
 
-          {/* All authenticated users */}
-          <Route path="/catalogue" element={
-            <ProtectedRoute>
-              <Layout><Catalogue /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/catalogue/categorie/:category" element={
-            <ProtectedRoute>
-              <Layout><CategorieDetail /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/catalogue/offre/:id" element={
-            <ProtectedRoute>
-              <Layout><VoucherDetail /></Layout>
-            </ProtectedRoute>
-          } />
+            {/* All authenticated users */}
+            <Route path="/catalogue" element={
+              <ProtectedRoute>
+                <Layout><Catalogue /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/catalogue/categorie/:category" element={
+              <ProtectedRoute>
+                <Layout><CategorieDetail /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/catalogue/offre/:id" element={
+              <ProtectedRoute>
+                <Layout><VoucherDetail /></Layout>
+              </ProtectedRoute>
+            } />
 
-          {/* All authenticated users */}
-          <Route path="/profil"      element={<Wrap><Profil /></Wrap>} />
-          <Route path="/parametres"  element={<Wrap><Parameters /></Wrap>} />
-          <Route path="/historique"  element={<Wrap><Historique /></Wrap>} />
-          <Route path="/panier"      element={<Wrap><Panier /></Wrap>} />
-          <Route path="/service"      element={<Wrap><Service /></Wrap>} />
-          <Route path="/mes-informations" element={<Wrap><MesInformations /></Wrap>} />
-          <Route path="/faq"              element={<Wrap><FAQ /></Wrap>} />
-          <Route path="/pour-toi"        element={<Wrap><PourToi /></Wrap>} />
-          <Route path="/mot-de-passe" element={<Wrap><MotDePasse /></Wrap>} />
-          <Route path="/cgu"          element={<Wrap><CGU /></Wrap>} />
-          <Route path="/avis"         element={<Wrap><Avis /></Wrap>} />
-          <Route path="/abonnement" element={
-            <ProtectedRoute allowedRoles={['employer']}>
-              <Layout><Abonnement /></Layout>
-            </ProtectedRoute>
-          } />
+            {/* All authenticated users */}
+            <Route path="/profil"      element={<Wrap><Profil /></Wrap>} />
+            <Route path="/parametres"  element={<Wrap><Parameters /></Wrap>} />
+            <Route path="/historique"  element={<Wrap><Historique /></Wrap>} />
+            <Route path="/panier"      element={<Wrap><Panier /></Wrap>} />
+            <Route path="/service"      element={<Wrap><Service /></Wrap>} />
+            <Route path="/mes-informations" element={<Wrap><MesInformations /></Wrap>} />
+            <Route path="/faq"              element={<Wrap><FAQ /></Wrap>} />
+            <Route path="/pour-toi"        element={<Wrap><PourToi /></Wrap>} />
+            <Route path="/mot-de-passe" element={<Wrap><MotDePasse /></Wrap>} />
+            <Route path="/cgu"          element={<Wrap><CGU /></Wrap>} />
+            <Route path="/avis"         element={<Wrap><Avis /></Wrap>} />
+            <Route path="/abonnement" element={
+              <ProtectedRoute allowedRoles={['employer']}>
+                <Layout><Abonnement /></Layout>
+              </ProtectedRoute>
+            } />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

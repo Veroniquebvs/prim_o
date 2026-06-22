@@ -93,7 +93,7 @@ function getTimeBuckets(history: AdminRedemption[], period: Period): { label: st
   if (period === 'tout') {
     const map: Record<string, number> = {};
     history.forEach(r => {
-      const d = new Date(r.redeemed_at);
+      const d = new Date(r.createdAt || r.redeemed_at);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       map[key] = (map[key] ?? 0) + 1;
     });
@@ -108,7 +108,7 @@ function getTimeBuckets(history: AdminRedemption[], period: Period): { label: st
   // 30j ou 90j → par semaine (lundi au dimanche)
   const map: Record<string, number> = {};
   history.forEach(r => {
-    const d = new Date(r.redeemed_at);
+    const d = new Date(r.createdAt || r.redeemed_at);
     const day = d.getDay();
     const diff = day === 0 ? -6 : 1 - day;
     const monday = new Date(d);
@@ -152,7 +152,7 @@ export default function AdminStatRachats() {
     : null;
 
   const filtered = cutoff
-    ? history.filter(r => new Date(r.redeemed_at) >= cutoff)
+    ? history.filter(r => new Date(r.createdAt || r.redeemed_at) >= cutoff)
     : history;
 
   // KPIs (période filtrée)
@@ -386,7 +386,7 @@ export default function AdminStatRachats() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...filtered].sort((a, b) => new Date(b.redeemed_at || b.created_at).getTime() - new Date(a.redeemed_at || a.created_at).getTime()).map(r => (
+                  {[...filtered].sort((a, b) => new Date(b.createdAt || b.redeemed_at || b.created_at).getTime() - new Date(a.createdAt || a.redeemed_at || a.created_at).getTime()).map(r => (
                     <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '10px 16px' }}>
                         <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.user?.first_name || r.user?.name || '—'}</p>
@@ -403,7 +403,7 @@ export default function AdminStatRachats() {
                         <span className="promo-code">{r.promo_code}</span>
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                        {fmt(r.redeemed_at || r.created_at)}
+                        {fmt(r.createdAt || r.redeemed_at || r.created_at)}
                       </td>
                     </tr>
                   ))}

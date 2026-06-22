@@ -257,7 +257,13 @@ export default function BottomNav() {
                 <div>
                   <p className="menu-sheet-name">{user.first_name || user.name}</p>
                   <p className="menu-sheet-email">{user.email}</p>
-                  <span className="menu-sheet-role">{user.role}</span>
+                  <span className="menu-sheet-role">
+                    {user.role === 'employee' ? 'collaborateur' :
+                     user.role === 'employer' ? 'employeur' :
+                     user.role === 'manager' ? 'manager' :
+                     user.role === 'admin' ? 'admin' :
+                     user.role}
+                  </span>
                 </div>
               </div>
             )}

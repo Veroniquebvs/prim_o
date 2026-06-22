@@ -73,6 +73,14 @@ export default function CollaborateurDetail() {
           <p className="stat-value">{tokensReceived}</p>
           <p className="stat-sub">de votre part</p>
         </div>
+<<<<<<< Updated upstream
+=======
+        <div className="stat-card">
+          <p className="stat-label">Membre depuis</p>
+          <p className="stat-value" style={{ fontSize: "1.1rem" }}>{fmt(collab.createdAt || collab.created_at)}</p>
+          <p className="stat-sub">dans l'entreprise</p>
+        </div>
+>>>>>>> Stashed changes
       </div>
 
       {/* Informations */}
@@ -112,7 +120,7 @@ export default function CollaborateurDetail() {
                 {history.map((tx) => (
                   <tr key={tx.id}>
                     <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {fmt(tx.created_at)}
+                      {fmt(tx.createdAt || tx.created_at)}
                     </td>
                     <td>
                       <span

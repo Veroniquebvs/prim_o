@@ -144,9 +144,18 @@ export default function EmployeeDetail() {
           <p className="stat-label">Tokens</p>
           <p className="stat-value">{employee.token_balance}</p>
           <p className="stat-sub">solde actuel</p>
+<<<<<<< Updated upstream
           <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span>+ Ajouter tokens</span>
           </div>
+=======
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Membre depuis</p>
+          <p className="stat-value" style={{ fontSize: "1.1rem" }}>
+            {fmt(employee.createdAt || employee.created_at)}
+          </p>
+>>>>>>> Stashed changes
         </div>
       </div>
 
@@ -231,7 +240,7 @@ export default function EmployeeDetail() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {fmt(tx.created_at)}
+                      {fmt(tx.createdAt || tx.created_at)}
                     </td>
                     <td>
                       <span

@@ -147,7 +147,7 @@ export default function AdminCompanyDetail() {
               </tr>
               <tr>
                 <td style={{ ...tdMuted, fontWeight: 700 }}>Inscrite le</td>
-                <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>{fmt(company.created_at)}</td>
+                <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>{fmt(company.createdAt || company.created_at)}</td>
               </tr>
             </tbody>
           </table>

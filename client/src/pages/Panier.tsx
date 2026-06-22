@@ -147,7 +147,7 @@ export default function Panier() {
                   disabled={redeeming === v.id || balance < v.token_cost}
                   onClick={() => handleRedeem(v)}
                 >
-                  {redeeming === v.id ? '…' : 'Racheter'}
+                  {redeeming === v.id ? '…' : 'Acheter'}
                 </button>
               )}
               <button

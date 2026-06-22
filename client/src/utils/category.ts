@@ -1,7 +1,7 @@
 import { Voucher } from '../types';
 
 export function getCategory(v: Voucher): string {
-  return v.category
+  return v && v.category
     ? v.category.charAt(0).toUpperCase() + v.category.slice(1)
     : 'Autres';
 }

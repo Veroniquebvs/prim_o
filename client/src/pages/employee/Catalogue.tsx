@@ -129,6 +129,8 @@ export default function Catalogue() {
   const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  type SortOption = 'populaires' | 'recent' | 'prix-croissant' | 'prix-decroissant';
+  const [sortBy, setSortBy] = useState<SortOption>('populaires');
   
   const { isFavorite, toggle } = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
@@ -136,7 +138,13 @@ export default function Catalogue() {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    marketplaceService.getItems().then(setVouchers).finally(() => setLoading(false));
+    marketplaceService.getItems()
+      .then((items) => setVouchers(Array.isArray(items) ? items : []))
+      .catch((err) => {
+        console.error(err);
+        setVouchers([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   /* Ferme le dropdown si clic en dehors */
@@ -162,9 +170,10 @@ export default function Catalogue() {
     if (!carouselRef.current) return;
     const scrollLeft = carouselRef.current.scrollLeft;
     const width = carouselRef.current.clientWidth;
+    if (!width) return; // Évite la division par zéro / NaN
     // Ajoute une petite tolérance pour éviter les sauts au début
     const newPage = Math.round(scrollLeft / width) + 1;
-    if (newPage !== page) setPage(newPage);
+    if (!isNaN(newPage) && newPage !== page) setPage(newPage);
   };
 
   const scrollToPage = (p: number) => {
@@ -198,11 +207,11 @@ export default function Catalogue() {
     }
   }
 
-  if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
-
   const userBalance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
-  const presentCategories = Array.from(new Set(vouchers.map((v) => getCategory(v))));
+  const safeVouchers = Array.isArray(vouchers) ? vouchers : [];
+
+  const presentCategories = Array.from(new Set(safeVouchers.map((v) => getCategory(v))));
   const orderedCategories = [
     ...VOUCHER_CATEGORIES
       .map((c) => c.charAt(0).toUpperCase() + c.slice(1))
@@ -216,32 +225,48 @@ export default function Catalogue() {
 
   /* Suggestions : partenaires dont le nom commence par le texte saisi */
   const partnerSuggestions = search.trim().length > 0
-    ? Array.from(new Set(vouchers.map((v) => v.partner)))
-        .filter((p) => p.toLowerCase().startsWith(searchLower))
+    ? Array.from(new Set(safeVouchers.map((v) => v.partner)))
+        .filter((p) => p && p.toLowerCase().startsWith(searchLower))
         .sort((a, b) => a.localeCompare(b))
         .slice(0, 6)
     : [];
 
-  const filtered = vouchers.filter((v) => {
-    const matchSearch = !search ||
-      v.partner.toLowerCase().includes(searchLower) ||
-      v.title.toLowerCase().includes(searchLower);
-    const matchCat = !activeCategory || getCategory(v) === activeCategory;
-    return matchSearch && matchCat;
-  });
+  const showSearch = !!search || !!activeCategory;
 
-  /* "Populaires" : toutes les offres triées par popularité puis récence */
-  const populaires = [...vouchers]
-    .filter((v) => v.available)
-    .sort((a, b) => {
-      const heartsA = a.favorite_count ?? 0;
-      const heartsB = b.favorite_count ?? 0;
-      if (heartsB !== heartsA) return heartsB - heartsA;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  const itemsToDisplay = useMemo(() => {
+    const filtered = safeVouchers.filter((v) => {
+      const matchSearch = !search ||
+        (v.partner || '').toLowerCase().includes(searchLower) ||
+        (v.title || '').toLowerCase().includes(searchLower);
+      const matchCat = !activeCategory || getCategory(v) === activeCategory;
+      return matchSearch && matchCat;
     });
 
-  const showSearch = !!search || !!activeCategory;
-  const itemsToDisplay = showSearch ? filtered : populaires;
+    const baseItems = showSearch ? filtered : safeVouchers.filter((v) => v.available);
+
+    return [...baseItems].sort((a, b) => {
+      if (sortBy === 'populaires') {
+        const heartsA = a.favorite_count ?? 0;
+        const heartsB = b.favorite_count ?? 0;
+        if (heartsB !== heartsA) return heartsB - heartsA;
+        const timeB = new Date(b.createdAt || b.created_at || 0).getTime();
+        const timeA = new Date(a.createdAt || a.created_at || 0).getTime();
+        return timeB - timeA;
+      }
+      if (sortBy === 'recent') {
+        const timeB = new Date(b.createdAt || b.created_at || 0).getTime();
+        const timeA = new Date(a.createdAt || a.created_at || 0).getTime();
+        return timeB - timeA;
+      }
+      if (sortBy === 'prix-croissant') {
+        return a.token_cost - b.token_cost;
+      }
+      if (sortBy === 'prix-decroissant') {
+        return b.token_cost - a.token_cost;
+      }
+      return 0;
+    });
+  }, [vouchers, search, searchLower, activeCategory, sortBy]);
 
   const PAGE_SIZE = 15;
   const totalPages = Math.ceil(itemsToDisplay.length / PAGE_SIZE) || 1;
@@ -250,48 +275,63 @@ export default function Catalogue() {
     pages.push(itemsToDisplay.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
   }
 
+  if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
+
   return (
     <div>
       <div className={`page-header page-header--clean page-header--centered ${isManager ? 'page-header--manager' : ''}`}>
         <h1>Échangez vos tokens contre des bons d'achat</h1>
       </div>
 
-      <div ref={searchWrapperRef} style={{ marginBottom: 14, position: 'relative' }}>
-        <input
-          className="form-input"
-          style={{ borderRadius: '999px', paddingLeft: '20px' }}
-          type="search"
-          placeholder="Rechercher un bon ou un partenaire…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
-          onFocus={() => setShowSuggestions(true)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
-          autoComplete="off"
-        />
-        {showSearch && showSuggestions && search.trim().length > 0 && (
-          <ul className="search-suggestions">
-            {partnerSuggestions.length > 0 ? (
-              partnerSuggestions.map((partner) => (
-                <li
-                  key={partner}
-                  className="search-suggestion-item"
-                  onMouseDown={(e) => { e.preventDefault(); applySuggestion(partner); }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    style={{ width: 14, height: 14, flexShrink: 0, color: 'var(--text-muted)' }}>
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  {partner}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div ref={searchWrapperRef} style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+          <input
+            className="form-input"
+            style={{ borderRadius: '999px', paddingLeft: '20px' }}
+            type="search"
+            placeholder="Rechercher un bon ou un partenaire…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
+            autoComplete="off"
+          />
+          {showSearch && showSuggestions && search.trim().length > 0 && (
+            <ul className="search-suggestions">
+              {partnerSuggestions.length > 0 ? (
+                partnerSuggestions.map((partner) => (
+                  <li
+                    key={partner}
+                    className="search-suggestion-item"
+                    onMouseDown={(e) => { e.preventDefault(); applySuggestion(partner); }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      style={{ width: 14, height: 14, flexShrink: 0, color: 'var(--text-muted)' }}>
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    {partner}
+                  </li>
+                ))
+              ) : (
+                <li className="search-suggestion-item" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
+                  Aucun partenaire trouvé
                 </li>
-              ))
-            ) : (
-              <li className="search-suggestion-item" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
-                Aucun partenaire trouvé
-              </li>
-            )}
-          </ul>
-        )}
+              )}
+            </ul>
+          )}
+        </div>
+        <select
+          className="form-select"
+          style={{ width: 'auto', minWidth: '180px', borderRadius: '999px', padding: '0 16px', fontSize: '0.85rem' }}
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+        >
+          <option value="populaires">Trier par : Populaires</option>
+          <option value="recent">Trier par : Nouveautés</option>
+          <option value="prix-croissant">Trier par : Du moins cher au plus cher</option>
+          <option value="prix-decroissant">Trier par : Du plus cher au moins cher</option>
+        </select>
       </div>
 
       <div className="category-chips">

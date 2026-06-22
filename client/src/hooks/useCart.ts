@@ -24,14 +24,21 @@ function cartKey(userId: string) {
 }
 
 function parseSaved(raw: string): CartItem[] {
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) return [];
-  // Migration: support anciens paniers stockés comme string[]
-  return parsed.map((entry: unknown) =>
-    typeof entry === 'string'
-      ? { id: entry, added_at: new Date().toISOString() }
-      : entry as CartItem,
-  );
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Migration: support anciens paniers stockés comme string[] ou objets corrompus
+    return parsed
+      .filter((entry): entry is any => entry !== null && entry !== undefined)
+      .map((entry: any) =>
+        typeof entry === 'string'
+          ? { id: entry, added_at: new Date().toISOString() }
+          : { id: entry.id || '', added_at: entry.added_at || new Date().toISOString() }
+      )
+      .filter((item) => !!item.id);
+  } catch {
+    return [];
+  }
 }
 
 export function useCart() {
@@ -58,7 +65,11 @@ export function useCart() {
 
   useEffect(() => {
     if (!key) return;
-    localStorage.setItem(key, JSON.stringify(saved));
+    try {
+      localStorage.setItem(key, JSON.stringify(saved));
+    } catch (e) {
+      console.warn('Failed to save cart to localStorage:', e);
+    }
   }, [saved, key]);
 
   function toggle(id: string) {

@@ -19,36 +19,41 @@ export function useFavorites() {
 
   useEffect(() => {
     marketplaceService.getFavorites()
-      .then(setFavorites)
+      .then((data) => setFavorites(Array.isArray(data) ? data : []))
       .catch(() => setFavorites([]))
       .finally(() => setLoading(false));
   }, []);
 
   const toggle = useCallback(async (voucher_id: string) => {
-    const wasFavorited = favorites.some((f) => f.voucher_id === voucher_id);
+    const safeFavs = Array.isArray(favorites) ? favorites : [];
+    const wasFavorited = safeFavs.some((f) => f && f.voucher_id === voucher_id);
     // Optimistic update
-    setFavorites((prev) =>
-      wasFavorited
-        ? prev.filter((f) => f.voucher_id !== voucher_id)
-        : [{ voucher_id, created_at: new Date().toISOString() }, ...prev]
-    );
+    setFavorites((prev) => {
+      const prevArr = Array.isArray(prev) ? prev : [];
+      return wasFavorited
+        ? prevArr.filter((f) => f && f.voucher_id !== voucher_id)
+        : [{ voucher_id, created_at: new Date().toISOString() }, ...prevArr];
+    });
     try {
       await marketplaceService.toggleFavorite(voucher_id);
     } catch {
       // Revert on error
-      setFavorites((prev) =>
-        wasFavorited
-          ? [{ voucher_id, created_at: new Date().toISOString() }, ...prev]
-          : prev.filter((f) => f.voucher_id !== voucher_id)
-      );
+      setFavorites((prev) => {
+        const prevArr = Array.isArray(prev) ? prev : [];
+        return wasFavorited
+          ? [{ voucher_id, created_at: new Date().toISOString() }, ...prevArr]
+          : prevArr.filter((f) => f && f.voucher_id !== voucher_id);
+      });
     }
   }, [favorites]);
 
+  const safeFavs = Array.isArray(favorites) ? favorites : [];
+
   return {
-    favorites,
+    favorites: safeFavs,
     loading,
-    isFavorite: (id: string) => favorites.some((f) => f.voucher_id === id),
+    isFavorite: (id: string) => safeFavs.some((f) => f && f.voucher_id === id),
     toggle,
-    count: favorites.length,
+    count: safeFavs.length,
   };
 }
