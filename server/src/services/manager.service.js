@@ -1,3 +1,15 @@
+/**
+ * manager.service.js — Business logic for manager-level team and token operations.
+ *
+ * Managers sit between employers and employees: they receive a token budget from the employer
+ * and redistribute it to the employees in their team. This service provides everything a
+ * manager needs: viewing and populating their team, creating employee accounts, distributing
+ * tokens, and managing their own recurring allocation rules (scheduled allocations).
+ *
+ * Token transfers from manager to employee use the manager's personal token_balance, which is
+ * funded by 'employer_to_manager' allocations. All balance changes are wrapped in atomic
+ * PostgreSQL transactions with row-level locks.
+ */
 const bcrypt = require('bcrypt');
 const sequelize = require('../config/database');
 const { User, Team, TeamMember, TokenTransaction, ScheduledAllocation } = require('../models');
@@ -10,6 +22,12 @@ const httpError = (message, status) => {
   return err;
 };
 
+/**
+ * Returns the manager's active team along with all currently active members.
+ * managerId is the UUID of the authenticated manager.
+ * Each member entry includes the full user record (without password hash).
+ * Throws 404 if the manager has no active (non-dissolved) team.
+ */
 const getTeam = async (managerId) => {
   const team = await Team.findOne({
     where: { manager_id: managerId, dissolved_at: null },
@@ -27,6 +45,15 @@ const getTeam = async (managerId) => {
   return team;
 };
 
+/**
+ * Creates a new employee account and immediately adds them to the manager's active team.
+ * manager is the authenticated manager user object. email must be unique across all users.
+ * first_name, name, and password are required. The password is hashed before storage.
+ * The employee is created with status 'active' and role 'employee'.
+ * The User creation and TeamMember record are committed atomically.
+ * Throws 409 if the email is already taken, 404 if the manager has no active team.
+ * Returns the created employee object without the password hash.
+ */
 const createEmployee = async (manager, { email, first_name, name, password }) => {
   const existing = await User.findOne({ where: { email } });
   if (existing) throw httpError('Email already in use', 409);
@@ -69,6 +96,13 @@ const createEmployee = async (manager, { email, first_name, name, password }) =>
   }
 };
 
+/**
+ * Adds an existing employee (from the same company) to the manager's active team.
+ * manager is the authenticated manager. employee_id is the UUID of the employee to add.
+ * Throws 404 if the manager has no active team or the employee is not found in the company.
+ * Throws 409 if the employee already belongs to an active team.
+ * Returns an object confirming the team_id and user_id that were linked.
+ */
 const addTeamMember = async (manager, { employee_id }) => {
   const team = await Team.findOne({
     where: { manager_id: manager.id, dissolved_at: null },
@@ -90,6 +124,13 @@ const addTeamMember = async (manager, { employee_id }) => {
   return { team_id: team.id, user_id: employee_id };
 };
 
+/**
+ * Transfers tokens from the manager's personal balance to an employee.
+ * manager is the authenticated manager user object. employee_id is the UUID of the target employee.
+ * amount must be a positive integer. Throws 402 if the manager's balance is insufficient.
+ * Throws 404 if the employee does not exist. The balance change and transaction record are
+ * committed atomically with row-level locks. Returns the created TokenTransaction record.
+ */
 const giveTokens = async (manager, { employee_id, amount }) => {
   if (!Number.isInteger(amount) || amount <= 0) {
     throw httpError('amount must be a positive integer', 400);
@@ -127,6 +168,11 @@ const giveTokens = async (manager, { employee_id, amount }) => {
   }
 };
 
+/**
+ * Returns all employees in the manager's company who are not currently assigned to any active team.
+ * manager is the authenticated manager user object (used to scope to the same company).
+ * Results are ordered by first name. This is used to populate the "add member" picker in the UI.
+ */
 const getUnassignedCollaborators = async (manager) => {
   const { Op } = require('sequelize');
   const assignedIds = await TeamMember.findAll({
@@ -151,6 +197,11 @@ const getUnassignedCollaborators = async (manager) => {
   });
 };
 
+/**
+ * Returns the manager's current token balance.
+ * managerId is the UUID of the authenticated manager.
+ * Throws 404 if the user does not exist.
+ */
 const getBalance = async (managerId) => {
   const user = await User.findByPk(managerId, { attributes: ['id', 'token_balance'] });
   if (!user) throw httpError('User not found', 404);
@@ -170,6 +221,11 @@ function computeNextRun(dayOfMonth, frequency, month) {
   return candidate;
 }
 
+/**
+ * Returns all scheduled allocation rules created by the given manager, including the
+ * receiver (employee) details. Results are ordered newest first.
+ * managerId is the UUID of the authenticated manager.
+ */
 const listScheduled = async (managerId) => {
   return ScheduledAllocation.findAll({
     where: { sender_id: managerId },
@@ -178,6 +234,14 @@ const listScheduled = async (managerId) => {
   });
 };
 
+/**
+ * Creates a recurring token allocation rule from this manager to a specific employee in their team.
+ * manager is the authenticated manager. receiver_id must be a UUID of an employee who is an
+ * active member of the manager's team. Throws 403 if the employee is not in the team.
+ * amount, frequency ('monthly' or 'annual'), and day_of_month define the schedule.
+ * month is required when frequency is 'annual'. label defaults to 'manager_to_employee'.
+ * Returns the created ScheduledAllocation record.
+ */
 const createScheduled = async (manager, { receiver_id, amount, frequency, day_of_month, month, label }) => {
   const membership = await TeamMember.findOne({
     where: { user_id: receiver_id, left_at: null },
@@ -205,6 +269,12 @@ const createScheduled = async (manager, { receiver_id, amount, frequency, day_of
   });
 };
 
+/**
+ * Toggles the active flag of a scheduled allocation rule (pause ↔ resume).
+ * manager is the authenticated manager. id is the UUID of the rule to toggle.
+ * Throws 404 if the rule is not found or does not belong to this manager.
+ * Returns the updated ScheduledAllocation record.
+ */
 const toggleScheduled = async (manager, id) => {
   const alloc = await ScheduledAllocation.findOne({ where: { id, sender_id: manager.id } });
   if (!alloc) throw httpError('Allocation not found', 404);
@@ -213,6 +283,11 @@ const toggleScheduled = async (manager, id) => {
   return alloc;
 };
 
+/**
+ * Permanently deletes a scheduled allocation rule.
+ * manager is the authenticated manager. id is the UUID of the rule to delete.
+ * Throws 404 if the rule is not found or does not belong to this manager.
+ */
 const deleteScheduled = async (manager, id) => {
   const alloc = await ScheduledAllocation.findOne({ where: { id, sender_id: manager.id } });
   if (!alloc) throw httpError('Allocation not found', 404);

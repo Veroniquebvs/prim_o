@@ -1,3 +1,13 @@
+/**
+ * pages/admin/AdminCompanyDetail.tsx — Detailed view of a single company, for the admin.
+ *
+ * Fetches the company record and its employee list. Displays company info, token balance,
+ * employee table (with a role-change dropdown that lets the admin promote/demote between
+ * employee and manager roles), and a two-step admin token deduction form. The deduction
+ * targets either the company token pool or an individual employee; a confirmation step
+ * shows the recap before committing the write. Company deletion requires a second click
+ * on the confirmation button and removes the company and all associated users.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { companyService } from '../../services/company.service';

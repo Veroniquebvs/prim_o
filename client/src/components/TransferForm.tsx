@@ -1,3 +1,13 @@
+/**
+ * components/TransferForm.tsx — Token allocation form used by employers and managers.
+ *
+ * Renders a form to select a collaborator from a provided list, enter an amount, and
+ * optionally enter a reason. On submit a confirmation modal appears showing a recap of
+ * the intended allocation. On confirmation, calls tokenService.allocate() then refreshes
+ * the company pool via AuthContext and invokes the onSuccess callback (typically triggers
+ * a re-fetch of the parent page data). Any server-side error (e.g. insufficient balance)
+ * is displayed inline in the form.
+ */
 import { useState } from "react";
 import type { User } from "../types";
 import { tokenService } from "../services/token.service";

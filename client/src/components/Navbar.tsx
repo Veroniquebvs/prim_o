@@ -1,3 +1,13 @@
+/**
+ * components/Navbar.tsx — Legacy desktop navigation bar (currently superseded by TopNav).
+ *
+ * Renders the PRIM'O brand link, a hamburger menu for mobile, and navigation links
+ * tailored to the user's role. The menu closes on outside clicks and on navigation.
+ * Cart item count is shown on the Panier link for employees.
+ *
+ * Note: this component may not be actively rendered in the current layout; TopNav and
+ * BottomNav together serve the equivalent role.
+ */
 import { useRef, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

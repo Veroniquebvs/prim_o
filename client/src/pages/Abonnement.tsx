@@ -1,3 +1,18 @@
+/**
+ * pages/Abonnement.tsx — Subscription management page for employers.
+ *
+ * Handles four sequential states:
+ * 1. loading — checks whether an active subscription already exists via tokenService.getSubscription.
+ * 2. subscribed — displays the current plan details and lets the employer switch to a different plan.
+ * 3. select — shows the three subscription plans (starter/growth/scale) for a first-time subscriber
+ *    or when switching plans.
+ * 4. checkout — renders the Stripe Elements PaymentElement inside a CheckoutForm component.
+ *    CheckoutForm calls stripe.confirmPayment() and invokes onSuccess on approval.
+ * 5. success — shows a confirmation screen and polls refreshCompany every 2 seconds for up to
+ *    8 attempts while waiting for the Stripe webhook to credit the tokens asynchronously.
+ *
+ * Raw card data is handled entirely by Stripe.js (PaymentElement) — it never reaches the backend.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';

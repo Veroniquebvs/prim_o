@@ -1,5 +1,21 @@
+/**
+ * models/User.js — Sequelize model for the users table.
+ *
+ * Represents every person who can authenticate with the platform, regardless of their role.
+ * A user belongs to exactly one company (except admin users who have no company). The role
+ * field controls which features and routes the user can access. The token_balance tracks how
+ * many tokens this user currently holds and can spend in the marketplace. Passwords are never
+ * stored here directly — only the bcrypt hash produced by AuthService.
+ *
+ * Roles: 'admin' | 'employer' | 'manager' | 'employee'
+ * Status: 'pending' (newly registered, not yet validated by employer) | 'active'
+ */
 const { Model, DataTypes } = require('sequelize');
 
+/**
+ * User model class. The initUser function must be called with the Sequelize instance before
+ * the model can be used for database queries.
+ */
 class User extends Model {
   // Space for future custom methods (e.g., password validation)
 }

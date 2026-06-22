@@ -1,3 +1,21 @@
+/**
+ * pages/employer/EmployerDashboard.tsx — Primary dashboard for the employer role.
+ *
+ * Shows:
+ * - Company token budget and team size stat cards
+ * - A toggle to enable/disable the real-time activity feed for employees (feedback_enabled flag)
+ * - A printable QR code poster for onboarding new employees
+ * - A list of pending (not-yet-activated) employees with a validation action and optional entry date
+ * - Scheduled automatic allocations management (create, edit, toggle active, delete) with a modal form
+ *   supporting monthly/annual frequency, a specific collaborator or all employees, and an exclusion list
+ * - The TransferForm component for immediate manual allocations
+ * - A table of all managers in the company
+ *
+ * Scheduled rule creation and editing share the same modal form (editing pre-fills from the rule object).
+ * A null receiver_id means the rule targets all employees; excluded_user_ids is only sent in that case.
+ *
+ * All data is fetched in parallel via Promise.all on mount and re-fetched after any mutation (fetchData).
+ */
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";

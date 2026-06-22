@@ -1,3 +1,10 @@
+/**
+ * pages/Avis.tsx — App rating page (stub).
+ *
+ * Placeholder page navigated to from the "Nous noter" menu item. Currently displays a
+ * "Fonctionnalité à venir" message. Will eventually integrate an app store or in-app rating
+ * flow when implemented.
+ */
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Avis() {

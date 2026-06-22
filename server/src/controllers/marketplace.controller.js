@@ -1,5 +1,12 @@
+/**
+ * marketplace.controller.js — HTTP handlers for marketplace routes.
+ *
+ * Handles voucher browsing, CRUD (admin), and the redemption flow. Passes req.user.role
+ * to the service layer so getItem can decide whether to include the promo_code field.
+ */
 const marketplaceService = require('../services/marketplace.service');
 
+/** Returns all available vouchers without promo codes, with their favourite counts. */
 const listItems = async (req, res, next) => {
   try {
     const data = await marketplaceService.listItems();
@@ -9,6 +16,7 @@ const listItems = async (req, res, next) => {
   }
 };
 
+/** Returns a single voucher. Includes promo_code only for admin callers. */
 const getItem = async (req, res, next) => {
   try {
     const isAdmin = req.user?.role === 'admin';
@@ -19,6 +27,7 @@ const getItem = async (req, res, next) => {
   }
 };
 
+/** Admin-only: creates a new voucher. Responds 201 with the created record. */
 const createItem = async (req, res, next) => {
   try {
     const data = await marketplaceService.createItem(req.body);
@@ -28,6 +37,7 @@ const createItem = async (req, res, next) => {
   }
 };
 
+/** Admin-only: updates an existing voucher's fields. */
 const updateItem = async (req, res, next) => {
   try {
     const data = await marketplaceService.updateItem(req.params.id, req.body);
@@ -37,6 +47,7 @@ const updateItem = async (req, res, next) => {
   }
 };
 
+/** Admin-only: permanently deletes a voucher by its UUID. */
 const deleteItem = async (req, res, next) => {
   try {
     await marketplaceService.deleteItem(req.params.id);
@@ -46,6 +57,7 @@ const deleteItem = async (req, res, next) => {
   }
 };
 
+/** Redeems a voucher for the authenticated user. Returns the promo code on success. */
 const redeem = async (req, res, next) => {
   try {
     const data = await marketplaceService.redeem(req.user.id, req.body.voucher_id);
@@ -55,6 +67,7 @@ const redeem = async (req, res, next) => {
   }
 };
 
+/** Returns the redemption history for the currently authenticated user. */
 const listOrders = async (req, res, next) => {
   try {
     const data = await marketplaceService.listOrders(req.user.id);
@@ -64,6 +77,7 @@ const listOrders = async (req, res, next) => {
   }
 };
 
+/** Admin-only: returns all vouchers (including unavailable ones and promo codes) with redemption counts. */
 const adminListVouchers = async (req, res, next) => {
   try {
     const data = await marketplaceService.adminListVouchers();
@@ -71,6 +85,7 @@ const adminListVouchers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** Admin-only: returns the full redemption history across all users and vouchers. */
 const adminHistory = async (req, res, next) => {
   try {
     const data = await marketplaceService.adminHistory();

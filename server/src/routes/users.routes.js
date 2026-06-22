@@ -1,3 +1,15 @@
+/**
+ * users.routes.js — Route definitions for user management.
+ *
+ * GET    /              — employer or admin; list users with optional role/companyId filter
+ * GET    /pending       — employer or admin; list employees awaiting activation
+ * GET    /:id           — any authenticated user; fetch one user (scoped to company)
+ * PUT    /:id           — any authenticated user; update name/first_name
+ * DELETE /:id           — admin only; permanently delete a user
+ * GET    /:id/history   — any authenticated user; token transaction history
+ * PATCH  /:id/activate  — employer or admin; activate a pending employee
+ * PATCH  /:id/entry-date — employer or admin; update an employee's entry date
+ */
 const { Router } = require('express');
 const { param, query, body } = require('express-validator');
 const usersController = require('../controllers/users.controller');

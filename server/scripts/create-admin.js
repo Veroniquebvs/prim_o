@@ -1,3 +1,12 @@
+/**
+ * scripts/create-admin.js — One-off script to bootstrap the first admin user.
+ *
+ * Expects the DATABASE_URL as the first command-line argument.
+ * Syncs the schema (alter), then creates a single admin account with a hardcoded
+ * password that should be changed immediately after first use.
+ *
+ * Usage: node scripts/create-admin.js postgresql://user:pass@host/db
+ */
 const bcrypt = require('bcrypt');
 
 const DATABASE_URL = process.argv[2];

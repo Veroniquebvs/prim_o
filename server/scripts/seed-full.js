@@ -1,3 +1,12 @@
+/**
+ * scripts/seed-full.js — Full production/staging seed for the Render environment.
+ *
+ * Expects the DATABASE_URL as the first command-line argument. Sets NODE_ENV=production
+ * so the database config enables SSL. Loads the shared seed-data.js dataset and creates:
+ * an admin account, the demo companies, one employer per company, and several employees per
+ * company with token balances and demo vouchers. Safe to run on a fresh schema only; running
+ * on an existing DB may produce duplicate-key errors.
+ */
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 

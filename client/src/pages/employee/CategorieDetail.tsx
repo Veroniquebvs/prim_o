@@ -1,3 +1,12 @@
+/**
+ * pages/employee/CategorieDetail.tsx — Paginated list of all vouchers in a single category.
+ *
+ * The category is read from the :category URL param (URL-decoded and capitalised for display).
+ * Vouchers are fetched from the API, filtered client-side to the matching category, and sorted
+ * by newest first. Results are paginated at PAGE_SIZE (30) items per page; navigation buttons
+ * scroll to the top of the page on page change. Favorite and cart toggles are available on each
+ * card, and inline redemption works the same way as in Catalogue and VoucherDetail.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

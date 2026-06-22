@@ -1,3 +1,11 @@
+/**
+ * scripts/seed-local.js — Seed for the local Docker PostgreSQL database.
+ *
+ * Does NOT force NODE_ENV=production so the database config runs without SSL (the Docker
+ * Postgres container does not support SSL). Defaults to the standard Docker compose URL
+ * if no argument is provided. Creates the same dataset as seed-full.js: admin + demo
+ * companies + employers + employees + 90 vouchers (10 per category with generated images).
+ */
 // Seed de la base Docker LOCALE (sans SSL).
 // Crée : compte admin + 3 entreprises + 3 employeurs + 9 employés (cf. workflow.md)
 // + 90 bons (10 par catégorie, une image chacun).

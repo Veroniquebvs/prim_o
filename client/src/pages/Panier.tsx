@@ -1,3 +1,17 @@
+/**
+ * pages/Panier.tsx — Shopping cart page where users review and redeem saved vouchers.
+ *
+ * Cart contents are sourced from useCart (localStorage) and cross-referenced with the live
+ * voucher list from the API to get current availability and token cost. Each voucher can be
+ * redeemed individually or all redeemable items can be redeemed at once via handleRedeemAll.
+ *
+ * The "Valider le panier" button in the desktop TopNav dispatches a custom 'panier:validate'
+ * browser event; this page listens for that event and triggers handleRedeemAll, allowing the
+ * checkout action to be triggered from outside the component tree.
+ *
+ * On successful redemption the promo code is displayed in-page, the item is removed from the
+ * cart, and the user/company balance is refreshed via AuthContext.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';

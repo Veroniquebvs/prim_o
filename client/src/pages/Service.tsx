@@ -1,3 +1,10 @@
+/**
+ * pages/Service.tsx — Help hub page that links to the FAQ and direct contact.
+ *
+ * Provides two action cards: one navigates to the full FAQ page, the other navigates to the
+ * FAQ page with `{ state: { anchor: 'contact' } }` so the contact section is scrolled into
+ * view automatically. Accessible from the secondary navigation menu.
+ */
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function IconFAQ() {

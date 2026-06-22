@@ -1,3 +1,11 @@
+/**
+ * pages/HomePage.tsx — Public landing page for unauthenticated visitors.
+ *
+ * If the session is still loading, renders nothing (avoids flash-of-wrong-page).
+ * If already authenticated, redirects immediately to the role-appropriate dashboard:
+ * employer → /employer/dashboard, admin → /admin/dashboard, others → /catalogue.
+ * For unauthenticated visitors, renders the marketing hero with login and register CTAs.
+ */
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 

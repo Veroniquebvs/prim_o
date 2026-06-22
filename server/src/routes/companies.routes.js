@@ -1,3 +1,14 @@
+/**
+ * companies.routes.js — Route definitions for company management.
+ *
+ * POST   /            — public; create a company (employer self-onboarding step 1)
+ * GET    /:id/public  — public; minimal company info for QR-code registration
+ * GET    /            — admin only; list all companies
+ * GET    /:id         — any authenticated user; fetch one company
+ * PUT    /:id         — employer (own company) or admin; update company fields
+ * POST   /:id/tokens  — admin only; grant tokens to a company without Stripe
+ * DELETE /:id         — admin only; delete company and all its data
+ */
 const { Router } = require('express');
 const { body, param } = require('express-validator');
 const companiesController = require('../controllers/companies.controller');

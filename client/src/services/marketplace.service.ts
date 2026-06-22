@@ -1,3 +1,10 @@
+/**
+ * services/marketplace.service.ts — Client-side wrapper for marketplace and favourites API endpoints.
+ *
+ * Covers the full marketplace surface: browsing vouchers, admin CRUD, image upload, redemption,
+ * order history, and the favourites toggle. Also exposes the admin reporting endpoints for
+ * the voucher and redemption management views.
+ */
 import api from './api';
 import type { Voucher, Redemption, AdminVoucher, AdminRedemption, ApiResponse } from '../types';
 

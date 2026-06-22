@@ -1,3 +1,13 @@
+/**
+ * pages/admin/AdminStatRachats.tsx — Redemption analytics page for the admin.
+ *
+ * Loads all vouchers and all redemption records, then derives per-voucher redemption rates
+ * and time-series counts for three selectable periods (30 days, 90 days, all-time). Shows:
+ * - A period selector (30j / 90j / tout)
+ * - An SVG bar chart of redemptions over time (one bar per day/week)
+ * - A top-10 most-redeemed vouchers table with redemption counts and colour-coded rate indicators
+ * rateColor uses green ≥50%, primary colour ≥20%, and muted for lower rates.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';

@@ -1,3 +1,12 @@
+/**
+ * tests/tokens/stripe.service.test.js — Unit tests for StripeService.
+ *
+ * Mocks the Stripe SDK, the database transaction, and the Company/TokenTransaction models.
+ * Tests cover:
+ * - handleWebhook: invalid signature throws 400; unknown event type is silently ignored;
+ *   payment_intent.succeeded credits company token_balance and inserts a TokenTransaction
+ *   and commits the transaction
+ */
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
 

@@ -1,3 +1,11 @@
+/**
+ * pages/LoginPage.tsx — Email + password login page.
+ *
+ * Redirects already-authenticated users to their role-appropriate dashboard. On submit,
+ * calls AuthContext.login() which persists the JWT and updates the user state. On success,
+ * navigates to the role-appropriate dashboard. On failure, shows an inline error message.
+ * The password field includes a visibility toggle.
+ */
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";

@@ -1,3 +1,11 @@
+/**
+ * services/manager.service.ts — Client-side wrapper for manager and employer-facing team management APIs.
+ *
+ * Covers two groups of endpoints:
+ *   Employer-facing: viewing a manager's team, promoting/demoting users.
+ *   Manager-facing: reading their own team, managing members, distributing tokens,
+ *   and managing recurring scheduled allocations to employees.
+ */
 import api from "./api";
 import type { ApiResponse, User, Team, ScheduledAllocation } from "../types";
 

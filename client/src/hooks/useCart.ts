@@ -1,3 +1,16 @@
+/**
+ * hooks/useCart.ts — Client-side voucher cart backed by localStorage, scoped per user.
+ *
+ * Persists the cart as a JSON array under the key `primo_cart_<userId>` so that each user's
+ * cart survives page reloads. Handles a legacy migration from old carts stored as plain string[]
+ * (each entry is converted to the current CartItem shape on read). When the user changes (e.g.
+ * logout/login), the hook re-initialises from the new user's storage key.
+ *
+ * toggle adds a voucher if absent, removes it if already present. remove always removes.
+ * count, isInCart, and addedAt are convenience read-only accessors.
+ *
+ * The cart is purely client-side; redemption is performed server-side by the Panier page.
+ */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 

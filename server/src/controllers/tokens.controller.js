@@ -1,7 +1,15 @@
+/**
+ * tokens.controller.js — HTTP handlers for token management and Stripe subscription routes.
+ *
+ * Covers: employer token allocation, balance queries, transaction listing, Stripe webhook
+ * processing, subscription creation/retrieval, and admin token deduction. Each handler is
+ * a thin delegate to TokenService or StripeService.
+ */
 const tokenService = require('../services/token.service');
 const stripeService = require('../services/stripe.service');
 const { Company } = require('../models');
 
+/** Handles token allocation from an employer to an employee. Responds 201 with the transaction record. */
 const allocate = async (req, res, next) => {
   try {
     const data = await tokenService.allocate(req.user, req.body);
@@ -11,6 +19,7 @@ const allocate = async (req, res, next) => {
   }
 };
 
+/** Returns the token balance for the user identified by req.params.userId. */
 const getBalance = async (req, res, next) => {
   try {
     const data = await tokenService.getBalance(req.params.userId);
@@ -20,6 +29,7 @@ const getBalance = async (req, res, next) => {
   }
 };
 
+/** Lists token transactions, filtered by optional query parameters (userId, date, type). */
 const listTransactions = async (req, res, next) => {
   try {
     const data = await tokenService.listTransactions(req.query);
@@ -29,6 +39,7 @@ const listTransactions = async (req, res, next) => {
   }
 };
 
+/** Returns a single transaction record by its UUID. */
 const getTransaction = async (req, res, next) => {
   try {
     const data = await tokenService.getTransaction(req.params.id);
@@ -38,6 +49,7 @@ const getTransaction = async (req, res, next) => {
   }
 };
 
+/** Receives and processes Stripe webhook events. Verifies the Stripe signature before acting. */
 const stripeWebhook = async (req, res, next) => {
   try {
     await stripeService.handleWebhook(req);
@@ -47,6 +59,7 @@ const stripeWebhook = async (req, res, next) => {
   }
 };
 
+/** Creates or replaces the employer's Stripe subscription for the plan specified in req.body.planId. */
 const subscribe = async (req, res, next) => {
   try {
     const company = await Company.findByPk(req.user.company_id);
@@ -58,6 +71,7 @@ const subscribe = async (req, res, next) => {
   }
 };
 
+/** Returns the employer's current Stripe subscription status, synced from the Stripe API. */
 const getSubscription = async (req, res, next) => {
   try {
     const company = await Company.findByPk(req.user.company_id);
@@ -69,6 +83,7 @@ const getSubscription = async (req, res, next) => {
   }
 };
 
+/** Admin-only: deducts tokens from a company or employee balance as specified in req.body. */
 const adminDeduct = async (req, res, next) => {
   try {
     await tokenService.adminDeduct(req.user, req.body);

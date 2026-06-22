@@ -1,3 +1,10 @@
+/**
+ * services/scheduled.service.ts — Client-side wrapper for the employer-level scheduled allocation API.
+ *
+ * Manages recurring allocation rules at the company level: an employer can define rules that
+ * automatically distribute tokens to specific employees or all active employees on a given
+ * schedule. Different from managerService.scheduled, which manages manager-to-employee rules.
+ */
 import api from './api';
 import type { ScheduledAllocation, ApiResponse } from '../types';
 

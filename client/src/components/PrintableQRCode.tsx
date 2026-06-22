@@ -1,3 +1,14 @@
+/**
+ * components/PrintableQRCode.tsx — Printable onboarding poster for a company.
+ *
+ * Generates a QR code that encodes the self-registration URL pre-filled with the company ID
+ * (`/register?companyId=<id>`), so new employees can scan it and land on a pre-linked
+ * registration form. Provides two export actions: browser print (via react-to-print) and
+ * PNG download (via Canvas serialisation of the SVG).
+ *
+ * Used in the admin company detail page to help employers onboard their teams without
+ * manually distributing invitation links.
+ */
 import { useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";

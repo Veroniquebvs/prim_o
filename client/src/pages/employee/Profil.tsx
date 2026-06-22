@@ -1,3 +1,14 @@
+/**
+ * pages/employee/Profil.tsx — User profile page with editable name and token history.
+ *
+ * Displays a two-column layout: a profile card (editable name, read-only email/role/balance)
+ * and a token transaction history table. The name field is the only editable field here;
+ * for full profile editing (including email) the user goes to MesInformations.
+ * On save the user state is refreshed via AuthContext.
+ *
+ * Note: this is the legacy profile page. The primary settings flow now goes through MesInformations
+ * and MotDePasse which are accessible from the navigation menu.
+ */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/user.service';

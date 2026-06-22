@@ -1,3 +1,11 @@
+/**
+ * pages/admin/AdminStats.tsx — Platform-wide statistics dashboard for the admin.
+ *
+ * Fetches three data sets in parallel (all companies, all vouchers, full redemption history)
+ * and derives four KPIs: total companies, total vouchers, total redemptions, and currently
+ * available vouchers. Each stat card is clickable and navigates to the corresponding detail
+ * list page (AdminDashboard for companies, AdminBons for vouchers/redemptions).
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { companyService } from '../../services/company.service';

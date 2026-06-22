@@ -1,3 +1,14 @@
+/**
+ * pages/Historique.tsx — Token and redemption history page, shared across all roles.
+ *
+ * Displays three tabs: "Mes tokens" (all token transactions involving the user), "Mes achats"
+ * (redemption history for employees), and "Mon équipe" (allocations sent, for employers).
+ *
+ * Additionally, for employers and for employees whose company has feedback_enabled, a live
+ * activity feed is shown below the tabs. The feed polls the transactions API every 5 seconds and
+ * highlights newly appeared entries with a brief animation. First load silently populates the known
+ * ID set without marking anything as new, so the highlight only fires on subsequent real-time events.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/user.service';

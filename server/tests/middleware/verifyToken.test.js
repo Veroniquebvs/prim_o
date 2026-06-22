@@ -1,3 +1,12 @@
+/**
+ * tests/middleware/verifyToken.test.js — Unit tests for the verifyToken middleware.
+ *
+ * Tests cover:
+ * - Valid Bearer token: calls next() and attaches decoded payload to req.user
+ * - Missing Authorization header: returns 401 with error message
+ * - Malformed token (not valid JWT): returns 401
+ * - Expired token: returns 401
+ */
 const jwt = require('jsonwebtoken');
 const { verifyToken } = require('../../src/middleware/verifyToken');
 

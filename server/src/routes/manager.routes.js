@@ -1,3 +1,19 @@
+/**
+ * manager.routes.js — Route definitions for manager-only features.
+ * All routes require a valid JWT with role 'manager' and an active team
+ * (enforced by the requireManager middleware applied at the router level).
+ *
+ * GET    /team                    — view active team and members
+ * POST   /employees               — create a new employee account and add them to the team
+ * POST   /team/members            — add an existing unassigned employee to the team
+ * POST   /tokens/give             — transfer tokens to an employee (requireTeamScope guards the target)
+ * GET    /tokens/balance          — read manager's own token balance
+ * GET    /available-collaborators — list company employees not yet assigned to any team
+ * GET    /scheduled               — list manager's recurring allocation rules
+ * POST   /scheduled               — create a new recurring rule
+ * PATCH  /scheduled/:id/toggle    — pause or resume a rule
+ * DELETE /scheduled/:id           — delete a rule
+ */
 const { Router } = require('express');
 const { body, param } = require('express-validator');
 const managerController = require('../controllers/manager.controller');

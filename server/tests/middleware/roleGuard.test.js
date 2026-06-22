@@ -1,3 +1,11 @@
+/**
+ * tests/middleware/roleGuard.test.js — Unit tests for the roleGuard factory middleware.
+ *
+ * Tests cover:
+ * - Single role: calls next() for matching role, returns 403 for non-matching role
+ * - Multiple allowed roles: calls next() for any matching role, returns 403 for others
+ * - Missing req.user: returns 401 (no auth context at all)
+ */
 const { roleGuard } = require('../../src/middleware/roleGuard');
 
 const mockRes = () => {

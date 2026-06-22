@@ -1,3 +1,21 @@
+/**
+ * App.tsx — Root component that defines the application's route structure.
+ *
+ * Wraps the entire app in BrowserRouter and AuthProvider. Routes are grouped by role:
+ *   Public: /, /login, /register
+ *   Employer-only: /employer/dashboard and sub-pages
+ *   Manager-only: /manager/collaborateurs/:id
+ *   Admin-only: /admin/dashboard and all /admin/* sub-pages
+ *   All authenticated users: /catalogue, /profil, /parametres, /historique, etc.
+ *
+ * HomeRedirect checks the authenticated user's role and sends them to the appropriate
+ * starting page so the root URL always lands somewhere meaningful.
+ *
+ * The Wrap helper composes ProtectedRoute and Layout to reduce repetition on routes that
+ * require authentication but do not restrict by role.
+ *
+ * Unknown paths redirect to / where HomeRedirect handles the final destination.
+ */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -36,6 +54,11 @@ import MesInformations from './pages/MesInformations';
 import FAQ from './pages/FAQ';
 import PourToi from './pages/PourToi';
 
+/**
+ * Redirects authenticated users to their role-specific home page when they visit /.
+ * Shows a splash screen while the session is being restored from localStorage.
+ * Unauthenticated users see the public HomePage.
+ */
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <SplashScreen />;
@@ -46,6 +69,10 @@ function HomeRedirect() {
   return <Navigate to="/catalogue" replace />;
 }
 
+/**
+ * Shorthand that wraps a route element in both ProtectedRoute (authentication guard)
+ * and Layout (navigation shell), used for routes accessible by all authenticated roles.
+ */
 function Wrap({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
