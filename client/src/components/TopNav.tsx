@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
+import { getAvatarUrl } from '../utils/avatar';
 /**
  * Desktop top navigation bar (hidden on mobile, shown on wider screens).
  *

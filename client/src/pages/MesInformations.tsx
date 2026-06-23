@@ -13,6 +13,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/user.service';
 import { companyService } from '../services/company.service';
+import { getAvatarUrl } from '../utils/avatar';
 
 export default function MesInformations() {
   const { user, refreshUser } = useAuth();
@@ -74,6 +75,15 @@ export default function MesInformations() {
       </div>
 
       <form onSubmit={handleSave} style={{ maxWidth: 520, margin: '0 auto' }}>
+        {user && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+            <img
+              src={getAvatarUrl(user.id)}
+              alt={user.first_name}
+              style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+            />
+          </div>
+        )}
         <div className="info-card-list">
 
           <div className="info-field-card">

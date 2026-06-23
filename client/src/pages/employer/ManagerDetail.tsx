@@ -18,6 +18,7 @@ import { tokenService } from "../../services/token.service";
 import type { User, Team, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 import { useAuth } from "../../context/AuthContext";
+import { getStoredAvatar } from "../../utils/avatar";
 
 function IconArrowLeft() {
   return (
@@ -130,11 +131,18 @@ export default function ManagerDetail() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
-            {manager.first_name} {manager.name}
-          </h1>
-          <p style={{ color: 'var(--text-muted)', margin: 0, marginTop: '4px' }}>Manager</p>
+        <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img
+            src={`/assets/av_${getStoredAvatar(manager.id)}.png`}
+            alt={manager.first_name}
+            style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }}
+          />
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
+              {manager.first_name} {manager.name}
+            </h1>
+            <p style={{ color: 'var(--text-muted)', margin: 0, marginTop: '4px' }}>Manager</p>
+          </div>
         </div>
       </div>
 
