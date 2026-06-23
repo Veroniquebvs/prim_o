@@ -198,7 +198,7 @@ export default function BottomNav() {
     ? [
         { label: 'Entreprises', icon: <IconBuilding />,  onClick: () => go('/admin/dashboard'), isActive: active('/admin/dashboard') },
         { label: 'Catalogue',   icon: <IconCatalogue />, onClick: () => go('/catalogue'),       isActive: active('/catalogue') },
-        { label: 'Statistique', icon: <IconDashboard />, onClick: () => go('/admin/stats'),     isActive: active('/admin/stats') },
+        { label: 'Statistiques', icon: <IconDashboard />, onClick: () => go('/admin/stats'),     isActive: active('/admin/stats') },
         { label: 'Bons',        icon: <IconTicket />,    onClick: () => go('/admin/bons'),      isActive: active('/admin/bons') },
       ]
     : [

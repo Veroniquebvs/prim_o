@@ -8,7 +8,7 @@ import api from "./api";
 import type { User, TokenTransaction, ApiResponse } from "../types";
 
 export const userService = {
-  getAll: (params: { companyId: string; role: string }) => {
+  getAll: (params: { companyId?: string; role?: string }) => {
     return api.get("/users", { params });
   },
 

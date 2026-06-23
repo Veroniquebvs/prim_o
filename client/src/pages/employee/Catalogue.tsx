@@ -131,11 +131,17 @@ export default function Catalogue() {
   const [page, setPage] = useState(1);
   type SortOption = 'populaires' | 'recent' | 'prix-croissant' | 'prix-decroissant';
   const [sortBy, setSortBy] = useState<SortOption>('populaires');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   
   const { isFavorite, toggle } = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const sortWrapperRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     marketplaceService.getItems()
@@ -147,11 +153,14 @@ export default function Catalogue() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* Ferme le dropdown si clic en dehors */
+  /* Ferme les dropdowns si clic en dehors */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (sortWrapperRef.current && !sortWrapperRef.current.contains(e.target as Node)) {
+        setShowSortDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -321,17 +330,62 @@ export default function Catalogue() {
             </ul>
           )}
         </div>
-        <select
-          className="form-select"
-          style={{ width: 'auto', minWidth: '180px', borderRadius: '999px', padding: '0 16px', fontSize: '0.85rem' }}
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-        >
-          <option value="populaires">Trier par : Populaires</option>
-          <option value="recent">Trier par : Nouveautés</option>
-          <option value="prix-croissant">Trier par : Du moins cher au plus cher</option>
-          <option value="prix-decroissant">Trier par : Du plus cher au moins cher</option>
-        </select>
+        <div ref={sortWrapperRef} className="sort-dropdown-container">
+          <button
+            type="button"
+            className="sort-dropdown-btn"
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+          >
+            <span>
+              {sortBy === 'populaires' && 'Trier par : Populaires'}
+              {sortBy === 'recent' && 'Trier par : Nouveautés'}
+              {sortBy === 'prix-croissant' && 'Trier par : Du moins cher au plus cher'}
+              {sortBy === 'prix-decroissant' && 'Trier par : Du plus cher au moins cher'}
+            </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                width: 14,
+                height: 14,
+                marginLeft: 8,
+                transition: 'transform 0.2s',
+                transform: showSortDropdown ? 'rotate(180deg)' : 'none',
+                color: 'var(--text-muted)'
+              }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {showSortDropdown && (
+            <ul className="sort-dropdown-list">
+              {[
+                { value: 'populaires', label: 'Trier par : Populaires' },
+                { value: 'recent', label: 'Trier par : Nouveautés' },
+                { value: 'prix-croissant', label: 'Trier par : Du moins cher au plus cher' },
+                { value: 'prix-decroissant', label: 'Trier par : Du plus cher au moins cher' }
+              ].map((opt) => (
+                <li key={opt.value}>
+                  <button
+                    type="button"
+                    className={`sort-dropdown-item ${sortBy === opt.value ? 'active' : ''}`}
+                    onClick={() => {
+                      setSortBy(opt.value as SortOption);
+                      setShowSortDropdown(false);
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className="category-chips">

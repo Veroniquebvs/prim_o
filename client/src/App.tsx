@@ -66,7 +66,7 @@ function HomeRedirect() {
   if (!user) return <HomePage />;
   if (user.role === 'employer') return <Navigate to="/employer/dashboard" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === 'manager') return <Navigate to="/pour-toi" replace />;
+  if (user.role === 'manager' || user.role === 'employee') return <Navigate to="/pour-toi" replace />;
   return <Navigate to="/catalogue" replace />;
 }
 
@@ -93,7 +93,6 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-<<<<<<< Updated upstream
           {/* Employer-only */}
           <Route path="/employer/dashboard" element={
             <ProtectedRoute allowedRoles={['employer']}>
@@ -110,24 +109,6 @@ export default function App() {
               <Layout><ManagerDetail /></Layout>
             </ProtectedRoute>
           } />
-=======
-            {/* Employer-only */}
-            <Route path="/employer/dashboard" element={
-              <ProtectedRoute allowedRoles={['employer']}>
-                <Layout><EmployerDashboard /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/employer/employees/:id" element={
-              <ProtectedRoute allowedRoles={['employer']}>
-                <Layout><EmployeeDetail /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/employer/managers/:id" element={
-              <ProtectedRoute allowedRoles={['employer']}>
-                <Layout><ManagerDetail /></Layout>
-              </ProtectedRoute>
-            } />
->>>>>>> Stashed changes
 
             <Route path="/manager/collaborateurs/:id" element={
               <ProtectedRoute allowedRoles={['manager']}>

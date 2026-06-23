@@ -126,19 +126,21 @@ export default function Historique() {
   // Unified timeline for employees
   const employeeTimeline = !isManager
     ? [...transactions.map(t => ({ ...t, _kind: 'token' })), ...redemptions.map(r => ({ ...r, _kind: 'redemption' }))]
-        .sort((a, b) => {
-          const da = new Date(a._kind === 'token' ? a.created_at : a.redeemed_at).getTime();
-          const db = new Date(b._kind === 'token' ? b.created_at : b.redeemed_at).getTime();
+        .sort((a: any, b: any) => {
+          const da = new Date(a._kind === 'token' ? (a.createdAt || a.created_at) : (a.redeemed_at || a.createdAt || a.created_at)).getTime();
+          const db = new Date(b._kind === 'token' ? (b.createdAt || b.created_at) : (b.redeemed_at || b.createdAt || b.created_at)).getTime();
           return db - da;
         })
     : [];
 
   // Unified timeline for managers and employers
   const managerTimeline = isManager
-    ? [...companyTx.map(t => ({ ...t, _kind: 'token' })), ...companyOrders.map(r => ({ ...r, _kind: 'redemption' }))]
-        .sort((a, b) => {
-          const da = new Date(a._kind === 'token' ? a.created_at : a.redeemed_at).getTime();
-          const db = new Date(b._kind === 'token' ? b.created_at : b.redeemed_at).getTime();
+    ? companyTx
+        .filter(t => t && t.amount > 0)
+        .map(t => ({ ...t, _kind: 'token' }))
+        .sort((a: any, b: any) => {
+          const da = new Date(a.createdAt || a.created_at).getTime();
+          const db = new Date(b.createdAt || b.created_at).getTime();
           return db - da;
         })
     : [];
@@ -166,7 +168,6 @@ export default function Historique() {
           {employeeTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique disponible.</p>
           ) : (
-<<<<<<< Updated upstream
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {employeeTimeline.map((item) => {
                 if (item._kind === 'token') {
@@ -179,7 +180,7 @@ export default function Historique() {
                       <div key={`tx-${tx.id}`} style={{ paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                         <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>{text}</p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>
-                          {fmtDateTime(tx.created_at)}
+                          {fmtDateTime(tx.createdAt || tx.created_at)}
                         </p>
                       </div>
                     );
@@ -189,7 +190,7 @@ export default function Historique() {
                       <div>
                         <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tokens reçus <span className="token-badge" style={{ marginLeft: 6 }}>+{tx.amount}</span></p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Motif : {tx.reason || tx.type || '—'}</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(tx.created_at)}</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(tx.createdAt || tx.created_at)}</p>
                       </div>
                     </div>
                   );
@@ -200,7 +201,7 @@ export default function Historique() {
                       <div>
                         <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Achat de bon <span className="token-badge" style={{ background: '#fef2f2', color: '#991b1b', marginLeft: 6 }}>-{r.voucher?.token_cost ?? '?'}</span></p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Offre : {r.voucher?.title || '—'} ({r.voucher?.partner || '—'})</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(r.redeemed_at)}</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(r.createdAt || r.redeemed_at)}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <span className="promo-code" style={{ fontSize: '0.75rem' }}>{r.promo_code}</span>
@@ -209,164 +210,50 @@ export default function Historique() {
                   );
                 }
               })}
-=======
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Montant</th>
-                    <th>Motif</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((tx) => (
-                    <tr key={tx.id}>
-                      <td><span className="token-badge">+{tx.amount}</span></td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{tx.type || '—'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{fmt(tx.createdAt || tx.created_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
->>>>>>> Stashed changes
             </div>
           )}
         </div>
       )}
 
       {/* Unified Timeline (Manager/Employer) */}
-      {isManager && (
+    {isManager && (
         <div className="card" style={{ marginTop: 16 }}>
           {managerTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique d'équipe disponible.</p>
           ) : (
-<<<<<<< Updated upstream
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {managerTimeline.map((item) => {
-                if (item._kind === 'token') {
-                  const tx = item as TokenTransaction & { _kind: 'token' };
-                  if (tx.type === 'role_change') {
-                    const text = tx.reason === 'manager' 
-                      ? 'a été promu(e) au poste de Manager' 
-                      : 'a été rétrogradé(e) au poste de Collaborateur';
-                    const receiverName = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
-                    return (
-                      <div key={`mtx-${tx.id}`} style={{ paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>{receiverName} {text}</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>
-                          {fmtDateTime(tx.created_at)}
-                        </p>
-                      </div>
-                    );
-                  }
-                  let receiverName = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
-                  if (tx.type === 'employer_to_team') {
-                    receiverName = `L'équipe de ${tx.receiver?.first_name} ${tx.receiver?.name}`;
-                  }
-                  const senderName = tx.sender?.first_name || tx.sender?.name || 'Système';
-                  return (
-                    <div key={`mtx-${tx.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                      <div>
-                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                          {receiverName} a reçu des tokens <span className="token-badge" style={{ marginLeft: 6 }}>+{tx.amount}</span>
-                        </p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Motif : {tx.reason || tx.type || '—'} (par {senderName})</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(tx.created_at)}</p>
-                      </div>
+                const tx = item as TokenTransaction;
+                const firstName = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
+                const motif = tx.reason || tx.type || '—';
+                const amount = tx.amount;
+                const dateStr = fmtDateTime(tx.createdAt || tx.created_at);
+
+                return (
+                  <div key={`mtx-${tx.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                        {firstName}
+                      </p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>
+                        Motif : {motif}
+                      </p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>
+                        {dateStr}
+                      </p>
                     </div>
-                  );
-                } else {
-                  const r = item as AdminRedemption & { _kind: 'redemption' };
-                  const buyerName = r.user?.first_name || r.user?.name || 'Un collaborateur';
-                  const offerName = r.voucher?.title || '—';
-                  const partnerName = r.voucher?.partner || '—';
-                  return (
-                    <div key={`mred-${r.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                      <div>
-                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                          {buyerName} a acheté le bon "{offerName}" <span className="token-badge" style={{ background: '#fef2f2', color: '#991b1b', marginLeft: 6 }}>-{r.voucher?.token_cost ?? '?'}</span>
-                        </p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Partenaire : {partnerName}</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(r.redeemed_at)}</p>
-                      </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="token-badge">+{amount} tokens</span>
                     </div>
-                  );
-                }
+                  </div>
+                );
               })}
-=======
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Boutique</th>
-                    <th>Code promo</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {redemptions.map((r) => (
-                    <tr key={r.id}>
-                      <td style={{ fontWeight: 600, fontSize: '0.82rem' }}>
-                        {r.voucher?.partner || '—'}
-                      </td>
-                      <td>
-                        <span className="promo-code">{r.promo_code}</span>
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                        {fmt(r.createdAt || r.redeemed_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
->>>>>>> Stashed changes
             </div>
           )}
         </div>
       )}
 
-<<<<<<< Updated upstream
       {/* Fil d'activité entreprise — temps réel */}
-=======
-      {/* Mon équipe (employer only) */}
-      {tab === 'equipe' && (
-        <div className="card" style={{ marginTop: 16 }}>
-          {teamTx.length === 0 ? (
-            <p className="empty-state">Aucune allocation effectuée.</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Collaborateur</th>
-                    <th>Tokens</th>
-                    <th>Motif</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamTx
-                    .filter((tx) => tx.sender_id === user?.id)
-                    .map((tx) => (
-                      <tr key={tx.id}>
-                        <td style={{ fontWeight: 500, fontSize: '0.82rem' }}>
-                          {tx.receiver?.first_name || tx.receiver?.name || tx.receiver_id?.slice(0, 8)}
-                        </td>
-                        <td><span className="token-badge">{tx.amount}</span></td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{tx.type || '—'}</td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{fmt(tx.createdAt || tx.created_at)}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Fil d'activité entreprise — temps réel, visible pour les employeurs et les employés si activé */}
->>>>>>> Stashed changes
       {showFeed && (
         <div className="card feed-card" style={{ marginTop: 24 }}>
           <div className="feed-header">
@@ -403,12 +290,12 @@ export default function Historique() {
                 const isNew = newIds.has(tx.id);
                 return (
                   <li key={tx.id} className={`feed-item${isNew ? ' feed-item--new' : ''}`}>
-                    <span className="feed-avatar" style={{ background: 'transparent' }}>
-                      <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="11" fill="#F5C518" />
-                        <circle cx="12" cy="12" r="9" fill="#F5C518" stroke="#E6A800" strokeWidth="1" />
-                        <text x="12" y="16.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="12" fill="#1A7A1A">P</text>
-                      </svg>
+                    <span className="feed-avatar" style={{ background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img 
+                        src="/icons/token-logo-SF.png" 
+                        alt="Token" 
+                        style={{ width: '28px', height: '28px', objectFit: 'contain' }} 
+                      />
                     </span>
                     <span className="feed-text">
                       <span className="token-badge feed-badge">+{tx.amount}</span> tokens gagnés pour : <strong>{tx.type || '—'}</strong>

@@ -58,7 +58,7 @@ export default function RegisterPage() {
       return <Navigate to="/employer/dashboard" replace />;
     if (user.role === "admin")
       return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/catalogue" replace />;
+    return <Navigate to="/pour-toi" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -92,7 +92,7 @@ export default function RegisterPage() {
       if (role === "employer") {
         navigate("/employer/dashboard", { replace: true });
       } else {
-        navigate("/catalogue", { replace: true });
+        navigate("/pour-toi", { replace: true });
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };

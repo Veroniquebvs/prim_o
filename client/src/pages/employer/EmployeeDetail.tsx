@@ -144,18 +144,15 @@ export default function EmployeeDetail() {
           <p className="stat-label">Tokens</p>
           <p className="stat-value">{employee.token_balance}</p>
           <p className="stat-sub">solde actuel</p>
-<<<<<<< Updated upstream
           <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span>+ Ajouter tokens</span>
           </div>
-=======
         </div>
         <div className="stat-card">
           <p className="stat-label">Membre depuis</p>
           <p className="stat-value" style={{ fontSize: "1.1rem" }}>
             {fmt(employee.createdAt || employee.created_at)}
           </p>
->>>>>>> Stashed changes
         </div>
       </div>
 
@@ -287,8 +284,13 @@ export default function EmployeeDetail() {
           onClick={async () => {
             try {
               if (!id) return;
-              await managerService.promoteToManager(id);
-                      navigate(-1);
+              const teamName = window.prompt(
+                "Nom de l'équipe pour ce manager :",
+                `Équipe de ${employee?.first_name || ""} ${employee?.name || ""}`.trim() || "Nouvelle équipe"
+              );
+              if (!teamName || !teamName.trim()) return;
+              await managerService.promoteToManager(id, teamName.trim());
+              navigate(-1);
             } catch {
               alert("Erreur lors de la promotion.");
             }

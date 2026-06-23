@@ -2713,3 +2713,78 @@ a[href*="stripe.com/about"][target="_blank"] {
 .blinking-arrows {
   animation: blink-arrows 1s infinite;
 }
+
+/* Custom dropdown style for sorting in Catalogue */
+.sort-dropdown-container {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+@media (min-width: 768px) {
+  .sort-dropdown-container {
+    flex: 0 0 auto;
+    width: auto;
+  }
+}
+
+.sort-dropdown-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-radius: 12px !important; /* Rounded corners */
+  padding: 10px 16px !important;
+  font-size: 0.85rem !important;
+  min-height: 44px;
+  cursor: pointer;
+  background: var(--card) !important;
+  border: 1.5px solid var(--border) !important;
+  text-align: left;
+  color: var(--text) !important;
+}
+
+.sort-dropdown-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 100%;
+  min-width: 240px;
+  max-width: calc(100vw - 32px); /* Prevents bleeding on mobile */
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 12px; /* Rounded corners */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  z-index: 1000;
+}
+
+.sort-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 0.82rem;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.sort-dropdown-item:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.sort-dropdown-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
