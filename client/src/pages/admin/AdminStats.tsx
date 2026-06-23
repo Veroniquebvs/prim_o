@@ -51,7 +51,7 @@ export default function AdminStats() {
     <div>
       <div className="page-header page-header--clean" style={{ justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <h1>Statistique</h1>
+          <h1>Statistiques</h1>
         </div>
       </div>
 

@@ -26,7 +26,7 @@ export default function LoginPage() {
       return <Navigate to="/employer/dashboard" replace />;
     if (user.role === "admin")
       return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/catalogue" replace />;
+    return <Navigate to="/pour-toi" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,7 +39,7 @@ export default function LoginPage() {
         navigate("/employer/dashboard", { replace: true });
       else if (u.role === "admin")
         navigate("/admin/dashboard", { replace: true });
-      else navigate("/catalogue", { replace: true });
+      else navigate("/pour-toi", { replace: true });
     } catch {
       setError("Email ou mot de passe incorrect.");
     } finally {

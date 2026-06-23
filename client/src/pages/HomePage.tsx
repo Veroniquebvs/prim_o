@@ -17,7 +17,7 @@ export default function HomePage() {
   if (isAuthenticated && user) {
     if (user.role === 'employer') return <Navigate to="/employer/dashboard" replace />;
     if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/catalogue" replace />;
+    return <Navigate to="/pour-toi" replace />;
   }
 
   return (

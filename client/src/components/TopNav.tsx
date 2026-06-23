@@ -59,9 +59,9 @@ export default function TopNav() {
         <nav className="top-nav-links">
           {isAdmin ? (
             <>
-              <NavLink to="/admin/dashboard" className={({ isActive }) => link(isActive)}>Entreprise</NavLink>
+              <NavLink to="/admin/dashboard" className={({ isActive }) => link(isActive)}>Entreprises</NavLink>
               <NavLink to="/catalogue"       className={({ isActive }) => link(isActive)}>Catalogue</NavLink>
-              <NavLink to="/admin/stats"     className={({ isActive }) => link(isActive)}>Statistique</NavLink>
+              <NavLink to="/admin/stats"     className={({ isActive }) => link(isActive)}>Statistiques</NavLink>
               <NavLink to="/admin/bons"      className={({ isActive }) => link(isActive)}>Bon</NavLink>
             </>
           ) : (

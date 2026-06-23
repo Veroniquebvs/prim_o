@@ -132,38 +132,7 @@ export default function VoucherDetail() {
     : null;
 
   return (
-    <div>
-      <style>{`
-        .page-header .back-btn {
-          position: absolute !important;
-          right: 24px !important;
-          top: 50% !important;
-          transform: translateY(-50%) !important;
-          background-color: transparent !important;
-          color: white !important;
-          border-color: white !important;
-        }
-        @media (min-width: 768px) {
-          .page-header .back-btn {
-            right: 32px !important;
-          }
-        }
-        @media (min-width: 1024px) {
-          .page-header .back-btn {
-            right: 40px !important;
-          }
-        }
-        .page-header .back-btn:hover {
-          background-color: rgba(255, 255, 255, 0.15) !important;
-        }
-      `}</style>
-      <div className="page-header">
-        <h1>Détail de l'offre</h1>
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <IconChevronLeft /> Retour
-        </button>
-      </div>
-
+    <div style={{ padding: '24px 0' }}>
       <div className="card" style={{ maxWidth: 560, margin: '0 auto', overflow: 'hidden' }}>
         {/* Image */}
         <div style={{ height: 220, borderRadius: 12, overflow: 'hidden', marginBottom: 16, background: 'var(--bg)' }}>
