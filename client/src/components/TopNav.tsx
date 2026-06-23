@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
+import { getAvatarUrl } from '../utils/avatar';
 /**
  * Desktop top navigation bar (hidden on mobile, shown on wider screens).
  *
@@ -98,10 +99,19 @@ export default function TopNav() {
 
             {dropOpen && (
               <div className="top-nav-dropdown">
-                <div className="top-nav-drop-user">
-                  <p className="top-nav-drop-name">{user?.first_name || user?.name}</p>
-                  <p className="top-nav-drop-email">{user?.email}</p>
-                  <span className="menu-sheet-role">{user?.role}</span>
+                <div className="top-nav-drop-user" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {user && (
+                    <img
+                      src={getAvatarUrl(user.id)}
+                      alt={user.first_name}
+                      style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--border)' }}
+                    />
+                  )}
+                  <div>
+                    <p className="top-nav-drop-name">{user?.first_name || user?.name}</p>
+                    <p className="top-nav-drop-email">{user?.email}</p>
+                    <span className="menu-sheet-role">{user?.role}</span>
+                  </div>
                 </div>
                 <div className="top-nav-drop-divider" />
                 {[

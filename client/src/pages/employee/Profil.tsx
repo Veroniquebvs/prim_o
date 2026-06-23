@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/user.service';
 import type { TokenTransaction } from '../../types';
 import { fmtShort } from '../../utils/date';
+import { getAvatarUrl } from '../../utils/avatar';
 
 export default function Profil() {
   const { user, company, refreshUser } = useAuth();
@@ -55,6 +56,15 @@ export default function Profil() {
 
       <div className="grid-2">
         <div className="card">
+          {user && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <img
+                src={getAvatarUrl(user.id)}
+                alt={user.first_name}
+                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              />
+            </div>
+          )}
           <h2 style={{ marginBottom: 20, fontSize: '1rem', fontWeight: 600 }}>
             Informations
           </h2>

@@ -33,6 +33,8 @@ import MotifSelectionModal from "../../components/MotifSelectionModal";
 import { MOTIFS_ALLOCATION } from "../../utils/motifs";
 import { managerService } from "../../services/manager.service";
 import type { Team } from "../../types";
+import AvatarPickerModal from "../../components/AvatarPickerModal";
+import { getStoredAvatar, saveAvatar } from "../../utils/avatar";
 
 const EMPTY_FORM = { first_name: "", name: "", email: "", password: "" };
 
@@ -57,6 +59,11 @@ const EMPTY_SCHED = {
 export default function EmployerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [avatarIndex, setAvatarIndex]           = useState<number>(1);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+
   const [employees, setEmployees] = useState<User[]>([]);
   const [managers, setManagers] = useState<User[]>([]);
   const [pendingEmployees, setPendingEmployees] = useState<User[]>([]);
@@ -240,16 +247,25 @@ export default function EmployerDashboard() {
   return (
     <div>
       {/* ══ Employer hero ══ */}
-      <div className="employer-hero-banner">
+      <div className="employer-hero-banner" style={{ position: 'relative' }}>
+        {/* Avatar — position absolute, ne prend aucune place dans le flux */}
+        {user && (
+          <button onClick={() => setShowAvatarPicker(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', position: 'absolute', top: 100, left: 40, zIndex: 10 }}>
+            <img
+              src={`/assets/av_${avatarIndex}.png`}
+              alt={user.first_name}
+              style={{ width: 'min(175px, 27vw)', height: 'auto', objectFit: 'contain', display: 'block' }}
+            />
+          </button>
+        )}
+
         {/* Two-column layout */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          
-          {/* Left: Brand */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: '24px' }}>
-              <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
-              <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
-            </div>
+
+          {/* Left: Brand (above the absolute avatar) */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: '3px' }}>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
           </div>
 
           {/* Right: QR Code + Token count */}
@@ -993,6 +1009,14 @@ export default function EmployerDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {showAvatarPicker && (
+        <AvatarPickerModal
+          current={avatarIndex}
+          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onClose={() => setShowAvatarPicker(false)}
+        />
       )}
     </div>
   );
