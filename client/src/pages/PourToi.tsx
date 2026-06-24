@@ -468,7 +468,7 @@ function ManagerPourToi() {
                 onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
                 style={{ cursor: 'pointer' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', flex: 1.5, minWidth: 0 }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', marginRight: 12, border: '1.5px solid var(--border)' }}>
                     <img src={`/assets/av_${getStoredAvatar(String(m.id))}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                   </div>
@@ -477,7 +477,16 @@ function ManagerPourToi() {
                     <p style={{ fontSize: '0.75rem', color: '#666' }}>Collaborateur</p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                
+                {/* Date d'entrée */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, paddingLeft: 8 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginBottom: 2 }}>Date d'entrée</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text)' }}>
+                    {m.entry_date ? fmtShort(m.entry_date) : '—'}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 1, minWidth: 0 }}>
                   <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{m.token_balance} tkn</span>
                   <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>Allouer</button>
                 </div>
@@ -560,46 +569,6 @@ function ManagerPourToi() {
             </form>
           )}
         </div>
-      </div>
-
-      {/* ══ Distribution des tokens ══ */}
-      <div className="card" style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>Distribution des tokens</h2>
-        {(() => {
-          const distributions = history
-            .filter(tx => tx.sender_id === user?.id && tx.receiver_id !== user?.id)
-            .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime());
-
-          if (distributions.length === 0) {
-            return <p className="empty-state">Aucune distribution effectuée pour le moment.</p>;
-          }
-
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {distributions.map((tx) => {
-                const name = tx.receiver?.first_name || members.find(m => m.id === tx.receiver_id)?.first_name || 'Collaborateur';
-                return (
-                  <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1, paddingRight: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>{name}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--border)', padding: '2px 8px', borderRadius: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }} title={tx.reason}>
-                          {tx.reason || 'sans motif'}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        {fmtShort(tx.createdAt || tx.created_at)}
-                      </span>
-                    </div>
-                    <span className="token-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none', fontWeight: 700, fontSize: '0.88rem' }}>
-                      +{tx.amount}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
       </div>
 
       {/* ══ Attributions automatiques ══ */}

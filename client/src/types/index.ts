@@ -60,6 +60,10 @@ export interface TokenTransaction {
     email: string;
     team_id?: string;
   } | null;
+  company?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export const VOUCHER_CATEGORIES = [

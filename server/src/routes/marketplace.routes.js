@@ -77,7 +77,7 @@ router.post(
   marketplaceController.redeem
 );
 
-router.get('/orders', verifyToken, roleGuard('employee', 'manager'), marketplaceController.listOrders);
+router.get('/orders', verifyToken, roleGuard('employee', 'manager', 'employer'), marketplaceController.listOrders);
 
 router.get(
   '/company-orders',

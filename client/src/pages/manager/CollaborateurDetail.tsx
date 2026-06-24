@@ -31,11 +31,18 @@ export default function CollaborateurDetail() {
   const [history, setHistory] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
+  const [entryDate, setEntryDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([userService.getById(id), userService.getHistory(id)])
-      .then(([u, h]) => { setCollab(u); setHistory(h); })
+      .then(([u, h]) => { 
+        setCollab(u); 
+        setHistory(h); 
+        setEntryDate(u.entry_date || "");
+      })
       .catch(() => setError("Impossible de charger les données."))
       .finally(() => setLoading(false));
   }, [id]);
@@ -95,12 +102,66 @@ export default function CollaborateurDetail() {
             { label: "Nom",     value: collab.name },
             { label: "Email",   value: collab.email },
             { label: "Rôle",    value: "Collaborateur" },
+            { label: "Date d'entrée", value: collab.entry_date ? fmt(collab.entry_date) : '—' },
           ].map(({ label, value }) => (
             <div key={label} className="info-field-card">
               <span className="info-field-label">{label}</span>
               <span className="info-field-value">{value}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Date d'entrée */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
+          Date d'entrée
+        </h2>
+
+        <input
+          type="date"
+          value={entryDate}
+          onChange={(e) => setEntryDate(e.target.value)}
+          className="form-input"
+          style={{ width: 200 }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ margin: 0 }}
+            disabled={saving}
+            onClick={async () => {
+              try {
+                setSaving(true);
+                setUpdateSuccess(false);
+                setError("");
+
+                await userService.updateEntryDate(id!, entryDate);
+
+                const updated = await userService.getById(id!);
+                setCollab(updated);
+                setUpdateSuccess(true);
+                setTimeout(() => setUpdateSuccess(false), 3000);
+              } catch {
+                setError("Erreur lors de la mise à jour.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? "Sauvegarde..." : "Mettre à jour"}
+          </button>
+          {updateSuccess && (
+            <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>
+              ✓ Date d'entrée mise à jour avec succès !
+            </span>
+          )}
+          {error && (
+            <span style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 600 }}>
+              {error}
+            </span>
+          )}
         </div>
       </div>
 

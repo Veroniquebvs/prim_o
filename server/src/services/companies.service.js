@@ -157,4 +157,72 @@ const grantTokens = async (companyId, amount) => {
   }
 };
 
-module.exports = { create, getById, getPublicById, list, update, remove, grantTokens };
+/**
+ * Admin-only: Creates a new company and its primary employer account atomically.
+ * Verifies email uniqueness for both the company and user.
+ * Hashes the employer's password (defaulting to 'Primo2026' if not provided).
+ */
+const adminCreate = async ({ name, street, zip_code, city, siret, employer_name, employer_first_name, employer_email, password }) => {
+  const { User } = require('../models');
+  const bcrypt = require('bcrypt');
+  const BCRYPT_ROUNDS = 12;
+
+  // 1. Check if email is already in use by any user
+  const existingUser = await User.findOne({ where: { email: employer_email } });
+  if (existingUser) {
+    throw httpError('Cet email est déjà utilisé par un utilisateur.', 409);
+  }
+
+  // 2. Check if company email is already in use
+  const existingCompany = await Company.findOne({ where: { email: employer_email } });
+  if (existingCompany) {
+    throw httpError('Une entreprise avec cet email existe déjà.', 409);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    // 3. Create Company
+    const company = await Company.create({
+      name,
+      email: employer_email,
+      street,
+      zip_code,
+      city,
+      siret,
+      token_balance: 0,
+    }, { transaction: t });
+
+    // 4. Hash Password
+    const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    // 5. Create Employer User
+    const employer = await User.create({
+      name: employer_name,
+      first_name: employer_first_name,
+      email: employer_email,
+      password_hash,
+      role: 'employer',
+      company_id: company.id,
+      token_balance: 0,
+      status: 'active',
+    }, { transaction: t });
+
+    await t.commit();
+
+    return {
+      company,
+      employer: {
+        id: employer.id,
+        name: employer.name,
+        first_name: employer.first_name,
+        email: employer.email,
+        role: employer.role,
+      }
+    };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
+module.exports = { create, getById, getPublicById, list, update, remove, grantTokens, adminCreate };
