@@ -875,3 +875,60 @@ Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manag
 
 #### Infrastructure Docker
 - Résolution du bug `Cannot find module 'vite-plugin-pwa'` : volume anonyme `node_modules` obsolète → `docker compose rm -f client` + `docker volume prune -f` + `docker compose build --no-cache client`
+
+---
+
+## Système d'avatars & polissage UI — 24/06/26 (fait par Loïc)
+
+**Branche :** `dev`
+
+### Avatars — mise en place complète
+
+#### Assets
+- Copie des fichiers `av_1.png` à `av_6.png` depuis `client/dist/assets/` vers `client/public/assets/` (servis statiquement par Vite à `/assets/av_N.png`)
+- Rognage automatique du whitespace transparent autour de chaque personnage via un script Python/PIL (`getbbox()` + 4 px de marge)
+- Redimensionnement de tous les avatars aux dimensions de `av_1.png` (218 × 699 px) pour une taille homogène dans le picker
+- `av_3.png` recadré depuis l'original (`dist/`) en mettant à l'échelle sur la hauteur (au lieu de la largeur) pour conserver la même taille de personnage que les autres
+
+#### Utilitaires (`client/src/utils/avatar.ts`)
+- `getAvatarUrl(userId)` : avatar déterministe basé sur un hash de l'ID
+- `getStoredAvatar(userId)` : lit le choix en localStorage, retourne `av_1` par défaut (plus d'aléatoire)
+- `saveAvatar(userId, index)` : persiste le choix en localStorage
+
+#### Composant partagé (`client/src/components/AvatarPickerModal.tsx`)
+- Bottom-sheet mobile (position fixed, alignItems flex-end) avec grille 3 colonnes
+- Sélection mise en évidence (bordure + scale), fermeture au clic en dehors
+
+#### Intégration dans les pages
+- **`PourToi.tsx` (manager & employé)** : avatar `position: absolute` dans le hero (ne pousse pas le contenu), cliquable, ouvre le picker
+- **`EmployerDashboard.tsx`** : même approche dans le hero employeur
+- **`ManagerDetail.tsx`, `CollaborateurDetail.tsx`** : avatar en lecture seule (pas de picker)
+- **`BottomNav.tsx`, `MesInformations.tsx`, `Profil.tsx`** : avatar affiché en cercle
+- Tous les cercles à initiales remplacés par des avatars (collab list manager, modales quick-send)
+
+#### Persistance
+- `useState(1)` + `useEffect([user?.id])` : lecture du localStorage après chargement de l'auth (corrige le bug où `useState` lazy s'exécutait avant que `user` soit disponible)
+- `String(user.id)` utilisé partout pour garantir la cohérence de la clé localStorage
+
+#### Affichage du visage dans les petits cercles
+- `objectFit: 'cover'` + `objectPosition: 'top center'` sur tous les avatars circulaires → montre la tête/visage au lieu du ventre
+
+---
+
+### Polissage UI — hero pages
+
+#### Layout hero (avatar absolu)
+- Avatar en `position: absolute` dans le hero → n'entre plus dans le flux flex, la colonne droite (tokens/pièce) a tout l'espace
+- `zIndex: 10` pour passer devant les autres éléments
+
+#### Responsive desktop — style "carte"
+- `.manager-hero` et `.pour-toi-hero` sur desktop (≥1024 px) : `border-radius: 24px`, `max-width: 600px`, `margin: auto`, ombre assortie au gradient → même rendu visuel que le bloc employeur
+- Taille avatar : `min(105px, 27vw)` → cap à 105 px sur desktop (évite l'avatar surdimensionné sur grands écrans)
+
+#### TopNav manager
+- `top-nav--transparent` (fond transparent + position absolute) restreint à `@media (max-width: 1023px)` → sur desktop, la barre est identique à celle de l'employeur (fond blanc, ombre, liens visibles)
+- Classes `top-nav--manager` et `no-shadow` supprimées du header → même style pour tous les rôles
+
+#### Modal QR Code (employeur)
+- Rendu via `ReactDOM.createPortal(…, document.body)` → échappe aux stacking contexts créés par le hero `position: relative`, passe devant la TopNav quelle que soit la hiérarchie DOM
+- `maxHeight: calc(100vh - 32px)` + `overflowY: auto` → le modal ne déborde plus hors écran

@@ -10,6 +10,7 @@
  * manually distributing invitation links.
  */
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -76,17 +77,18 @@ export const PrintableQRCode = ({ companyId, companyName }: Props) => {
         <QRCodeSVG value={registrationUrl} size={48} />
       </button>
 
-      {/* Popup Modal */}
-      {isOpen && (
+      {/* Popup Modal — rendu dans document.body via Portal pour échapper aux stacking contexts */}
+      {isOpen && createPortal(
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)', 
+          position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.6)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
         }}>
           {/* Modal Window Card */}
-          <div style={{ 
-            background: '#fff', borderRadius: '24px', width: '100%', maxWidth: '440px', 
-            overflow: 'hidden', display: 'flex', flexDirection: 'column', 
-            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative' 
+          <div style={{
+            background: '#fff', borderRadius: '24px', width: '100%', maxWidth: '440px',
+            maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative'
           }}>
             
             {/* Close button */}
@@ -139,7 +141,7 @@ export const PrintableQRCode = ({ companyId, companyName }: Props) => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 };

@@ -49,14 +49,16 @@ export default function TopNav() {
     : (user?.token_balance ?? 0);
 
   return (
-    <header className={`top-nav ${isManager ? 'top-nav--manager' : ''} ${isManager && isPourToi ? 'top-nav--transparent' : ''} ${isManager && !isPourToi ? 'no-shadow' : ''}`}>
+    <header className="top-nav">
       <div className="top-nav-inner">
         {/* Brand */}
-        {!(isManager && isPourToi) && (
-          <Link to={user?.role === 'employer' ? '/employer/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/pour-toi'} className="top-nav-brand" style={{ display: 'flex', alignItems: 'baseline', gap: 2, textDecoration: 'none' }}>
-            <img src="/logo-primo.png" alt="prim'o" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
-          </Link>
-        )}
+        <Link
+          to={user?.role === 'employer' ? '/employer/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/pour-toi'}
+          className="top-nav-brand"
+          style={{ display: 'flex', alignItems: 'baseline', gap: 2, textDecoration: 'none' }}
+        >
+          <img src="/logo-primo.png" alt="prim'o" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+        </Link>
 
         {/* Nav links + Voir plus (à gauche) */}
         <nav className="top-nav-links">

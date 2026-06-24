@@ -10,6 +10,8 @@ import { resolveImageUrl } from '../utils/imageUrl';
 import { getCategory, getCategoryColor } from '../utils/category';
 import { MOTIFS_ALLOCATION } from '../utils/motifs';
 import MotifSelectionModal from '../components/MotifSelectionModal';
+import AvatarPickerModal from '../components/AvatarPickerModal';
+import { getStoredAvatar, saveAvatar } from '../utils/avatar';
 import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
 
@@ -232,6 +234,10 @@ function ManagerPourToi() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
+  const [avatarIndex, setAvatarIndex]           = useState<number>(1);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+
   const [team, setTeam]             = useState<Team | null>(null);
   const [orders, setOrders]         = useState<Redemption[]>([]);
   const [schedRules, setSchedRules] = useState<ScheduledAllocation[]>([]);
@@ -368,19 +374,25 @@ function ManagerPourToi() {
   return (
     <div>
       {/* ══ Dark hero ══ */}
-      <div className="manager-hero">
+      <div className="manager-hero" style={{ position: 'relative' }}>
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0, marginTop: -5 }}>
           <span style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
           </span>
         </div>
 
-        {/* Two-column: left = avatar placeholder, right = coin + stock */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Left — avatar area (client will provide asset) */}
-          <div style={{ flex: 1 }} />
+        {/* Avatar — position absolute, ne prend pas de place dans le flux */}
+        {user && (
+          <button onClick={() => setShowAvatarPicker(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', position: 'absolute', top: 100, left: 40, zIndex: 10 }}>
+            <img src={`/assets/av_${avatarIndex}.png`} alt={user.first_name}
+              style={{ width: 'min(105px, 27vw)', height: 'auto', objectFit: 'contain', display: 'block' }} />
+          </button>
+        )}
+
+        {/* Right — coin + stock */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
 
           {/* Right — coin + token count window */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, transform: 'translateY(35px)' }}>
@@ -419,7 +431,7 @@ function ManagerPourToi() {
 
       {/* ══ M'attribuer des tokens ══ */}
       {user?.role === 'manager' && (
-        <div style={{ marginBottom: 28, marginTop: 24 }}>
+        <div style={{ marginBottom: 28, marginTop: 80 }}>
           <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'linear-gradient(135deg, rgba(240, 168, 0, 0.1), rgba(240, 168, 0, 0.05))', border: '1px solid rgba(240, 168, 0, 0.2)' }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
               <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>M'attribuer des tokens</p>
@@ -457,8 +469,8 @@ function ManagerPourToi() {
                 style={{ cursor: 'pointer' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.88rem', fontWeight: 700, marginRight: 12 }}>
-                    {(m.first_name[0] ?? '').toUpperCase()}{(m.name[0] ?? '').toUpperCase()}
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', marginRight: 12, border: '1.5px solid var(--border)' }}>
+                    <img src={`/assets/av_${getStoredAvatar(String(m.id))}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
@@ -663,13 +675,8 @@ function ManagerPourToi() {
         <div className="emp-modal-overlay" onClick={() => { setQuickMember(null); setQuickError(''); setQuickSuccess(''); }}>
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1rem', fontWeight: 700, flexShrink: 0,
-              }}>
-                {(quickMember.first_name[0] ?? '').toUpperCase()}{(quickMember.name[0] ?? '').toUpperCase()}
+              <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
+                <img src={`/assets/av_${getStoredAvatar(String(quickMember.id))}.png`} alt={quickMember.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{quickMember.first_name} {quickMember.name}</p>
@@ -832,6 +839,14 @@ function ManagerPourToi() {
           </div>
         </div>
       )}
+
+      {showAvatarPicker && (
+        <AvatarPickerModal
+          current={avatarIndex}
+          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onClose={() => setShowAvatarPicker(false)}
+        />
+      )}
     </div>
   );
 }
@@ -850,6 +865,11 @@ export default function PourToi() {
 ════════════════════════════════════════════════════════════ */
 function EmployeePourToi() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
+
+  const [avatarIndex, setAvatarIndex]           = useState<number>(1);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+
   const [vouchers, setVouchers]         = useState<Voucher[]>([]);
   const [orders, setOrders]             = useState<Redemption[]>([]);
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
@@ -924,20 +944,25 @@ function EmployeePourToi() {
   return (
     <div>
       {/* ══ Teal hero ══ */}
-      <div className="pour-toi-hero">
+      <div className="pour-toi-hero" style={{ position: 'relative' }}>
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0, marginTop: -5 }}>
           <span style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.4rem', color: '#ffffff', letterSpacing: '0.5px' }}>prim'</span>
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.6rem', color: '#f0a800', lineHeight: 1 }}>o</span>
           </span>
         </div>
 
-        {/* Two-column: left = avatar placeholder, right = coin + stock */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Left — avatar area (client will provide asset) */}
-          <div style={{ flex: 1 }} />
+        {/* Avatar — position absolute */}
+        {user && (
+          <button onClick={() => setShowAvatarPicker(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', position: 'absolute', top: 100, left: 40, zIndex: 10 }}>
+            <img src={`/assets/av_${avatarIndex}.png`} alt={user.first_name}
+              style={{ width: 'min(105px, 27vw)', height: 'auto', objectFit: 'contain', display: 'block' }} />
+          </button>
+        )}
 
+        {/* Right — coin + stock */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           {/* Right — coin + token count window */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, transform: 'translateY(55px)' }}>
             <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 4, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
@@ -961,8 +986,16 @@ function EmployeePourToi() {
         </div>
       </div>
 
+      {showAvatarPicker && (
+        <AvatarPickerModal
+          current={avatarIndex}
+          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onClose={() => setShowAvatarPicker(false)}
+        />
+      )}
+
       {/* ══ Feedback instantané ══ */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 32, marginTop: 60 }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 16 }}>Feedback instantané</h2>
         {recentReceived.length === 0 ? (
           <div className="card" style={{ padding: '20px', textAlign: 'center' }}>

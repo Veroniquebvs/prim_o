@@ -253,7 +253,7 @@ export default function BottomNav() {
             {user && (
               <div className="menu-sheet-user">
                 <div className="menu-sheet-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                  <img src={getAvatarUrl(user.id)} alt={user.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={getAvatarUrl(user.id)} alt={user.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                 </div>
                 <div>
                   <p className="menu-sheet-name">{user.first_name || user.name}</p>

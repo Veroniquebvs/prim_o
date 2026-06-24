@@ -254,7 +254,7 @@ export default function EmployerDashboard() {
             <img
               src={`/assets/av_${avatarIndex}.png`}
               alt={user.first_name}
-              style={{ width: 'min(175px, 27vw)', height: 'auto', objectFit: 'contain', display: 'block' }}
+              style={{ width: 'min(105px, 27vw)', height: 'auto', objectFit: 'contain', display: 'block' }}
             />
           </button>
         )}

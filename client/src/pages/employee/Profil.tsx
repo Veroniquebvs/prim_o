@@ -61,7 +61,7 @@ export default function Profil() {
               <img
                 src={getAvatarUrl(user.id)}
                 alt={user.first_name}
-                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '3px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               />
             </div>
           )}

@@ -55,7 +55,7 @@ export default function CollaborateurDetail() {
           <img
             src={`/assets/av_${getStoredAvatar(collab.id)}.png`}
             alt={collab.first_name}
-            style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }}
+            style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '2px solid var(--border)', flexShrink: 0 }}
           />
           <div>
             <h1 style={{ marginBottom: 2 }}>{collab.first_name} {collab.name}</h1>

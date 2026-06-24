@@ -139,7 +139,7 @@ export default function ManagerDetail() {
           <img
             src={`/assets/av_${getStoredAvatar(manager.id)}.png`}
             alt={manager.first_name}
-            style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }}
+            style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '2px solid var(--border)', flexShrink: 0 }}
           />
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
@@ -415,13 +415,8 @@ export default function ManagerDetail() {
         <div className="emp-modal-overlay" onClick={() => { setQuickTarget(null); setQuickError(''); setQuickSuccess(''); }}>
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1rem', fontWeight: 700, flexShrink: 0,
-              }}>
-                {(manager.first_name[0] ?? '').toUpperCase()}{(manager.name[0] ?? '').toUpperCase()}
+              <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
+                <img src={`/assets/av_${getStoredAvatar(manager.id)}.png`} alt={manager.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{manager.first_name} {manager.name}</p>
