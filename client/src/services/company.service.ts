@@ -72,4 +72,22 @@ export const companyService = {
     );
     return data.data;
   },
+
+  async adminCreate(payload: {
+    name: string;
+    street: string;
+    zip_code: string;
+    city: string;
+    siret: string;
+    employer_name: string;
+    employer_first_name: string;
+    employer_email: string;
+    password?: string;
+  }): Promise<{ company: Company; employer: any }> {
+    const { data } = await api.post<ApiResponse<{ company: Company; employer: any }>>(
+      "/companies/admin",
+      payload
+    );
+    return data.data;
+  },
 };

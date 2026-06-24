@@ -19,11 +19,14 @@ import CompanySelectionModal from '../../components/CompanySelectionModal';
 
 const EMPTY_COMPANY_FORM = {
   name: '',
-  email: '',
   street: '',
   zip_code: '',
   city: '',
   siret: '',
+  employer_name: '',
+  employer_first_name: '',
+  employer_email: '',
+  password: '',
 };
 
 
@@ -145,18 +148,21 @@ export default function AdminDashboard() {
     try {
       const payload = {
         name: createForm.name,
-        email: createForm.email || undefined,
         street: createForm.street,
         zip_code: createForm.zip_code,
         city: createForm.city,
         siret: createForm.siret,
+        employer_name: createForm.employer_name,
+        employer_first_name: createForm.employer_first_name,
+        employer_email: createForm.employer_email,
+        password: createForm.password || undefined,
       };
-      const newCompany = await companyService.create(payload);
-      setCompanies(prev => [newCompany, ...prev]);
+      const res = await companyService.adminCreate(payload);
+      setCompanies(prev => [res.company, ...prev]);
       setShowCreateModal(false);
       setCreateForm(EMPTY_COMPANY_FORM);
     } catch (err: any) {
-      setCreateError(err?.response?.data?.error ?? "Erreur lors de la création de l'entreprise.");
+      setCreateError(err?.response?.data?.error || err?.response?.data?.message || "Erreur lors de la création de l'entreprise.");
     } finally {
       setCreateLoading(false);
     }
@@ -213,9 +219,17 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2 style={{ marginBottom: 16, fontSize: '1rem', fontWeight: 600 }}>
-          Entreprises
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
+            Entreprises
+          </h2>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => { setCreateForm(EMPTY_COMPANY_FORM); setCreateError(''); setShowCreateModal(true); }}
+          >
+            + Créer une entreprise
+          </button>
+        </div>
         {companies.length === 0 ? (
           <p className="empty-state">Aucune entreprise enregistrée.</p>
         ) : (
@@ -431,67 +445,61 @@ export default function AdminDashboard() {
 
       {showCreateModal && (
         <div className="emp-modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="emp-modal-title">Créer une entreprise</h2>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto', width: '100%', maxWidth: '500px' }}>
+            <h2 className="emp-modal-title" style={{ marginBottom: 20 }}>Créer une entreprise</h2>
 
-            <form onSubmit={handleCreateCompany} noValidate>
-              <div className="form-group">
-                <label className="form-label">Nom de l'entreprise *</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder="ex : Acme Corp"
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  required
-                />
-              </div>
+            <form onSubmit={handleCreateCompany} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Section Entreprise */}
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h3 style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', margin: 0, letterSpacing: '0.5px' }}>
+                  🏢 Informations de l'entreprise
+                </h3>
+                
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Nom de l'entreprise *</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="ex : Acme Corp"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    required
+                  />
+                </div>
 
-              <div className="form-group">
-                <label className="form-label">Email de contact</label>
-                <input
-                  className="form-input"
-                  type="email"
-                  placeholder="contact@acme.com"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  required
-                />
-              </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Numéro SIRET (14 chiffres) *</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    maxLength={14}
+                    placeholder="ex : 12345678901234"
+                    value={createForm.siret}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setCreateForm({ ...createForm, siret: val });
+                    }}
+                    required
+                  />
+                </div>
 
-              <div className="form-group">
-                <label className="form-label">SIRET (14 chiffres, optionnel)</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  maxLength={14}
-                  placeholder="12345678901234"
-                  value={createForm.siret}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    setCreateForm({ ...createForm, siret: val });
-                  }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Adresse complète</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder="Rue, avenue..."
-                  value={createForm.street}
-                  onChange={(e) => setCreateForm({ ...createForm, street: e.target.value })}
-                  style={{ marginBottom: 12 }}
-                  required
-                />
-                <div className="emp-modal-row">
-                  <div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Adresse de l'entreprise *</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Rue, avenue..."
+                    value={createForm.street}
+                    onChange={(e) => setCreateForm({ ...createForm, street: e.target.value })}
+                    style={{ marginBottom: 10 }}
+                    required
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
                     <input
                       className="form-input"
                       type="text"
                       maxLength={5}
-                      placeholder="CP (5 chiffres)"
+                      placeholder="Code Postal"
                       value={createForm.zip_code}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '');
@@ -499,8 +507,6 @@ export default function AdminDashboard() {
                       }}
                       required
                     />
-                  </div>
-                  <div>
                     <input
                       className="form-input"
                       type="text"
@@ -513,9 +519,65 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {createError && <p className="form-error">{createError}</p>}
+              {/* Section Employeur */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h3 style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', margin: 0, letterSpacing: '0.5px' }}>
+                  👤 Informations de l'employeur
+                </h3>
 
-              <div className="emp-modal-actions">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Prénom *</label>
+                    <input
+                      className="form-input"
+                      type="text"
+                      placeholder="Jean"
+                      value={createForm.employer_first_name}
+                      onChange={(e) => setCreateForm({ ...createForm, employer_first_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Nom *</label>
+                    <input
+                      className="form-input"
+                      type="text"
+                      placeholder="Dupont"
+                      value={createForm.employer_name}
+                      onChange={(e) => setCreateForm({ ...createForm, employer_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Email de l'employeur *</label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    placeholder="jean.dupont@acme.com"
+                    value={createForm.employer_email}
+                    onChange={(e) => setCreateForm({ ...createForm, employer_email: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Mot de passe de l'employeur (min. 8 car.) *</label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    placeholder="Saisir le mot de passe"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {createError && <p className="form-error" style={{ margin: 0 }}>{createError}</p>}
+
+              <div className="emp-modal-actions" style={{ marginTop: 8 }}>
                 <button
                   type="button"
                   style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'transparent', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}

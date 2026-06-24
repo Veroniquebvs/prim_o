@@ -18,14 +18,14 @@ import { companyService } from '../services/company.service';
 import type { TokenTransaction, Redemption, AdminRedemption, Team } from '../types';
 import { fmtShort as fmt, fmtDateTime } from '../utils/date';
 
-type Tab = 'tokens' | 'achats' | 'depenses';
+type Tab = 'equipe' | 'perso';
 
 export default function Historique() {
   const { user, company } = useAuth();
   const isManager = user?.role === 'manager' || user?.role === 'employer';
   
-  // Default tab selection based on role
-  const [tab, setTab] = useState<Tab>(isManager ? 'depenses' : 'tokens');
+  // Default tab selection for manager
+  const [tab, setTab] = useState<Tab>('equipe');
   
   // Employee-specific states
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]); 
@@ -68,7 +68,7 @@ export default function Historique() {
     Promise.all(tasks).finally(() => setLoading(false));
   }, [user?.id, user?.role, isManager]);
 
-  const showFeed = user?.role === 'employer' || (user?.role === 'employee' && company?.feedback_enabled === true);
+  const showFeed = user?.role === 'employer' || user?.role === 'manager' || (user?.role === 'employee' && company?.feedback_enabled === true);
 
   useEffect(() => {
     if (!user?.id || !showFeed) return;
@@ -135,20 +135,23 @@ export default function Historique() {
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
-  // Build Tabs dynamically
-  const tabs: { key: Tab; label: string }[] = [];
+  // Build Tabs dynamically for Manager
+  const showTabs = user?.role === 'manager';
 
-  // Unified timeline for employees
-  const employeeTimeline = !isManager
-    ? [...transactions.map(t => ({ ...t, _kind: 'token' })), ...redemptions.map(r => ({ ...r, _kind: 'redemption' }))]
-        .sort((a: any, b: any) => {
-          const da = new Date(a._kind === 'token' ? (a.createdAt || a.created_at) : (a.redeemed_at || a.createdAt || a.created_at)).getTime();
-          const db = new Date(b._kind === 'token' ? (b.createdAt || b.created_at) : (b.redeemed_at || b.createdAt || b.created_at)).getTime();
-          return db - da;
-        })
-    : [];
+  // Unified personal timeline (tokens received and redemptions)
+  const personalTimeline = [
+    ...transactions
+      .filter(t => t && t.receiver_id === user?.id)
+      .map(t => ({ ...t, _kind: 'token' })),
+    ...redemptions
+      .map(r => ({ ...r, _kind: 'redemption' }))
+  ].sort((a: any, b: any) => {
+    const da = new Date(a._kind === 'token' ? (a.createdAt || a.created_at) : (a.redeemed_at || a.createdAt || a.created_at)).getTime();
+    const db = new Date(b._kind === 'token' ? (b.createdAt || b.created_at) : (b.redeemed_at || b.createdAt || b.created_at)).getTime();
+    return db - da;
+  });
 
-  // Unified timeline for managers and employers
+  // Unified timeline for managers and employers (team allocations)
   const managerTimeline = isManager
     ? companyTx
         .filter(t => t && t.amount > 0)
@@ -162,29 +165,32 @@ export default function Historique() {
 
   return (
     <div>
-      {/* Tabs */}
-      {tabs.length > 0 && (
-        <div className="hist-tabs">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              className={`hist-tab ${tab === t.key ? 'hist-tab--active' : ''}`}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
-            </button>
-          ))}
+      {/* Tabs for Manager */}
+      {showTabs && (
+        <div className="hist-tabs" style={{ marginBottom: 16 }}>
+          <button
+            className={`hist-tab ${tab === 'equipe' ? 'hist-tab--active' : ''}`}
+            onClick={() => setTab('equipe')}
+          >
+            Mon équipe
+          </button>
+          <button
+            className={`hist-tab ${tab === 'perso' ? 'hist-tab--active' : ''}`}
+            onClick={() => setTab('perso')}
+          >
+            Mon historique
+          </button>
         </div>
       )}
 
-      {/* Unified Timeline (Employee only) */}
-      {!isManager && (
+      {/* Unified Personal Timeline (Employee or Manager on personal tab) */}
+      {(user?.role === 'employee' || (user?.role === 'manager' && tab === 'perso')) && (
         <div className="card" style={{ marginTop: 16 }}>
-          {employeeTimeline.length === 0 ? (
+          {personalTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique disponible.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {employeeTimeline.map((item) => {
+              {personalTimeline.map((item) => {
                 if (item._kind === 'token') {
                   const tx = item as TokenTransaction & { _kind: 'token' };
                   if (tx.type === 'role_change') {
@@ -230,8 +236,8 @@ export default function Historique() {
         </div>
       )}
 
-      {/* Unified Timeline (Manager/Employer) */}
-      {isManager && (
+      {/* Unified Timeline (Employer or Manager on team tab) */}
+      {(user?.role === 'employer' || (user?.role === 'manager' && tab === 'equipe')) && (
         <div className="card" style={{ marginTop: 16 }}>
           {managerTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique d'équipe disponible.</p>

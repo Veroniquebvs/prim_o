@@ -66,7 +66,7 @@ const initCompany = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      // 5. SIRET Number (Optional, but must be exactly 14 characters if provided)
+      // 5. SIRET Number (Required, must be exactly 14 characters)
       siret: {
         type: DataTypes.STRING(14), // Limits the database column to 14 characters maximum
         allowNull: false,

@@ -32,7 +32,10 @@ const getBalance = async (req, res, next) => {
 /** Lists token transactions, filtered by optional query parameters (userId, date, type). */
 const listTransactions = async (req, res, next) => {
   try {
-    const query = { ...req.query, company_id: req.user.company_id };
+    const query = { ...req.query };
+    if (req.user.role !== 'admin') {
+      query.company_id = req.user.company_id;
+    }
     
     // Un employé ne peut voir que ses propres transactions
     if (req.user.role === 'employee') {

@@ -28,7 +28,6 @@ const companyBodyRules = [
     .withMessage('zip_code must be 5 digits'),
   body('city').trim().notEmpty().withMessage('city must not be empty'),
   body('siret')
-    .optional()
     .isNumeric()
     .isLength({ min: 14, max: 14 })
     .withMessage('siret must be 14 digits'),
@@ -36,6 +35,32 @@ const companyBodyRules = [
 
 // Public — employer self-onboarding: create company first, then POST /auth/register with returned id
 router.post('/', companyBodyRules, validate, companiesController.create);
+
+// Admin only — create a company and its employer atomically
+router.post(
+  '/admin',
+  verifyToken,
+  roleGuard('admin'),
+  [
+    body('name').trim().notEmpty().withMessage('name is required'),
+    body('street').trim().notEmpty().withMessage('street must not be empty'),
+    body('zip_code')
+      .isNumeric()
+      .isLength({ min: 5, max: 5 })
+      .withMessage('zip_code must be 5 digits'),
+    body('city').trim().notEmpty().withMessage('city must not be empty'),
+    body('siret')
+      .isNumeric()
+      .isLength({ min: 14, max: 14 })
+      .withMessage('siret must be 14 digits'),
+    body('employer_name').trim().notEmpty().withMessage('employer_name is required'),
+    body('employer_first_name').trim().notEmpty().withMessage('employer_first_name is required'),
+    body('employer_email').isEmail().withMessage('valid employer_email is required'),
+    body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),
+    validate,
+  ],
+  companiesController.adminCreate
+);
 
 // Public — minimal company info (name) for the QR-code registration flow
 router.get(
