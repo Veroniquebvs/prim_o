@@ -138,11 +138,18 @@ const getBalance = async (userId) => {
  * Results are ordered newest first and include sender and receiver user details.
  */
 const listTransactions = async ({ company_id, userId, date, type, managerTeamId } = {}) => {
-  const where = { company_id };
+  const where = {};
+  if (company_id !== undefined) {
+    where.company_id = company_id;
+  }
 
   if (managerTeamId) {
+    const team = await Team.findByPk(managerTeamId);
     const teamMembers = await TeamMember.findAll({ where: { team_id: managerTeamId } });
     const userIds = teamMembers.map(tm => tm.user_id);
+    if (team && team.manager_id) {
+      userIds.push(team.manager_id);
+    }
     where[Op.or] = [
       { sender_id: { [Op.in]: userIds } },
       { receiver_id: { [Op.in]: userIds } }
@@ -164,6 +171,7 @@ const listTransactions = async ({ company_id, userId, date, type, managerTeamId 
           attributes: ['team_id']
         }]
       },
+      { model: Company, as: 'company', attributes: ['id', 'name'] },
     ],
   });
 

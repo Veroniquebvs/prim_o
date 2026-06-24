@@ -94,7 +94,7 @@ router.patch(
 router.patch(
   '/:id/entry-date',
   verifyToken,
-  roleGuard('employer', 'admin'),
+  roleGuard('employer', 'admin', 'manager'),
   [
     param('id').isUUID().withMessage('id must be a valid UUID'),
     body('entry_date').optional().isISO8601().withMessage('entry_date must be a valid date'),

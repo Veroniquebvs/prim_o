@@ -24,7 +24,7 @@ import { companyService } from "../../services/company.service";
 import { authService } from "../../services/auth.service";
 import { scheduledService } from "../../services/scheduled.service";
 import TransferForm from "../../components/TransferForm";
-import type { User, Company, ScheduledAllocation } from "../../types";
+import type { User, Company, ScheduledAllocation, Redemption } from "../../types";
 import { PrintableQRCode } from "../../components/PrintableQRCode";
 import { fmtShort } from "../../utils/date";
 import UserSelectionModal from "../../components/UserSelectionModal";
@@ -35,6 +35,7 @@ import { managerService } from "../../services/manager.service";
 import type { Team } from "../../types";
 import AvatarPickerModal from "../../components/AvatarPickerModal";
 import { getStoredAvatar, saveAvatar } from "../../utils/avatar";
+import { marketplaceService } from "../../services/marketplace.service";
 
 const EMPTY_FORM = { first_name: "", name: "", email: "", password: "" };
 
@@ -94,6 +95,7 @@ export default function EmployerDashboard() {
   const [showSchedSelectModal, setShowSchedSelectModal] = useState(false);
   const [schedError, setSchedError] = useState("");
   const [schedLoading, setSchedLoading] = useState(false);
+  const [orders, setOrders] = useState<Redemption[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!user?.company_id) return;
@@ -105,6 +107,7 @@ export default function EmployerDashboard() {
         scheduledService.list(),
         userService.getAll({ companyId: user.company_id, role: "manager" }),
         companyService.getTeams(),
+        marketplaceService.getOrders().catch(() => []),
       ]);
 
       setEmployees(results[0].data.data || []);
@@ -113,6 +116,7 @@ export default function EmployerDashboard() {
       setSchedRules(results[3] || []);
       setManagers(results[4].data.data || []);
       setTeams(results[5] || []);
+      setOrders(results[6] as Redemption[] || []);
     } catch (err) {
       console.error("Erreur :", err);
     } finally {
@@ -634,6 +638,27 @@ export default function EmployerDashboard() {
 
       <div style={{ marginBottom: 24 }}>
         <TransferForm employees={[...managers, ...employees]} teams={teams} onSuccess={fetchData} />
+      </div>
+
+      {/* ══ Bons d'achat utilisés ══ */}
+      <div style={{ marginBottom: 28 }}>
+        <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
+        {orders.length === 0 ? (
+          <div className="card"><p className="empty-state">Tu n'as pas encore racheté de bon.</p></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {orders.map((order) => (
+              <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.createdAt || order.redeemed_at)}</p>
+                </div>
+                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {showSchedModal && (

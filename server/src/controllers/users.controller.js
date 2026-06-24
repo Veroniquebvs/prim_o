@@ -115,7 +115,7 @@ const updateEntryDate = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (req.user.role !== 'employer') {
+    if (req.user.role !== 'employer' && req.user.role !== 'manager') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 

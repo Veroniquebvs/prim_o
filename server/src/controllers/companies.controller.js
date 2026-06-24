@@ -83,4 +83,17 @@ const grantTokens = async (req, res, next) => {
   }
 };
 
-module.exports = { create, getById, getPublicById, list, update, remove, grantTokens };
+/**
+ * Admin-only: Creates a new company and its associated employer user atomically.
+ * Responds 201 with the created company and employer details.
+ */
+const adminCreate = async (req, res, next) => {
+  try {
+    const data = await companiesService.adminCreate(req.body);
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { create, getById, getPublicById, list, update, remove, grantTokens, adminCreate };
