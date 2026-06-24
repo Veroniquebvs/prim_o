@@ -135,12 +135,6 @@ export default function ManagerDetail() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '16px' }}>
-        <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
-            {manager.first_name} {manager.name}
-          </h1>
-          <p style={{ color: 'var(--text-muted)', margin: 0, marginTop: '4px' }}>Manager</p>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 16 }}>
           <img
             src={`/assets/av_${getStoredAvatar(manager.id)}.png`}
