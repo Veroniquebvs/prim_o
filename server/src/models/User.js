@@ -90,6 +90,12 @@ const initUser = (sequelize) => {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
+      // 10. avatar index (1–6) chosen by the user
+      avatar_index: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
     },
     {
       sequelize,

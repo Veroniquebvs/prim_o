@@ -131,10 +131,25 @@ const updateEntryDate = async (req, res, next) => {
   }
 };
 
+/** Updates the avatar_index for the currently authenticated user (self-only). */
+const updateAvatar = async (req, res, next) => {
+  try {
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({ error: 'Forbidden', code: 403 });
+    }
+    const avatar_index = parseInt(req.body.avatar_index, 10);
+    const data = await usersService.updateAvatar(req.params.id, avatar_index);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   list,
   getById,
   update,
+  updateAvatar,
   remove,
   history,
   activateUser,

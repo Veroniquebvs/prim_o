@@ -92,6 +92,17 @@ router.patch(
 );
 
 router.patch(
+  '/:id/avatar',
+  verifyToken,
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('avatar_index').isInt({ min: 1, max: 6 }).withMessage('avatar_index must be between 1 and 6'),
+    validate,
+  ],
+  usersController.updateAvatar
+);
+
+router.patch(
   '/:id/entry-date',
   verifyToken,
   roleGuard('employer', 'admin', 'manager'),

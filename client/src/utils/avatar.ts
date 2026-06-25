@@ -21,3 +21,12 @@ export function getStoredAvatar(userId: string): number {
 export function saveAvatar(userId: string, index: number): void {
   localStorage.setItem(`primo_avatar_${userId}`, String(index));
 }
+
+/** Returns the best-known avatar index for a user object.
+ *  Prefers the server-stored avatar_index, falls back to localStorage, then 1. */
+export function resolveAvatarIndex(user: { id: string; avatar_index?: number | null }): number {
+  if (user.avatar_index && user.avatar_index >= 1 && user.avatar_index <= AVATAR_COUNT) {
+    return user.avatar_index;
+  }
+  return getStoredAvatar(user.id);
+}

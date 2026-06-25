@@ -11,7 +11,7 @@ import { getCategory, getCategoryColor } from '../utils/category';
 import { MOTIFS_ALLOCATION } from '../utils/motifs';
 import MotifSelectionModal from '../components/MotifSelectionModal';
 import AvatarPickerModal from '../components/AvatarPickerModal';
-import { getStoredAvatar, saveAvatar } from '../utils/avatar';
+import { getStoredAvatar, saveAvatar, resolveAvatarIndex } from '../utils/avatar';
 import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
 
@@ -236,7 +236,9 @@ function ManagerPourToi() {
 
   const [avatarIndex, setAvatarIndex]           = useState<number>(1);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+  useEffect(() => {
+    if (user) setAvatarIndex(user.avatar_index ?? getStoredAvatar(String(user.id)));
+  }, [user?.id, user?.avatar_index]);
 
   const [team, setTeam]             = useState<Team | null>(null);
   const [orders, setOrders]         = useState<Redemption[]>([]);
@@ -470,7 +472,7 @@ function ManagerPourToi() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', flex: 1.5, minWidth: 0 }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', marginRight: 12, border: '1.5px solid var(--border)' }}>
-                    <img src={`/assets/av_${getStoredAvatar(String(m.id))}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                    <img src={`/assets/av_${resolveAvatarIndex(m)}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
@@ -645,7 +647,7 @@ function ManagerPourToi() {
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
-                <img src={`/assets/av_${getStoredAvatar(String(quickMember.id))}.png`} alt={quickMember.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                <img src={`/assets/av_${resolveAvatarIndex(quickMember)}.png`} alt={quickMember.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{quickMember.first_name} {quickMember.name}</p>
@@ -812,7 +814,14 @@ function ManagerPourToi() {
       {showAvatarPicker && (
         <AvatarPickerModal
           current={avatarIndex}
-          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onSelect={(index) => {
+            setAvatarIndex(index);
+            if (user) {
+              saveAvatar(String(user.id), index);
+              userService.updateAvatar(user.id, index).then(() => refreshUser()).catch(() => {});
+            }
+            setShowAvatarPicker(false);
+          }}
           onClose={() => setShowAvatarPicker(false)}
         />
       )}
@@ -837,7 +846,9 @@ function EmployeePourToi() {
 
   const [avatarIndex, setAvatarIndex]           = useState<number>(1);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+  useEffect(() => {
+    if (user) setAvatarIndex(user.avatar_index ?? getStoredAvatar(String(user.id)));
+  }, [user?.id, user?.avatar_index]);
 
   const [vouchers, setVouchers]         = useState<Voucher[]>([]);
   const [orders, setOrders]             = useState<Redemption[]>([]);
@@ -958,7 +969,14 @@ function EmployeePourToi() {
       {showAvatarPicker && (
         <AvatarPickerModal
           current={avatarIndex}
-          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onSelect={(index) => {
+            setAvatarIndex(index);
+            if (user) {
+              saveAvatar(String(user.id), index);
+              userService.updateAvatar(user.id, index).then(() => refreshUser()).catch(() => {});
+            }
+            setShowAvatarPicker(false);
+          }}
           onClose={() => setShowAvatarPicker(false)}
         />
       )}

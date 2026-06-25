@@ -13,7 +13,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/user.service';
 import { companyService } from '../services/company.service';
-import { getAvatarUrl } from '../utils/avatar';
+import { resolveAvatarIndex } from '../utils/avatar';
 
 export default function MesInformations() {
   const { user, refreshUser } = useAuth();
@@ -78,7 +78,7 @@ export default function MesInformations() {
         {user && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
             <img
-              src={getAvatarUrl(user.id)}
+              src={`/assets/av_${resolveAvatarIndex(user)}.png`}
               alt={user.first_name}
               style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '3px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
             />

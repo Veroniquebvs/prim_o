@@ -18,7 +18,7 @@ import { tokenService } from "../../services/token.service";
 import type { User, Team, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 import { useAuth } from "../../context/AuthContext";
-import { getStoredAvatar } from "../../utils/avatar";
+import { resolveAvatarIndex } from "../../utils/avatar";
 
 function IconArrowLeft() {
   return (
@@ -137,7 +137,7 @@ export default function ManagerDetail() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '16px' }}>
         <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 16 }}>
           <img
-            src={`/assets/av_${getStoredAvatar(manager.id)}.png`}
+            src={`/assets/av_${resolveAvatarIndex(manager)}.png`}
             alt={manager.first_name}
             style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '2px solid var(--border)', flexShrink: 0 }}
           />
@@ -416,7 +416,7 @@ export default function ManagerDetail() {
           <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
-                <img src={`/assets/av_${getStoredAvatar(manager.id)}.png`} alt={manager.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                <img src={`/assets/av_${resolveAvatarIndex(manager)}.png`} alt={manager.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{manager.first_name} {manager.name}</p>

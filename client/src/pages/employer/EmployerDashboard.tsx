@@ -58,12 +58,14 @@ const EMPTY_SCHED = {
 };
 
 export default function EmployerDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [avatarIndex, setAvatarIndex]           = useState<number>(1);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  useEffect(() => { if (user) setAvatarIndex(getStoredAvatar(String(user.id))); }, [user?.id]);
+  useEffect(() => {
+    if (user) setAvatarIndex(user.avatar_index ?? getStoredAvatar(String(user.id)));
+  }, [user?.id, user?.avatar_index]);
 
   const [employees, setEmployees] = useState<User[]>([]);
   const [managers, setManagers] = useState<User[]>([]);
@@ -1050,7 +1052,14 @@ export default function EmployerDashboard() {
       {showAvatarPicker && (
         <AvatarPickerModal
           current={avatarIndex}
-          onSelect={(index) => { setAvatarIndex(index); if (user) saveAvatar(String(user.id), index); setShowAvatarPicker(false); }}
+          onSelect={(index) => {
+            setAvatarIndex(index);
+            if (user) {
+              saveAvatar(String(user.id), index);
+              userService.updateAvatar(user.id, index).then(() => refreshUser()).catch(() => {});
+            }
+            setShowAvatarPicker(false);
+          }}
           onClose={() => setShowAvatarPicker(false)}
         />
       )}

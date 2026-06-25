@@ -12,7 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
-import { getStoredAvatar } from "../../utils/avatar";
+import { resolveAvatarIndex } from "../../utils/avatar";
 
 function IconArrowLeft() {
   return (
@@ -60,7 +60,7 @@ export default function CollaborateurDetail() {
       <div className="page-header page-header--clean">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <img
-            src={`/assets/av_${getStoredAvatar(collab.id)}.png`}
+            src={`/assets/av_${resolveAvatarIndex(collab)}.png`}
             alt={collab.first_name}
             style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '2px solid var(--border)', flexShrink: 0 }}
           />

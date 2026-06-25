@@ -54,4 +54,8 @@ export const userService = {
       entry_date,
     });
   },
+
+  async updateAvatar(id: string, avatar_index: number): Promise<void> {
+    await api.patch(`/users/${id}/avatar`, { avatar_index });
+  },
 };

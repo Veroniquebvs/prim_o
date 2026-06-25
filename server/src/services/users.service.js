@@ -85,6 +85,22 @@ const update = async (id, body, companyId) => {
  * Permanently deletes a user by their UUID. Admin-only operation.
  * id is the UUID of the user to delete. Throws 404 if the user does not exist.
  */
+/**
+ * Updates the avatar_index for a user. Only the user themselves can call this.
+ * id is the UUID of the user. index must be between 1 and 6.
+ */
+const updateAvatar = async (id, avatar_index) => {
+  const user = await User.findByPk(id);
+  if (!user) throw httpError('User not found', 404);
+  if (!Number.isInteger(avatar_index) || avatar_index < 1 || avatar_index > 6) {
+    throw httpError('avatar_index must be an integer between 1 and 6', 400);
+  }
+  user.avatar_index = avatar_index;
+  await user.save();
+  const { password_hash: _, ...safe } = user.toJSON();
+  return safe;
+};
+
 const remove = async (id) => {
   const user = await User.findByPk(id);
   if (!user) throw httpError('User not found', 404);
@@ -136,4 +152,4 @@ const activateUser = async (id, companyId, entry_date) => {
   return user;
 };
 
-module.exports = { list, getById, update, remove, history, activateUser };
+module.exports = { list, getById, update, updateAvatar, remove, history, activateUser };

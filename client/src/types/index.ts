@@ -20,6 +20,7 @@ export interface User {
   created_at: string;
   createdAt?: string;
   entry_date?: string | null;
+  avatar_index?: number | null;
 }
 
 export interface Company {

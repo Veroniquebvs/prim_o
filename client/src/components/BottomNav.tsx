@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
-import { getAvatarUrl } from '../utils/avatar';
+import { resolveAvatarIndex } from '../utils/avatar';
 
 /* ── Inline SVG icons ─────────────────────────────────── */
 function IconDots() {
@@ -253,7 +253,7 @@ export default function BottomNav() {
             {user && (
               <div className="menu-sheet-user">
                 <div className="menu-sheet-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                  <img src={getAvatarUrl(user.id)} alt={user.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                  <img src={`/assets/av_${resolveAvatarIndex(user)}.png`} alt={user.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                 </div>
                 <div>
                   <p className="menu-sheet-name">{user.first_name || user.name}</p>
