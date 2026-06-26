@@ -16,6 +16,8 @@ const mockTx = {
 };
 jest.mock('../../src/config/database', () => ({
   transaction: jest.fn().mockResolvedValue(mockTx),
+  fn: jest.fn(),
+  col: jest.fn(),
 }));
 
 // ─── Mock models ──────────────────────────────────────────────────────────────
@@ -25,9 +27,14 @@ const mockVoucher = {
   partner: 'Fnac',
   token_cost: 20,
   available: true,
+  promo_code: 'TESTPROMO123',
   update: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   destroy: jest.fn().mockResolvedValue(undefined),
+  toJSON() {
+    const { toJSON, update, save, destroy, ...plain } = this;
+    return plain;
+  }
 };
 const mockUser = {
   id: 'user-uuid',
@@ -46,9 +53,10 @@ jest.mock('../../src/models', () => ({
   Voucher: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() },
   Redemption: { findAll: jest.fn(), create: jest.fn() },
   Company: { findOne: jest.fn(), findByPk: jest.fn() },
+  Favorite: { findAll: jest.fn() },
 }));
 
-const { User, Voucher, Redemption, Company } = require('../../src/models');
+const { User, Voucher, Redemption, Company, Favorite } = require('../../src/models');
 const {
   listItems, getItem, createItem, updateItem, deleteItem, redeem, listOrders,
 } = require('../../src/services/marketplace.service');
@@ -60,6 +68,7 @@ beforeEach(() => jest.clearAllMocks());
 describe('listItems', () => {
   it('returns only available vouchers', async () => {
     Voucher.findAll.mockResolvedValue([mockVoucher]);
+    Favorite.findAll.mockResolvedValue([]);
 
     const result = await listItems();
 
@@ -75,7 +84,9 @@ describe('listItems', () => {
 describe('getItem', () => {
   it('returns the voucher when found', async () => {
     Voucher.findByPk.mockResolvedValue(mockVoucher);
-    expect(await getItem('voucher-uuid')).toBe(mockVoucher);
+    const result = await getItem('voucher-uuid');
+    expect(result.id).toBe(mockVoucher.id);
+    expect(result).not.toHaveProperty('promo_code');
   });
 
   it('throws 404 when voucher does not exist', async () => {
@@ -90,23 +101,24 @@ describe('createItem', () => {
   it('creates and returns the voucher', async () => {
     Voucher.create.mockResolvedValue(mockVoucher);
 
-    const result = await createItem({ title: 'Fnac 20€', partner: 'Fnac', token_cost: 20 });
+    const result = await createItem({ title: 'Fnac 20€', partner: 'Fnac', token_cost: 20, promo_code: 'TESTPROMO123' });
 
     expect(Voucher.create).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Fnac 20€', partner: 'Fnac', token_cost: 20, available: true })
+      expect.objectContaining({ title: 'Fnac 20€', partner: 'Fnac', token_cost: 20, promo_code: 'TESTPROMO123', available: true })
     );
     expect(result).toBe(mockVoucher);
   });
 
   it('defaults available to true when not provided', async () => {
     Voucher.create.mockResolvedValue(mockVoucher);
-    await createItem({ title: 'X', partner: 'Y', token_cost: 10 });
+    await createItem({ title: 'X', partner: 'Y', token_cost: 10, promo_code: 'TESTPROMO123' });
     expect(Voucher.create).toHaveBeenCalledWith(expect.objectContaining({ available: true }));
   });
 
   it('throws 400 when required fields are missing', async () => {
-    await expect(createItem({ title: 'X', partner: 'Y' })).rejects.toMatchObject({ status: 400 });
-    await expect(createItem({ partner: 'Y', token_cost: 10 })).rejects.toMatchObject({ status: 400 });
+    await expect(createItem({ title: 'X', partner: 'Y', promo_code: 'TESTPROMO123' })).rejects.toMatchObject({ status: 400 });
+    await expect(createItem({ partner: 'Y', token_cost: 10, promo_code: 'TESTPROMO123' })).rejects.toMatchObject({ status: 400 });
+    await expect(createItem({ title: 'X', partner: 'Y', token_cost: 10 })).rejects.toMatchObject({ status: 400 });
   });
 });
 
