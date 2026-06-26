@@ -1,3 +1,16 @@
+/**
+ * pages/RegisterPage.tsx — Account creation page for both employers and employees.
+ *
+ * Supports two registration paths:
+ * 1. Direct registration: the user picks their role (employer or employee) and fills in the
+ *    corresponding fields. Employers must supply company details (name, SIRET, address); a new
+ *    company record is created before the user account.
+ * 2. QR-code registration: if a `?companyId=<id>` query param is present (scanned from the
+ *    PrintableQRCode poster), the role is locked to employee, the company is pre-resolved
+ *    (name fetched via the public endpoint), and the company ID field is non-editable.
+ *
+ * On successful registration, navigates to the role-appropriate dashboard.
+ */
 import { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -45,7 +58,7 @@ export default function RegisterPage() {
       return <Navigate to="/employer/dashboard" replace />;
     if (user.role === "admin")
       return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/catalogue" replace />;
+    return <Navigate to="/pour-toi" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,7 +92,7 @@ export default function RegisterPage() {
       if (role === "employer") {
         navigate("/employer/dashboard", { replace: true });
       } else {
-        navigate("/catalogue", { replace: true });
+        navigate("/pour-toi", { replace: true });
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
@@ -99,7 +112,7 @@ export default function RegisterPage() {
 
         {qrCompanyId ? (
           <>
-            <h1 className="auth-title">Créer votre compte employé</h1>
+            <h1 className="auth-title">Créer votre compte collaborateur</h1>
             <p className="auth-subtitle">
               Vous rejoignez{' '}
               <strong>{qrCompanyName || '…'}</strong>
@@ -122,7 +135,7 @@ export default function RegisterPage() {
                 value={role}
                 onChange={(e) => setRole(e.target.value as Role)}
               >
-                <option value="employee">Employé</option>
+                <option value="employee">Collaborateur</option>
                 <option value="employer">Employeur</option>
               </select>
             </div>

@@ -1,3 +1,13 @@
+/**
+ * tests/users/users.service.test.js — Unit tests for UsersService.
+ *
+ * Mocks the User and TokenTransaction models. Tests cover:
+ * - list: returns all users matching the provided filter options
+ * - getById: returns the user or throws 404 if not found
+ * - update: applies only whitelisted fields; strips password_hash from the response
+ * - remove: calls user.destroy(); returns 404 if user not found
+ * - history: returns the user's token transaction history
+ */
 jest.mock('../../src/models', () => ({
   User: { findAll: jest.fn(), findByPk: jest.fn() },
   TokenTransaction: { findAll: jest.fn() },

@@ -1,3 +1,9 @@
+/**
+ * favorites.routes.js — Route definitions for the voucher favourites feature.
+ *
+ * GET    /         — returns the authenticated user's list of favourited voucher IDs
+ * POST   /toggle   — adds or removes a voucher from the user's favourites (idempotent toggle)
+ */
 const { Router } = require('express');
 const { body } = require('express-validator');
 const { toggle, getUserFavorites } = require('../controllers/favorites.controller');

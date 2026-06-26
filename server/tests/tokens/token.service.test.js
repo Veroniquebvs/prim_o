@@ -1,3 +1,14 @@
+/**
+ * tests/tokens/token.service.test.js — Unit tests for TokenService.
+ *
+ * Mocks the database and model layer so no real PostgreSQL connection is needed.
+ * Tests cover:
+ * - allocate: employer with insufficient company balance returns 402; successful allocation
+ *   decrements company balance, increments receiver balance, inserts a TokenTransaction,
+ *   and commits the transaction; rollback is called on any intermediate failure
+ * - getBalance: returns the user's token_balance
+ * - listTransactions and getTransaction: return the mocked query results
+ */
 process.env.JWT_SECRET = 'test_secret';
 
 // ─── Mock sequelize transaction ───────────────────────────────────────────────

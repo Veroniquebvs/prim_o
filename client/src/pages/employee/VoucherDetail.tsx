@@ -1,3 +1,14 @@
+/**
+ * pages/employee/VoucherDetail.tsx — Full-page detail view for a single voucher.
+ *
+ * Fetches the voucher by the :id route param. If not found, shows a 404-style message.
+ * Displays the partner image (if available), title, category chip, token cost, user balance,
+ * and availability status. Authenticated users can redeem directly on this page or toggle the
+ * item in/out of their cart. Favorite toggle is also available.
+ *
+ * After redemption the promo code is displayed in a highlighted block, the voucher's available
+ * flag is set to false, and the balance is refreshed via AuthContext.
+ */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -121,37 +132,34 @@ export default function VoucherDetail() {
     : null;
 
   return (
-    <div>
-      <style>{`
-        .page-header .back-btn {
-          position: absolute !important;
-          right: 24px !important;
-          top: 50% !important;
-          transform: translateY(-50%) !important;
-          background-color: transparent !important;
-          color: white !important;
-          border-color: white !important;
-        }
-        @media (min-width: 768px) {
-          .page-header .back-btn {
-            right: 32px !important;
-          }
-        }
-        @media (min-width: 1024px) {
-          .page-header .back-btn {
-            right: 40px !important;
-          }
-        }
-        .page-header .back-btn:hover {
-          background-color: rgba(255, 255, 255, 0.15) !important;
-        }
-      `}</style>
-      <div className="page-header">
-        <div style={{ width: '100%', textAlign: 'center' }}>
-          <h1>Détail de l'offre</h1>
-        </div>
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <IconChevronLeft /> Retour
+    <div style={{ padding: '24px 0' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto 16px auto', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          className="btn btn-outline back-btn"
+          style={{
+            borderColor: 'var(--primary)',
+            color: 'var(--primary)',
+            background: 'transparent',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            height: 'fit-content',
+            padding: '8px 16px',
+            borderRadius: '12px',
+            transition: 'all 0.2s ease',
+          }}
+          onClick={() => navigate(-1)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 161, 154, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <IconChevronLeft />
+          Retour
         </button>
       </div>
 

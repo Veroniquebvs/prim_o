@@ -703,6 +703,64 @@ PATCH /users/:id/entry-date
 
 ---
 
+### 🗓️ 15 Juin 2026 : Optimisations UI/UX et corrections de logique
+
+**Objectifs :** Améliorer l'interface utilisateur (UI) du catalogue et sécuriser les calculs financiers côté employeur.
+
+#### 🎨 Interface Utilisateur (UI/UX) - 15/06/26 (fait par Véro)
+*   **Alignement des titres :** Centralisation des titres de page pour une meilleure lisibilité et uniformité visuelle.
+*   **Bouton "Retour" :** 
+    *   Refonte du style : passage en fond blanc avec texte contrasté.
+    *   Positionnement fixe à droite dans le header pour une meilleure ergonomie mobile/desktop.
+*   **Style des offres :** Restructuration visuelle des cartes d'offres :
+    *   Amélioration de la hiérarchie typographique (titre mis en avant, description plus lisible).
+    *   Ajustement des espacements (padding/margin) pour aérer le contenu.
+
+#### ⚙️ Logique & Backend
+*   **Correction du panier :**
+    *   Audit et correction de l'algorithme de calcul du solde total du panier côté employeur.
+    *   Assurance de la cohérence des totaux lors de l'ajout/suppression d'offres.
+
+---
+
+## UX, polissage & intégration Stripe complète — 16/06/26 (fait par Loïc)
+
+**Polissage UI**
+
+- Suppression de la fenêtre "Solde disponible" redondante sur la page Panier (déjà affiché en haut à droite)
+- Remplacement du cadran horloge par un logo token Prim'O (cercle jaune `#F5C518` + lettre **P** verte) dans la TopNav desktop et la barre mobile (`Layout.tsx`)
+- Alignement à gauche du titre "Détail de l'offre" sur `VoucherDetail.tsx`
+- Correction du style des boutons ← Retour sur les pages "Voir plus" (Paramètres, Mes informations, Mot de passe, CGU, Aide, Nous noter) : `.page-header .back-btn` unifié dans `globals.css` — transparent, texte blanc, `margin-left: auto`
+- Ajout d'un bouton ← Retour (chevron vert + `var(--primary)`) dans les modales "Attribution automatique" et "Créer un employé" sur `EmployerDashboard`
+- Remplacement de l'ID entreprise par le nom de l'entreprise dans la modale "Créer un employé"
+- Suppression de la fenêtre "Solde actuel" redondante sur la page Abonnement
+
+**Page de chargement (SplashScreen)**
+
+- Création de `SplashScreen.tsx` : fond blanc, logo centré, dégradé vert léger en haut
+- Branché sur `ProtectedRoute` (remplace le texte "Chargement…")
+- Logo `logo_page-chargement.png` copié dans `public/` pour accès direct
+
+**Œil afficher/masquer le mot de passe**
+
+- Ajout d'un toggle œil sur le champ mot de passe de `LoginPage.tsx`
+- SVG œil barré / ouvert selon l'état, couleur `var(--text-muted)`
+
+**Intégration Stripe complète (abonnements mensuels récurrents)**
+
+- Migration de `PaymentIntent` vers **Stripe Subscription** (vrai prélèvement mensuel automatique)
+- Backend `stripe.service.js` : `createOrUpdateSubscription()` — crée un Stripe Customer + Subscription avec `price_data` inline, annule l'ancien abonnement si changement de plan
+- Backend : nouveau webhook `invoice.payment_succeeded` (remplace `payment_intent.succeeded`) — crédit des tokens via transaction PostgreSQL atomique
+- Nouveaux endpoints : `POST /api/tokens/subscribe` (planId) · `GET /api/tokens/subscription`
+- Modèle `Company` : 5 nouvelles colonnes (`stripe_customer_id`, `stripe_subscription_id`, `subscription_plan`, `subscription_status`, `subscription_next_billing`) — ajout automatique via `sync({ alter: true })`
+- Frontend `Abonnement.tsx` : 4 états — chargement · abonnement actif (plan + date prochain prélèvement + changement de plan) · sélection · paiement · succès
+- Polling du solde toutes les 2 s après paiement (le webhook crédite de façon asynchrone)
+- `PaymentElement` configuré : carte bancaire uniquement (`payment_method_types: ['card']`, `wallets: { link: 'never' }`)
+- `docker-compose.yml` : `env_file: ./client/.env` pour injecter `VITE_STRIPE_PUBLIC_KEY` dans le conteneur frontend
+- Masquage du badge test-mode Stripe via CSS global (`#stripe-badge-iframe`)
+
+---
+
 ## TODO
 
 - [ ] **Nettoyer les contraintes UNIQUE dupliquées sur `users.email`** — la table contient ~22 index `users_email_keyX` identiques, probablement générés par des migrations Sequelize rejouées en boucle. À corriger via une migration qui supprime les doublons et ne conserve qu'un seul `UNIQUE` sur `email`.
@@ -743,7 +801,33 @@ Mot de passe pour tous les comptes : `admin123456789`
 | marie.garcia@aldi-demo.fr | Aldi |
 | paul.thomas@amazon-demo.fr | Amazon |
 
-### Employés
+### Managers (Leclerc — seed local, mot de passe : `admin123`)
+| Email | Équipe |
+|---|---|
+| sophie.martin@leclerc.fr | Équipe Rayon Frais |
+| thomas.dubois@leclerc.fr | Équipe Caisse |
+| isabelle.bernard@leclerc.fr | Équipe Drive |
+
+### Employés (Leclerc — seed local, mot de passe : `admin123`)
+| Email | Équipe |
+|---|---|
+| lucas.petit@leclerc.fr | Rayon Frais |
+| emma.leroy@leclerc.fr | Rayon Frais |
+| nathan.moreau@leclerc.fr | Rayon Frais |
+| chloe.simon@leclerc.fr | Rayon Frais |
+| antoine.laurent@leclerc.fr | Rayon Frais |
+| camille.michel@leclerc.fr | Caisse |
+| raphael.garcia@leclerc.fr | Caisse |
+| lea.david@leclerc.fr | Caisse |
+| hugo.bertrand@leclerc.fr | Caisse |
+| manon.roux@leclerc.fr | Caisse |
+| alexis.vincent@leclerc.fr | Drive |
+| ines.fournier@leclerc.fr | Drive |
+| maxime.morel@leclerc.fr | Drive |
+| julie.girard@leclerc.fr | Drive |
+| theo.andre@leclerc.fr | Drive |
+
+### Employés (base Render — production, mot de passe : `admin123456789`)
 | Email | Entreprise |
 |---|---|
 | sophie.martin@leclerc-demo.fr | Leclerc |
@@ -755,3 +839,96 @@ Mot de passe pour tous les comptes : `admin123456789`
 | lea.simon@amazon-demo.fr | Amazon |
 | tom.laurent@amazon-demo.fr | Amazon |
 | jade.michel@amazon-demo.fr | Amazon |
+
+
+---
+
+## Session du 17 Juin 2026 — Refonte UI Pages Manager & Employé
+
+**Auteur :** Loïc Cerqueira  
+**Branche :** `feat/front`
+
+### Objectif
+Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manager)** et **Pour Toi (Employé)**.
+
+### Modifications effectuées
+
+#### `client/src/pages/PourToi.tsx`
+- **Hero Manager** (dark navy) : logo prim'O en Pacifico, pièce `token-logo-SF.png`, fenêtre stock tokens fond gris foncé avec contour blanc et `translateY(55px)` pour chevaucher la coupure bleu/blanc, nom d'équipe au-dessus de l'image
+- **Hero Employé** (teal) : greeting "Bonjour, [Prénom] !", pièce centrée, bulle blanche avec solde tokens
+- **Layout 2 colonnes** dans les deux heroes : gauche réservée aux avatars (fournis par le client), droite avec pièce + solde
+- **Fil d'activité** : récupération via `userService.getHistory()` des derniers tokens reçus (page employé)
+- **Carousels** : offres du moment, favoris, nouveautés (page employé)
+- **Cards collaborateurs** : avatar (initiales), nom, solde tkn, bouton "+ Envoyer" (page manager)
+- **Quick send modal** : envoi instantané de tokens depuis une card collaborateur
+- **Panneau Ajouter/Créer** collaborateur avec deux modes : "Depuis la liste" / "Créer un profil"
+
+#### `client/src/components/Layout.tsx`
+- Ajout détection des "hero pages" (`/pour-toi`, `/employer/dashboard`)
+- Sur ces pages : masquage de la `top-bar` mobile (blanc avec tokens) pour que le hero couvre toute la largeur dès le haut
+
+#### `client/src/styles/globals.css`
+- Classes `.pour-toi-hero` et `.manager-hero` : gradients teal/navy, responsive
+- Suppression des rayures diagonales (`::before`)
+- Classe `.app-main--hero` : `padding-top: 0` pour coller le hero au bord supérieur
+- Classes `.collab-card` et `.activity-item`
+
+#### Infrastructure Docker
+- Résolution du bug `Cannot find module 'vite-plugin-pwa'` : volume anonyme `node_modules` obsolète → `docker compose rm -f client` + `docker volume prune -f` + `docker compose build --no-cache client`
+
+---
+
+## Système d'avatars & polissage UI — 24/06/26 (fait par Loïc)
+
+**Branche :** `dev`
+
+### Avatars — mise en place complète
+
+#### Assets
+- Copie des fichiers `av_1.png` à `av_6.png` depuis `client/dist/assets/` vers `client/public/assets/` (servis statiquement par Vite à `/assets/av_N.png`)
+- Rognage automatique du whitespace transparent autour de chaque personnage via un script Python/PIL (`getbbox()` + 4 px de marge)
+- Redimensionnement de tous les avatars aux dimensions de `av_1.png` (218 × 699 px) pour une taille homogène dans le picker
+- `av_3.png` recadré depuis l'original (`dist/`) en mettant à l'échelle sur la hauteur (au lieu de la largeur) pour conserver la même taille de personnage que les autres
+
+#### Utilitaires (`client/src/utils/avatar.ts`)
+- `getAvatarUrl(userId)` : avatar déterministe basé sur un hash de l'ID
+- `getStoredAvatar(userId)` : lit le choix en localStorage, retourne `av_1` par défaut (plus d'aléatoire)
+- `saveAvatar(userId, index)` : persiste le choix en localStorage
+
+#### Composant partagé (`client/src/components/AvatarPickerModal.tsx`)
+- Bottom-sheet mobile (position fixed, alignItems flex-end) avec grille 3 colonnes
+- Sélection mise en évidence (bordure + scale), fermeture au clic en dehors
+
+#### Intégration dans les pages
+- **`PourToi.tsx` (manager & employé)** : avatar `position: absolute` dans le hero (ne pousse pas le contenu), cliquable, ouvre le picker
+- **`EmployerDashboard.tsx`** : même approche dans le hero employeur
+- **`ManagerDetail.tsx`, `CollaborateurDetail.tsx`** : avatar en lecture seule (pas de picker)
+- **`BottomNav.tsx`, `MesInformations.tsx`, `Profil.tsx`** : avatar affiché en cercle
+- Tous les cercles à initiales remplacés par des avatars (collab list manager, modales quick-send)
+
+#### Persistance
+- `useState(1)` + `useEffect([user?.id])` : lecture du localStorage après chargement de l'auth (corrige le bug où `useState` lazy s'exécutait avant que `user` soit disponible)
+- `String(user.id)` utilisé partout pour garantir la cohérence de la clé localStorage
+
+#### Affichage du visage dans les petits cercles
+- `objectFit: 'cover'` + `objectPosition: 'top center'` sur tous les avatars circulaires → montre la tête/visage au lieu du ventre
+
+---
+
+### Polissage UI — hero pages
+
+#### Layout hero (avatar absolu)
+- Avatar en `position: absolute` dans le hero → n'entre plus dans le flux flex, la colonne droite (tokens/pièce) a tout l'espace
+- `zIndex: 10` pour passer devant les autres éléments
+
+#### Responsive desktop — style "carte"
+- `.manager-hero` et `.pour-toi-hero` sur desktop (≥1024 px) : `border-radius: 24px`, `max-width: 600px`, `margin: auto`, ombre assortie au gradient → même rendu visuel que le bloc employeur
+- Taille avatar : `min(105px, 27vw)` → cap à 105 px sur desktop (évite l'avatar surdimensionné sur grands écrans)
+
+#### TopNav manager
+- `top-nav--transparent` (fond transparent + position absolute) restreint à `@media (max-width: 1023px)` → sur desktop, la barre est identique à celle de l'employeur (fond blanc, ombre, liens visibles)
+- Classes `top-nav--manager` et `no-shadow` supprimées du header → même style pour tous les rôles
+
+#### Modal QR Code (employeur)
+- Rendu via `ReactDOM.createPortal(…, document.body)` → échappe aux stacking contexts créés par le hero `position: relative`, passe devant la TopNav quelle que soit la hiérarchie DOM
+- `maxHeight: calc(100vh - 32px)` + `overflowY: auto` → le modal ne déborde plus hors écran

@@ -1,3 +1,11 @@
+/**
+ * pages/admin/AdminRachats.tsx — Platform-wide redemption history page for the admin.
+ *
+ * Fetches all redemption records across all companies. Derives two aggregate views:
+ * a by-partner summary (total redemptions per partner, sorted descending) and a top-10
+ * most-redeemed vouchers table. The full chronological redemption log is shown below.
+ * Navigates back to AdminBons on the back button.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -42,7 +50,7 @@ export default function AdminRachats() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Rachats totaux</h1>
           <p>{history.length} échange{history.length !== 1 ? 's' : ''} effectué{history.length !== 1 ? 's' : ''}</p>

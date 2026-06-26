@@ -1,8 +1,19 @@
+/**
+ * pages/MesInformations.tsx — Personal information settings page.
+ *
+ * Lets the user view and update their first name, last name, and email. Company name and
+ * SIRET are fetched and displayed read-only (employers only). The save button is disabled
+ * unless the form is dirty (i.e., at least one field differs from the current user values).
+ * On success, the user state is refreshed via AuthContext so the rest of the UI reflects the
+ * new name immediately. The back button navigates to the originating page and sets reopenMenu
+ * in location state so BottomNav re-opens the slide-up menu.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/user.service';
 import { companyService } from '../services/company.service';
+import { resolveAvatarIndex } from '../utils/avatar';
 
 export default function MesInformations() {
   const { user, refreshUser } = useAuth();
@@ -50,7 +61,7 @@ export default function MesInformations() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Mes informations</h1>
           <p>Vos informations personnelles</p>
@@ -64,6 +75,15 @@ export default function MesInformations() {
       </div>
 
       <form onSubmit={handleSave} style={{ maxWidth: 520, margin: '0 auto' }}>
+        {user && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+            <img
+              src={`/assets/av_${resolveAvatarIndex(user)}.png`}
+              alt={user.first_name}
+              style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', border: '3px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+            />
+          </div>
+        )}
         <div className="info-card-list">
 
           <div className="info-field-card">

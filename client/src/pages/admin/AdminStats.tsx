@@ -1,3 +1,11 @@
+/**
+ * pages/admin/AdminStats.tsx — Platform-wide statistics dashboard for the admin.
+ *
+ * Fetches three data sets in parallel (all companies, all vouchers, full redemption history)
+ * and derives four KPIs: total companies, total vouchers, total redemptions, and currently
+ * available vouchers. Each stat card is clickable and navigates to the corresponding detail
+ * list page (AdminDashboard for companies, AdminBons for vouchers/redemptions).
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { companyService } from '../../services/company.service';
@@ -41,31 +49,13 @@ export default function AdminStats() {
 
   return (
     <div>
-      <div className="page-header" style={{ justifyContent: 'center' }}>
+      <div className="page-header page-header--clean" style={{ justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <h1>Tableau de bord</h1>
+          <h1>Statistiques</h1>
         </div>
       </div>
 
       <div className="grid-2" style={{ marginBottom: 32 }}>
-        <div className="stat-card" style={cardClickStyle}
-          onClick={() => navigate('/admin/dashboard')}
-          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
-        >
-          <p className="stat-label">Entreprises</p>
-          <p className="stat-value">{stats?.companies ?? 0}</p>
-          <p className="stat-sub">enregistrées</p>
-        </div>
-        <div className="stat-card" style={cardClickStyle}
-          onClick={() => navigate('/admin/bons')}
-          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
-        >
-          <p className="stat-label">Bons d'achat</p>
-          <p className="stat-value">{stats?.vouchers ?? 0}</p>
-          <p className="stat-sub">{stats?.available ?? 0} disponibles</p>
-        </div>
         <div className="stat-card" style={cardClickStyle}
           onClick={() => navigate('/admin/stat-rachats')}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; }}

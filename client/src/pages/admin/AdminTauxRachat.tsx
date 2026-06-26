@@ -1,3 +1,10 @@
+/**
+ * pages/admin/AdminTauxRachat.tsx — Partner redemption rate page for the admin.
+ *
+ * Computes per-partner redemption rates by dividing the number of redemptions by the number
+ * of vouchers for each partner. Sorted by rate descending. The global rate is also displayed.
+ * Intended to help the admin identify which partners' offers are most attractive to employees.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -47,7 +54,7 @@ export default function AdminTauxRachat() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Taux de rachat</h1>
           <p>Performance par partenaire</p>

@@ -1,3 +1,15 @@
+/**
+ * pages/employee/Parameters.tsx — App preferences and account deletion page.
+ *
+ * Stores three preferences in localStorage (email offers toggle, notifications toggle, language).
+ * These are client-side only and not synced to the server in the current implementation.
+ * The useLocalBool hook is a local helper that reads/writes a boolean localStorage key and
+ * keeps React state in sync.
+ *
+ * Account deletion requires a two-step confirmation: clicking "Supprimer mon compte" reveals
+ * a confirmation message, and only a second explicit click triggers the API call. On success,
+ * the session is logged out and the user is redirected to /login.
+ */
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -66,7 +78,7 @@ export default function Parameters() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div>
           <h1>Paramètres</h1>
           <p>Préférences et compte</p>

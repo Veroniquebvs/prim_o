@@ -1,3 +1,13 @@
+/**
+ * scheduled.routes.js — Route definitions for employer-level scheduled allocation management.
+ * All routes require a valid JWT with role 'employer'.
+ *
+ * GET    /          — list all allocation rules for the employer's company
+ * POST   /          — create a new rule (targeting a specific user or all active employees)
+ * PUT    /:id       — replace an existing rule's schedule and target
+ * PATCH  /:id/toggle — pause or resume a rule
+ * DELETE /:id       — permanently delete a rule
+ */
 const { Router } = require('express');
 const { body, param } = require('express-validator');
 const scheduledController = require('../controllers/scheduled.controller');

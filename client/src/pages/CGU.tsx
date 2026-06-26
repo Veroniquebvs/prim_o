@@ -1,3 +1,12 @@
+/**
+ * pages/CGU.tsx — Terms of use and sale (CGU-CGV) page.
+ *
+ * Renders 17 legal articles covering the platform's object, contact details, user capacities,
+ * token rules, marketplace terms, payment and billing, data protection (RGPD), intellectual
+ * property, and jurisdiction. Content is statically defined in the articles array and rendered
+ * as paragraphs split on double newlines. Article numbers and titles form a readable heading
+ * hierarchy. The contact section mirrors the one in FAQ.
+ */
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function IconMail() {
@@ -273,7 +282,7 @@ export default function CGU() {
   return (
     <div>
       {/* Sticky top bar */}
-      <div className="faq-topbar" style={{ justifyContent: 'space-between' }}>
+      <div className="faq-topbar faq-topbar--clean" style={{ justifyContent: 'space-between' }}>
         <h1 className="faq-topbar-title">CGU — CGV</h1>
         <button className="back-btn" onClick={() => navigate(from, { state: { reopenMenu: true } })}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

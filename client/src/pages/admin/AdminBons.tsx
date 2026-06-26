@@ -1,3 +1,12 @@
+/**
+ * pages/admin/AdminBons.tsx — Voucher management page for the admin role.
+ *
+ * Provides two tabs: "Gérer" (create new vouchers and view/search the existing list) and
+ * "Rachats" (all-time redemption history across the platform). The Gérer tab supports image
+ * uploads (up to 5 per voucher, preview shown before save), category assignment, and a
+ * free-text search to filter the existing voucher list. Clicking a voucher row navigates
+ * to AdminVoucherDetail for full editing. The Rachats tab is rendered via AdminRachats.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -22,6 +31,8 @@ function OngletGerer() {
   const [success, setSuccess]   = useState('');
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const load = useCallback(() => {
     setLoading(true);
@@ -95,7 +106,7 @@ function OngletGerer() {
   return (
     <div>
       {/* Formulaire d'ajout */}
-      <div className="card" style={{ marginBottom: 24 }}>
+      <div className="card" style={{ marginBottom: 24, background: '#f0fdf4', borderColor: '#bbf7d0' }}>
         <p style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>Ajouter un bon d'achat</p>
         <form onSubmit={handleAdd}>
           <div className="grid-2" style={{ marginBottom: 12 }}>
@@ -188,7 +199,7 @@ function OngletGerer() {
             className="form-input"
             placeholder="Rechercher partenaire, titre, code…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ maxWidth: 260, marginBottom: 0 }}
           />
         </div>
@@ -202,80 +213,123 @@ function OngletGerer() {
                   <th></th>
                   <th>Partenaire</th>
                   <th>Titre</th>
-                  <th>Code promo</th>
                   <th>Catégorie</th>
                   <th>Tokens</th>
-                  <th>Rachats</th>
                   <th>Statut</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {[...vouchers]
-                  .filter(v => {
-                    const q = search.toLowerCase();
-                    return !q
-                      || v.partner.toLowerCase().includes(q)
-                      || v.title.toLowerCase().includes(q)
-                      || (v.promo_code ?? '').toLowerCase().includes(q);
-                  })
-                  .sort((a, b) => a.partner.localeCompare(b.partner, 'fr')).map(v => (
-                  <tr key={v.id} onClick={() => navigate(`/admin/bons/${v.id}`)}
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
-                  >
-                    <td style={{ width: 48 }}>
-                      {v.images?.[0] ? (
-                        <img
-                          src={resolveImageUrl(v.images[0])}
-                          alt=""
-                          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }}
-                        />
-                      ) : (
-                        <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18, color: 'var(--text-muted)' }}>
-                            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                          </svg>
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{v.partner}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{v.title}</td>
-                    <td>
-                      {v.promo_code
-                        ? <span className="promo-code">{v.promo_code}</span>
-                        : <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>—</span>}
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                      {v.category ? v.category.charAt(0).toUpperCase() + v.category.slice(1) : '—'}
-                    </td>
-                    <td><span className="token-badge">{v.token_cost}</span></td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{v.redemptions?.length ?? 0}</td>
-                    <td>
-                      <button
-                        onClick={e => { e.stopPropagation(); handleToggle(v); }}
-                        style={{
-                          fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px',
-                          borderRadius: 999, border: 'none', cursor: 'pointer',
-                          background: v.available ? '#dcfce7' : '#fee2e2',
-                          color: v.available ? '#16a34a' : '#dc2626',
-                        }}
-                      >
-                        {v.available ? 'Disponible' : 'Indispo'}
-                      </button>
-                    </td>
-                    <td>
-                      <button onClick={e => { e.stopPropagation(); handleDelete(v.id); }} className="btn btn-danger btn-sm">
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const filtered = [...vouchers]
+                    .filter(v => {
+                      const q = search.toLowerCase();
+                      return !q
+                        || v.partner.toLowerCase().includes(q)
+                        || v.title.toLowerCase().includes(q)
+                        || (v.promo_code ?? '').toLowerCase().includes(q);
+                    })
+                    .sort((a, b) => a.partner.localeCompare(b.partner, 'fr'));
+                  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+                  const safePage = Math.min(page, totalPages);
+                  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+                  return paginated.map(v => (
+                    <tr key={v.id} onClick={() => navigate(`/admin/bons/${v.id}`)}
+                      style={{ cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}
+                    >
+                      <td style={{ width: 48 }}>
+                        {v.images?.[0] ? (
+                          <img
+                            src={resolveImageUrl(v.images[0])}
+                            alt=""
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }}
+                          />
+                        ) : (
+                          <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18, color: 'var(--text-muted)' }}>
+                              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                            </svg>
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{v.partner}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{v.title}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                        {v.category ? v.category.charAt(0).toUpperCase() + v.category.slice(1) : '—'}
+                      </td>
+                      <td><span className="token-badge">{v.token_cost}</span></td>
+                      <td>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleToggle(v); }}
+                          style={{
+                            fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px',
+                            borderRadius: 999, border: 'none', cursor: 'pointer',
+                            background: v.available ? '#dcfce7' : '#fee2e2',
+                            color: v.available ? '#16a34a' : '#dc2626',
+                          }}
+                        >
+                          {v.available ? 'Disponible' : 'Indispo'}
+                        </button>
+                      </td>
+                      <td>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(v.id); }} className="btn btn-danger btn-sm">
+                          Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
         )}
+
+        {/* Pagination */}
+        {(() => {
+          const filtered = vouchers.filter(v => {
+            const q = search.toLowerCase();
+            return !q || v.partner.toLowerCase().includes(q) || v.title.toLowerCase().includes(q) || (v.promo_code ?? '').toLowerCase().includes(q);
+          });
+          const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+          if (totalPages <= 1) return null;
+          const safePage = Math.min(page, totalPages);
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  style={{
+                    minWidth: 32, height: 32, borderRadius: 8, border: '1.5px solid',
+                    borderColor: n === safePage ? 'var(--primary)' : 'var(--border)',
+                    background: n === safePage ? 'var(--primary)' : 'transparent',
+                    color: n === safePage ? '#fff' : 'var(--text)',
+                    fontWeight: n === safePage ? 700 : 400,
+                    fontSize: '0.82rem', cursor: 'pointer',
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+              >
+                ›
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -311,7 +365,7 @@ export default function AdminBons() {
           background-color: rgba(255, 255, 255, 0.15) !important;
         }
       `}</style>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div style={{ width: '100%', textAlign: 'center' }}>
           <h1>Bons d'achat</h1>
           <p>Gestion du catalogue</p>

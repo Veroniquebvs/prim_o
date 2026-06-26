@@ -1,3 +1,13 @@
+/**
+ * pages/admin/AdminCompanyDetail.tsx — Detailed view of a single company, for the admin.
+ *
+ * Fetches the company record and its employee list. Displays company info, token balance,
+ * employee table (with a role-change dropdown that lets the admin promote/demote between
+ * employee and manager roles), and a two-step admin token deduction form. The deduction
+ * targets either the company token pool or an individual employee; a confirmation step
+ * shows the recap before committing the write. Company deletion requires a second click
+ * on the confirmation button and removes the company and all associated users.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { companyService } from '../../services/company.service';
@@ -5,6 +15,7 @@ import { userService } from '../../services/user.service';
 import { tokenService } from '../../services/token.service';
 import type { Company, User } from '../../types';
 import { fmt } from '../../utils/date';
+import UserSelectionModal from '../../components/UserSelectionModal';
 
 export default function AdminCompanyDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,63 +27,19 @@ export default function AdminCompanyDetail() {
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState('');
 
-  // Déduction admin
-  type DeductTarget = 'company' | 'employee';
-  const [deductTarget, setDeductTarget] = useState<DeductTarget>('company');
-  const [deductUserId, setDeductUserId] = useState('');
-  const [deductAmount, setDeductAmount] = useState('');
-  const [deductReason, setDeductReason] = useState('');
-  const [deductPending, setDeductPending] = useState(false);
-  const [deductConfirm, setDeductConfirm] = useState(false);
-  const [deductMsg, setDeductMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [showManagersModal, setShowManagersModal] = useState(false);
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       companyService.getById(id),
-      userService.getAll({ companyId: id, role: 'employee' }),
+      userService.getAll({ companyId: id }),
     ])
       .then(([c, u]) => { setCompany(c); setEmployees((u as any).data?.data || []); })
       .catch(() => setError('Impossible de charger les données.'))
       .finally(() => setLoading(false));
   }, [id]);
-
-  function handleDeductSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setDeductMsg(null);
-    setDeductConfirm(true);
-  }
-
-  async function handleDeductConfirm() {
-    if (!id || !company) return;
-    setDeductPending(true);
-    try {
-      await tokenService.adminDeduct({
-        target: deductTarget,
-        company_id: id,
-        user_id: deductTarget === 'employee' ? deductUserId : undefined,
-        amount: Number(deductAmount),
-        reason: deductReason || undefined,
-      });
-      const [freshCompany, freshUsers] = await Promise.all([
-        companyService.getById(id),
-        userService.getAll({ companyId: id, role: 'employee' }),
-      ]);
-      setCompany(freshCompany);
-      setEmployees((freshUsers as any).data?.data || []);
-      setDeductMsg({ ok: true, text: `${deductAmount} tokens déduits avec succès.` });
-      setDeductAmount('');
-      setDeductReason('');
-      setDeductUserId('');
-      setDeductConfirm(false);
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string } } };
-      setDeductMsg({ ok: false, text: axiosErr.response?.data?.error ?? 'Erreur lors de la déduction.' });
-      setDeductConfirm(false);
-    } finally {
-      setDeductPending(false);
-    }
-  }
 
   async function handleDelete() {
     if (!id) return;
@@ -88,7 +55,9 @@ export default function AdminCompanyDetail() {
   }
 
   const employers  = employees.filter(u => u.role === 'employer');
-  const empList    = employees.filter(u => u.role === 'employee');
+  const managers   = employees.filter(u => u.role === 'manager');
+  const collaborateurs = employees.filter(u => u.role === 'employee');
+  const staff = [...managers, ...collaborateurs];
   const totalTokens = employees.reduce((sum, u) => sum + u.token_balance, 0);
 
   const rowStyle: React.CSSProperties = { borderBottom: '1px solid var(--border)' };
@@ -123,7 +92,7 @@ export default function AdminCompanyDetail() {
           background-color: rgba(255, 255, 255, 0.15) !important;
         }
       `}</style>
-      <div className="page-header">
+      <div className="page-header page-header--clean">
         <div style={{ width: '100%', textAlign: 'center' }}>
           <h1>{company.name}</h1>
           <p>{company.city ?? ''}</p>
@@ -144,7 +113,7 @@ export default function AdminCompanyDetail() {
         <div className="grid-3">
           <div className="stat-card">
             <p className="stat-label">Employés</p>
-            <p className="stat-value">{empList.length}</p>
+            <p className="stat-value">{staff.length}</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Tokens distribués</p>
@@ -178,7 +147,7 @@ export default function AdminCompanyDetail() {
               </tr>
               <tr>
                 <td style={{ ...tdMuted, fontWeight: 700 }}>Inscrite le</td>
-                <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>{fmt(company.created_at)}</td>
+                <td style={{ padding: '10px 16px', fontSize: '0.875rem' }}>{fmt(company.createdAt || company.created_at)}</td>
               </tr>
             </tbody>
           </table>
@@ -192,7 +161,13 @@ export default function AdminCompanyDetail() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   {employers.map(u => (
-                    <tr key={u.id} style={rowStyle}>
+                    <tr 
+                      key={u.id} 
+                      style={{...rowStyle, cursor: 'pointer', transition: 'background 0.2s'}}
+                      onClick={() => navigate(`/employer/employees/${u.id}`)}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
                       <td style={{ padding: '10px 16px', fontWeight: 600, fontSize: '0.875rem' }}>
                         {u.first_name} {u.name}
                       </td>
@@ -207,167 +182,24 @@ export default function AdminCompanyDetail() {
 
         {/* Employees */}
         <div>
-          <h2 className="faq-section-title">Employés ({empList.length})</h2>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            {empList.length === 0 ? (
-              <p style={{ padding: 16, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucun employé enregistré.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Nom</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Email</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>Tokens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {empList.map(u => (
-                    <tr key={u.id} style={rowStyle}>
-                      <td style={{ padding: '10px 16px', fontWeight: 600, fontSize: '0.875rem' }}>
-                        {u.first_name} {u.name}
-                      </td>
-                      <td style={tdMuted}>{u.email}</td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                        <span className="token-badge">{u.token_balance}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-
-        {/* Déduction admin */}
-        <div>
-          <h2 className="faq-section-title">Déduire des tokens</h2>
-          <div className="card">
-            {/* Tabs cible */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              {(['company', 'employee'] as DeductTarget[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => { setDeductTarget(t); setDeductUserId(''); setDeductMsg(null); setDeductConfirm(false); }}
-                  style={{
-                    flex: 1, padding: '10px 0', borderRadius: 'var(--radius)',
-                    border: '1.5px solid', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
-                    background: deductTarget === t ? 'var(--primary)' : 'transparent',
-                    borderColor: deductTarget === t ? 'var(--primary)' : 'var(--border)',
-                    color: deductTarget === t ? '#fff' : 'var(--text)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {t === 'company' ? '🏢 Entreprise' : '👤 Employé'}
-                </button>
-              ))}
-            </div>
-
-            {!deductConfirm ? (
-              <form onSubmit={handleDeductSubmit}>
-                {deductTarget === 'company' && (
-                  <div className="form-group">
-                    <label className="form-label">Entreprise</label>
-                    <div className="form-input" style={{ background: 'var(--bg)', color: 'var(--text-muted)', cursor: 'default' }}>
-                      {company.name} — solde actuel : {company.token_balance} tokens
-                    </div>
-                  </div>
-                )}
-
-                {deductTarget === 'employee' && (
-                  <div className="form-group">
-                    <label className="form-label">Employé</label>
-                    <select
-                      className="form-select"
-                      value={deductUserId}
-                      onChange={(e) => setDeductUserId(e.target.value)}
-                      required
-                    >
-                      <option value="">Sélectionner un employé…</option>
-                      {[...employers, ...empList].map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.first_name} {u.name} — {u.token_balance} tokens
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label className="form-label">Montant à déduire</label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    min={1}
-                    value={deductAmount}
-                    onChange={(e) => setDeductAmount(e.target.value)}
-                    placeholder="ex. 50"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Motif (facultatif)</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    value={deductReason}
-                    onChange={(e) => setDeductReason(e.target.value)}
-                    placeholder="ex. Correction d'erreur"
-                  />
-                </div>
-
-                {deductMsg && (
-                  <p className={deductMsg.ok ? 'form-success' : 'form-error'} style={{ marginBottom: 12 }}>
-                    {deductMsg.text}
-                  </p>
-                )}
-
-                <button type="submit" className="btn btn-primary">
-                  Déduire
-                </button>
-              </form>
-            ) : (
-              <div>
-                <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '16px 20px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cible</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                      {deductTarget === 'company'
-                        ? company.name
-                        : (() => { const u = [...employers, ...empList].find(u => String(u.id) === deductUserId); return u ? `${u.first_name} ${u.name}` : '—'; })()
-                      }
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tokens à déduire</span>
-                    <span className="token-badge" style={{ fontSize: '1rem', background: '#fee2e2', color: '#dc2626' }}>−{deductAmount}</span>
-                  </div>
-                  {deductReason && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>Motif</span>
-                      <span style={{ fontSize: '0.85rem', textAlign: 'right' }}>{deductReason}</span>
-                    </div>
-                  )}
-                </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                  Cette action est irréversible. Confirmez-vous la déduction ?
-                </p>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button className="btn btn-outline" onClick={() => setDeductConfirm(false)} disabled={deductPending}>
-                    Annuler
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    style={{ background: '#dc2626', borderColor: '#dc2626' }}
-                    onClick={handleDeductConfirm}
-                    disabled={deductPending}
-                  >
-                    {deductPending ? 'Déduction…' : 'Confirmer la déduction'}
-                  </button>
-                </div>
-              </div>
-            )}
+          <h2 className="faq-section-title">Employés ({staff.length})</h2>
+          <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setShowManagersModal(true)}
+              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer' }}
+            >
+              <span style={{ fontWeight: 600 }}>Managers</span>
+              <span className="token-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none' }}>{managers.length}</span>
+            </button>
+            <button
+              className="btn btn-outline"
+              onClick={() => setShowCollaboratorsModal(true)}
+              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer' }}
+            >
+              <span style={{ fontWeight: 600 }}>Collaborateurs</span>
+              <span className="token-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none' }}>{collaborateurs.length}</span>
+            </button>
           </div>
         </div>
 
@@ -404,6 +236,69 @@ export default function AdminCompanyDetail() {
         </div>
 
       </div>
+
+      {showManagersModal && (
+        <div className="emp-modal-overlay" onClick={() => setShowManagersModal(false)} style={{ zIndex: 1000 }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', display: 'flex', flexDirection: 'column', maxHeight: '80vh', width: '90%', maxWidth: 500 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 className="emp-modal-title" style={{ margin: 0 }}>Managers</h2>
+              <button onClick={() => setShowManagersModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {managers.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>Aucun manager.</p> : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    {managers.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || '')).map(u => (
+                      <tr 
+                        key={u.id} 
+                        style={{...rowStyle, cursor: 'pointer', transition: 'background 0.2s'}}
+                        onClick={() => navigate(`/employer/employees/${u.id}`)}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '12px 0', fontWeight: 600, fontSize: '0.875rem' }}>{u.first_name} {u.name}</td>
+                        <td style={{ padding: '12px 0', textAlign: 'right' }}><span className="token-badge">{u.token_balance}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCollaboratorsModal && (
+        <div className="emp-modal-overlay" onClick={() => setShowCollaboratorsModal(false)} style={{ zIndex: 1000 }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', display: 'flex', flexDirection: 'column', maxHeight: '80vh', width: '90%', maxWidth: 500 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 className="emp-modal-title" style={{ margin: 0 }}>Collaborateurs</h2>
+              <button onClick={() => setShowCollaboratorsModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {collaborateurs.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>Aucun collaborateur.</p> : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    {collaborateurs.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || '')).map(u => (
+                      <tr 
+                        key={u.id} 
+                        style={{...rowStyle, cursor: 'pointer', transition: 'background 0.2s'}}
+                        onClick={() => navigate(`/employer/employees/${u.id}`)}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '12px 0', fontWeight: 600, fontSize: '0.875rem' }}>{u.first_name} {u.name}</td>
+                        <td style={{ padding: '12px 0', textAlign: 'right' }}><span className="token-badge">{u.token_balance}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

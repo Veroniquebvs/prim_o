@@ -1,3 +1,15 @@
+/**
+ * users.routes.js — Route definitions for user management.
+ *
+ * GET    /              — employer or admin; list users with optional role/companyId filter
+ * GET    /pending       — employer or admin; list employees awaiting activation
+ * GET    /:id           — any authenticated user; fetch one user (scoped to company)
+ * PUT    /:id           — any authenticated user; update name/first_name
+ * DELETE /:id           — admin only; permanently delete a user
+ * GET    /:id/history   — any authenticated user; token transaction history
+ * PATCH  /:id/activate  — employer or admin; activate a pending employee
+ * PATCH  /:id/entry-date — employer or admin; update an employee's entry date
+ */
 const { Router } = require('express');
 const { param, query, body } = require('express-validator');
 const usersController = require('../controllers/users.controller');
@@ -14,8 +26,8 @@ router.get(
   [
     query('role')
       .optional()
-      .isIn(['employer', 'employee', 'admin'])
-      .withMessage('role must be employer, employee or admin'),
+      .isIn(['employer', 'employee', 'admin', 'manager'])
+      .withMessage('role must be employer, employee, admin or manager'),
     query('companyId').optional().isUUID().withMessage('companyId must be a valid UUID'),
     validate,
   ],
@@ -80,9 +92,20 @@ router.patch(
 );
 
 router.patch(
+  '/:id/avatar',
+  verifyToken,
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('avatar_index').isInt({ min: 1, max: 6 }).withMessage('avatar_index must be between 1 and 6'),
+    validate,
+  ],
+  usersController.updateAvatar
+);
+
+router.patch(
   '/:id/entry-date',
   verifyToken,
-  roleGuard('employer', 'admin'),
+  roleGuard('employer', 'admin', 'manager'),
   [
     param('id').isUUID().withMessage('id must be a valid UUID'),
     body('entry_date').optional().isISO8601().withMessage('entry_date must be a valid date'),
@@ -90,5 +113,7 @@ router.patch(
   ],
   usersController.updateEntryDate
 );
+
+router.get('/me/team', verifyToken, usersController.getMyTeam);
 
 module.exports = router;

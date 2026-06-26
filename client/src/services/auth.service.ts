@@ -1,3 +1,10 @@
+/**
+ * services/auth.service.ts — Client-side wrapper for the authentication API.
+ *
+ * Provides login, registration, logout, and current-user profile fetch operations.
+ * Token storage (localStorage) is handled by AuthContext, not here — this service only
+ * makes the HTTP calls and returns the response data.
+ */
 import api from "./api";
 import type { User, ApiResponse } from "../types";
 

@@ -1,3 +1,14 @@
+/**
+ * tests/marketplace/marketplace.service.test.js — Unit tests for MarketplaceService.
+ *
+ * Mocks the database transaction and all Sequelize models. Tests cover:
+ * - redeem: returns 404 when voucher not found; returns 409 when voucher unavailable;
+ *   returns 402 when user has insufficient balance; on success decrements user balance,
+ *   flips voucher.available to false, inserts a Redemption record, and commits the transaction
+ * - listItems: returns only available vouchers with promo_code stripped
+ * - getItem: returns item by id or throws 404
+ * - createItem / updateItem / deleteItem: pass-through CRUD with mocked model methods
+ */
 // ─── Mock sequelize transaction ───────────────────────────────────────────────
 const mockTx = {
   commit: jest.fn().mockResolvedValue(undefined),

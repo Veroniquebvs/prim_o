@@ -1,3 +1,12 @@
+/**
+ * pages/employee/CategorieDetail.tsx — Paginated list of all vouchers in a single category.
+ *
+ * The category is read from the :category URL param (URL-decoded and capitalised for display).
+ * Vouchers are fetched from the API, filtered client-side to the matching category, and sorted
+ * by newest first. Results are paginated at PAGE_SIZE (30) items per page; navigation buttons
+ * scroll to the top of the page on page change. Favorite and cart toggles are available on each
+ * card, and inline redemption works the same way as in Catalogue and VoucherDetail.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -5,6 +14,7 @@ import { marketplaceService } from '../../services/marketplace.service';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useCart } from '../../hooks/useCart';
 import { resolveImageUrl } from '../../utils/imageUrl';
+import { getCategory, getCategoryColor } from '../../utils/category';
 import type { Voucher } from '../../types';
 
 const PAGE_SIZE = 30;
@@ -43,11 +53,12 @@ function VoucherCard({
 }) {
   const navigate = useNavigate();
   const imgSrc = resolveImageUrl(voucher.images?.[0]);
+  const catColor = getCategoryColor(getCategory(voucher));
 
   return (
     <div
       className="voucher-card-carousel"
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', backgroundColor: catColor.light }}
       onClick={() => navigate(`/catalogue/offre/${voucher.id}`)}
       role="button"
       tabIndex={0}
@@ -125,7 +136,7 @@ export default function CategorieDetail() {
       .then((all) => {
         const filtered = all
           .filter((v) => v.category === decodedCategory)
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          .sort((a, b) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime());
         setVouchers(filtered);
       })
       .finally(() => setLoading(false));
@@ -181,7 +192,7 @@ export default function CategorieDetail() {
       {pageVouchers.length === 0 ? (
         <p className="empty-state">Aucune offre dans cette catégorie.</p>
       ) : (
-        <div className="grid-3">
+        <div className="voucher-list">
           {pageVouchers.map((v) => (
             <VoucherCard
               key={v.id}

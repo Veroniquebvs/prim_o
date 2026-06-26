@@ -1,3 +1,15 @@
+/**
+ * companies.service.js — Business logic for company management.
+ *
+ * A company is the top-level entity in the PRIM'O hierarchy. This service handles creation,
+ * retrieval, updating, and deletion of companies, as well as the admin-only token grant
+ * operation. The remove function cascades the deletion to all associated users, redemptions,
+ * and transactions to maintain referential integrity without relying on DB-level cascades.
+ *
+ * The update function enforces that non-admin callers can only modify their own company.
+ * The getPublicById function exposes only the company name and is used unauthenticated
+ * during the QR-code employee registration flow.
+ */
 const { Op } = require('sequelize');
 const { Company } = require('../models');
 const sequelize = require('../config/database');
@@ -8,6 +20,11 @@ const httpError = (message, status) => {
   return err;
 };
 
+/**
+ * Creates a new company record. Throws 409 if another company already uses the same email.
+ * name, street, zip_code, city, and siret are required. email is optional but unique when present.
+ * Returns the created Company instance.
+ */
 const create = async ({ name, email, street, zip_code, city, siret }) => {
   if (email) {
     const existing = await Company.findOne({ where: { email } });
@@ -23,21 +40,41 @@ const create = async ({ name, email, street, zip_code, city, siret }) => {
   });
 };
 
+/**
+ * Fetches a company by its UUID. Throws 404 if the company does not exist.
+ * Returns the full Company record including Stripe subscription fields.
+ */
 const getById = async (id) => {
   const company = await Company.findByPk(id);
   if (!company) throw httpError('Company not found', 404);
   return company;
 };
 
-// Public — minimal, non-sensitive info for the QR-code registration flow
+/**
+ * Fetches minimal public information about a company — only its id and name.
+ * Used unauthenticated in the QR-code registration flow so an employee can confirm they are
+ * joining the right company before creating their account.
+ * Throws 404 if the company does not exist.
+ */
 const getPublicById = async (id) => {
   const company = await Company.findByPk(id, { attributes: ['id', 'name'] });
   if (!company) throw httpError('Company not found', 404);
   return { id: company.id, name: company.name };
 };
 
+/**
+ * Returns all companies ordered alphabetically by name. Admin-only operation.
+ */
 const list = async () => Company.findAll({ order: [['name', 'ASC']] });
 
+/**
+ * Updates a company's editable fields. Accessible by admins (any company) or employers (own company only).
+ * id is the UUID of the company to update. body may contain name, email, street, zip_code,
+ * city, siret, and feedback_enabled. requesterId and requesterRole are used to authorise
+ * non-admin updates — if the requester is not an admin, they must belong to the target company.
+ * Throws 404 if the company does not exist, 403 if a non-admin tries to modify another company.
+ * Returns the updated Company instance.
+ */
 const update = async (id, body, requesterId, requesterRole) => {
   const company = await Company.findByPk(id);
   if (!company) throw httpError('Company not found', 404);
@@ -59,6 +96,13 @@ const update = async (id, body, requesterId, requesterRole) => {
   return company;
 };
 
+/**
+ * Permanently deletes a company and all its associated data. Admin-only operation.
+ * id is the UUID of the company to delete. Throws 404 if it does not exist.
+ * Cascades deletion to: all redemptions made by company users, all token transactions
+ * involving company users or the company itself, all user records for the company, and finally
+ * the company record. The deletion order respects foreign-key constraints.
+ */
 const remove = async (id) => {
   const { User, TokenTransaction, Redemption } = require('../models');
   const company = await Company.findByPk(id);
@@ -79,6 +123,13 @@ const remove = async (id) => {
   await company.destroy();
 };
 
+/**
+ * Admin-only operation that adds tokens directly to a company's balance without a Stripe payment.
+ * companyId is the UUID of the company to top up. amount must be a positive integer.
+ * The balance increment and the corresponding 'admin_grant' TokenTransaction are committed
+ * atomically. Throws 404 if the company does not exist.
+ * Returns an object with company_id, the granted amount, and the new balance.
+ */
 const grantTokens = async (companyId, amount) => {
   const { TokenTransaction } = require('../models');
 
@@ -106,4 +157,72 @@ const grantTokens = async (companyId, amount) => {
   }
 };
 
-module.exports = { create, getById, getPublicById, list, update, remove, grantTokens };
+/**
+ * Admin-only: Creates a new company and its primary employer account atomically.
+ * Verifies email uniqueness for both the company and user.
+ * Hashes the employer's password (defaulting to 'Primo2026' if not provided).
+ */
+const adminCreate = async ({ name, street, zip_code, city, siret, employer_name, employer_first_name, employer_email, password }) => {
+  const { User } = require('../models');
+  const bcrypt = require('bcrypt');
+  const BCRYPT_ROUNDS = 12;
+
+  // 1. Check if email is already in use by any user
+  const existingUser = await User.findOne({ where: { email: employer_email } });
+  if (existingUser) {
+    throw httpError('Cet email est déjà utilisé par un utilisateur.', 409);
+  }
+
+  // 2. Check if company email is already in use
+  const existingCompany = await Company.findOne({ where: { email: employer_email } });
+  if (existingCompany) {
+    throw httpError('Une entreprise avec cet email existe déjà.', 409);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    // 3. Create Company
+    const company = await Company.create({
+      name,
+      email: employer_email,
+      street,
+      zip_code,
+      city,
+      siret,
+      token_balance: 0,
+    }, { transaction: t });
+
+    // 4. Hash Password
+    const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    // 5. Create Employer User
+    const employer = await User.create({
+      name: employer_name,
+      first_name: employer_first_name,
+      email: employer_email,
+      password_hash,
+      role: 'employer',
+      company_id: company.id,
+      token_balance: 0,
+      status: 'active',
+    }, { transaction: t });
+
+    await t.commit();
+
+    return {
+      company,
+      employer: {
+        id: employer.id,
+        name: employer.name,
+        first_name: employer.first_name,
+        email: employer.email,
+        role: employer.role,
+      }
+    };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
+module.exports = { create, getById, getPublicById, list, update, remove, grantTokens, adminCreate };

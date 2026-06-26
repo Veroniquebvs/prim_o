@@ -1,8 +1,14 @@
+/**
+ * services/user.service.ts — Client-side wrapper for user management API endpoints.
+ *
+ * Provides CRUD operations for users plus activation and entry-date management.
+ * Used by employer dashboards to manage the employee list.
+ */
 import api from "./api";
 import type { User, TokenTransaction, ApiResponse } from "../types";
 
 export const userService = {
-  getAll: (params: { companyId: string; role: string }) => {
+  getAll: (params: { companyId?: string; role?: string }) => {
     return api.get("/users", { params });
   },
 
@@ -47,5 +53,14 @@ export const userService = {
     return api.patch(`/users/${id}/entry-date`, {
       entry_date,
     });
+  },
+
+  async updateAvatar(id: string, avatar_index: number): Promise<void> {
+    await api.patch(`/users/${id}/avatar`, { avatar_index });
+  },
+
+  async getMyTeam(): Promise<{ team_name: string; manager: User } | null> {
+    const { data } = await api.get<ApiResponse<{ team_name: string; manager: User } | null>>('/users/me/team');
+    return data.data;
   },
 };

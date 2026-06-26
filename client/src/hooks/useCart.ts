@@ -1,3 +1,16 @@
+/**
+ * hooks/useCart.ts — Client-side voucher cart backed by localStorage, scoped per user.
+ *
+ * Persists the cart as a JSON array under the key `primo_cart_<userId>` so that each user's
+ * cart survives page reloads. Handles a legacy migration from old carts stored as plain string[]
+ * (each entry is converted to the current CartItem shape on read). When the user changes (e.g.
+ * logout/login), the hook re-initialises from the new user's storage key.
+ *
+ * toggle adds a voucher if absent, removes it if already present. remove always removes.
+ * count, isInCart, and addedAt are convenience read-only accessors.
+ *
+ * The cart is purely client-side; redemption is performed server-side by the Panier page.
+ */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,14 +24,21 @@ function cartKey(userId: string) {
 }
 
 function parseSaved(raw: string): CartItem[] {
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) return [];
-  // Migration: support anciens paniers stockés comme string[]
-  return parsed.map((entry: unknown) =>
-    typeof entry === 'string'
-      ? { id: entry, added_at: new Date().toISOString() }
-      : entry as CartItem,
-  );
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Migration: support anciens paniers stockés comme string[] ou objets corrompus
+    return parsed
+      .filter((entry): entry is any => entry !== null && entry !== undefined)
+      .map((entry: any) =>
+        typeof entry === 'string'
+          ? { id: entry, added_at: new Date().toISOString() }
+          : { id: entry.id || '', added_at: entry.added_at || new Date().toISOString() }
+      )
+      .filter((item) => !!item.id);
+  } catch {
+    return [];
+  }
 }
 
 export function useCart() {
@@ -45,7 +65,11 @@ export function useCart() {
 
   useEffect(() => {
     if (!key) return;
-    localStorage.setItem(key, JSON.stringify(saved));
+    try {
+      localStorage.setItem(key, JSON.stringify(saved));
+    } catch (e) {
+      console.warn('Failed to save cart to localStorage:', e);
+    }
   }, [saved, key]);
 
   function toggle(id: string) {

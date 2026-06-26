@@ -1,3 +1,10 @@
+/**
+ * services/marketplace.service.ts — Client-side wrapper for marketplace and favourites API endpoints.
+ *
+ * Covers the full marketplace surface: browsing vouchers, admin CRUD, image upload, redemption,
+ * order history, and the favourites toggle. Also exposes the admin reporting endpoints for
+ * the voucher and redemption management views.
+ */
 import api from './api';
 import type { Voucher, Redemption, AdminVoucher, AdminRedemption, ApiResponse } from '../types';
 
@@ -42,6 +49,11 @@ export const marketplaceService = {
 
   async getOrders(): Promise<Redemption[]> {
     const { data } = await api.get<ApiResponse<Redemption[]>>('/marketplace/orders');
+    return data.data;
+  },
+
+  async getCompanyOrders(): Promise<AdminRedemption[]> {
+    const { data } = await api.get<ApiResponse<AdminRedemption[]>>('/marketplace/company-orders');
     return data.data;
   },
 

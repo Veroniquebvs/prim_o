@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
+import { resolveAvatarIndex } from '../utils/avatar';
 
 /* ── Inline SVG icons ─────────────────────────────────── */
 function IconDots() {
@@ -152,7 +153,18 @@ function IconChevron() {
   );
 }
 
-/* ── Component ────────────────────────────────────────── */
+/**
+ * Mobile bottom navigation bar and slide-up menu sheet.
+ *
+ * Displays four main navigation tabs whose destinations differ by role (admin vs. all others),
+ * plus a "Voir plus" button that slides up a menu sheet containing secondary navigation links
+ * (settings, personal info, password, help, CGU, rating) and a logout button.
+ *
+ * The menu sheet re-opens automatically if the user navigates to a secondary page that sets
+ * the reopenMenu flag in the location state (so the back gesture feels natural).
+ *
+ * Cart badge count is shown on the Panier tab for non-admin users.
+ */
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -187,7 +199,7 @@ export default function BottomNav() {
     ? [
         { label: 'Entreprises', icon: <IconBuilding />,  onClick: () => go('/admin/dashboard'), isActive: active('/admin/dashboard') },
         { label: 'Catalogue',   icon: <IconCatalogue />, onClick: () => go('/catalogue'),       isActive: active('/catalogue') },
-        { label: 'Dashboard',   icon: <IconDashboard />, onClick: () => go('/admin/stats'),     isActive: active('/admin/stats') },
+        { label: 'Statistiques', icon: <IconDashboard />, onClick: () => go('/admin/stats'),     isActive: active('/admin/stats') },
         { label: 'Bons',        icon: <IconTicket />,    onClick: () => go('/admin/bons'),      isActive: active('/admin/bons') },
       ]
     : [
@@ -240,13 +252,19 @@ export default function BottomNav() {
 
             {user && (
               <div className="menu-sheet-user">
-                <div className="menu-sheet-avatar">
-                  {(user.first_name || user.name).charAt(0).toUpperCase()}
+                <div className="menu-sheet-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                  <img src={`/assets/av_${resolveAvatarIndex(user)}.png`} alt={user.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                 </div>
                 <div>
                   <p className="menu-sheet-name">{user.first_name || user.name}</p>
                   <p className="menu-sheet-email">{user.email}</p>
-                  <span className="menu-sheet-role">{user.role}</span>
+                  <span className="menu-sheet-role">
+                    {user.role === 'employee' ? 'collaborateur' :
+                     user.role === 'employer' ? 'employeur' :
+                     user.role === 'manager' ? 'manager' :
+                     user.role === 'admin' ? 'admin' :
+                     user.role}
+                  </span>
                 </div>
               </div>
             )}

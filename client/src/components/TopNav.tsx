@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
-
-
+import { resolveAvatarIndex } from '../utils/avatar';
+/**
+ * Desktop top navigation bar (hidden on mobile, shown on wider screens).
+ *
+ * Renders the PRIM'O brand, role-specific navigation links, a "Voir plus" dropdown
+ * containing secondary links and logout, and a right-side token balance display.
+ * Employers also see an 'Acheter' button and, when on /panier, a 'Valider le panier'
+ * button that dispatches a custom browser event consumed by the Panier page.
+ * The dropdown closes on outside clicks.
+ */
 export default function TopNav() {
   const { user, company, logout } = useAuth();
   const { count } = useCart();
@@ -13,7 +21,8 @@ export default function TopNav() {
   const dropRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === "admin";
-  const onPanier = location.pathname === '/panier';
+  const isManager = user?.role === "manager" || user?.role === "employee";
+  const isPourToi = location.pathname === '/pour-toi' || location.pathname === '/employer/dashboard';
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -43,16 +52,22 @@ export default function TopNav() {
     <header className="top-nav">
       <div className="top-nav-inner">
         {/* Brand */}
-        <span className="top-nav-brand">PRIM'O</span>
+        <Link
+          to={user?.role === 'employer' ? '/employer/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/pour-toi'}
+          className="top-nav-brand"
+          style={{ display: 'flex', alignItems: 'baseline', gap: 2, textDecoration: 'none' }}
+        >
+          <img src="/logo-primo.png" alt="prim'o" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+        </Link>
 
         {/* Nav links + Voir plus (à gauche) */}
         <nav className="top-nav-links">
           {isAdmin ? (
             <>
-              <NavLink to="/admin/stats"     className={({ isActive }) => link(isActive)}>Tableau de bord</NavLink>
               <NavLink to="/admin/dashboard" className={({ isActive }) => link(isActive)}>Entreprises</NavLink>
-              <NavLink to="/admin/bons"      className={({ isActive }) => link(isActive)}>Bons d'achat</NavLink>
               <NavLink to="/catalogue"       className={({ isActive }) => link(isActive)}>Catalogue</NavLink>
+              <NavLink to="/admin/stats"     className={({ isActive }) => link(isActive)}>Statistiques</NavLink>
+              <NavLink to="/admin/bons"      className={({ isActive }) => link(isActive)}>Bons</NavLink>
             </>
           ) : (
             <>
@@ -71,7 +86,7 @@ export default function TopNav() {
             </>
           )}
 
-          {/* Voir plus — déplacé ici à gauche */}
+          {/* Voir plus */}
           <div className="top-nav-more-wrap" ref={dropRef}>
             <button
               className="top-nav-more-btn"
@@ -91,7 +106,13 @@ export default function TopNav() {
                 <div className="top-nav-drop-user">
                   <p className="top-nav-drop-name">{user?.first_name || user?.name}</p>
                   <p className="top-nav-drop-email">{user?.email}</p>
-                  <span className="menu-sheet-role">{user?.role}</span>
+                  <span className="menu-sheet-role">
+                    {user?.role === 'employee' ? 'collaborateur' :
+                     user?.role === 'employer' ? 'employeur' :
+                     user?.role === 'manager' ? 'manager' :
+                     user?.role === 'admin' ? 'admin' :
+                     user?.role}
+                  </span>
                 </div>
                 <div className="top-nav-drop-divider" />
                 {[
@@ -120,35 +141,13 @@ export default function TopNav() {
           </div>
         </nav>
 
-        {/* Droite : balance tokens + Valider le panier */}
-        {user && (
+        {/* Droite : balance tokens */}
+        {user && !isPourToi && !isAdmin && (
           <div className="top-nav-right">
-            {user?.role === 'employer' && (
-              <button
-                className="top-bar-buy"
-                onClick={() => navigate('/abonnement')}
-                aria-label="Acheter des tokens"
-              >
-                + Acheter
-              </button>
-            )}
-            <div className="top-bar-tokens">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
+            <div className={`top-bar-tokens ${isManager ? 'top-bar-tokens--large' : ''}`}>
+              <img src="/icons/token-logo-SF.png" alt="Token" style={{ width: 24, height: 24, objectFit: 'contain' }} />
               <span>{tokenBalance}</span>
             </div>
-            {onPanier && (
-              <button
-                className="btn btn-primary"
-                style={{ fontSize: '0.82rem', padding: '6px 16px', borderRadius: 8 }}
-                onClick={() => window.dispatchEvent(new CustomEvent('panier:validate'))}
-              >
-                Valider le panier
-              </button>
-            )}
           </div>
         )}
       </div>

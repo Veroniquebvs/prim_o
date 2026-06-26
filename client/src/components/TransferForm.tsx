@@ -1,17 +1,36 @@
+/**
+ * components/TransferForm.tsx — Token allocation form used by employers and managers.
+ *
+ * Renders a form to select a collaborator from a provided list, enter an amount, and
+ * optionally enter a reason. On submit a confirmation modal appears showing a recap of
+ * the intended allocation. On confirmation, calls tokenService.allocate() then refreshes
+ * the company pool via AuthContext and invokes the onSuccess callback (typically triggers
+ * a re-fetch of the parent page data). Any server-side error (e.g. insufficient balance)
+ * is displayed inline in the form.
+ */
 import { useState } from "react";
-import type { User } from "../types";
+import type { User, Team } from "../types";
 import { tokenService } from "../services/token.service";
 import { useAuth } from "../context/AuthContext";
+import TargetSelectionModal from "./TargetSelectionModal";
+import MotifSelectionModal from "./MotifSelectionModal";
+import { MOTIFS_ALLOCATION } from "../utils/motifs";
 
 interface Props {
   employees: User[];
+  teams: Team[];
   onSuccess: () => void;
 }
 
 interface PendingAlloc {
-  employee: User;
+  target_type: string;
+  receiver_id: string | null;
+  target_team_id: string | null;
+  excluded_user_ids: string[];
   amount: number;
   reason: string;
+  targetName: string;
+  target_account?: "personal" | "team";
 }
 
 function ConfirmModal({
@@ -25,10 +44,6 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const initials = pending.employee.name
-    ? pending.employee.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "?";
-
   return (
     <div
       style={{
@@ -44,22 +59,11 @@ function ConfirmModal({
         style={{ maxWidth: 400, width: "100%", padding: 28, textAlign: "center" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Avatar */}
-        <div style={{
-          width: 56, height: 56, borderRadius: "50%",
-          background: "var(--primary-light)", color: "var(--primary)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "1.2rem", fontWeight: 700,
-          margin: "0 auto 16px",
-        }}>
-          {initials}
-        </div>
-
         <p style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 6 }}>
-          Confirmer le don
+          Confirmer l'allocation
         </p>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 20, lineHeight: 1.5 }}>
-          Vous allez allouer des tokens à cet employé.<br />Cette action est irréversible.
+          Vous allez allouer des tokens.<br />Cette action est irréversible.
         </p>
 
         {/* Récap */}
@@ -70,11 +74,11 @@ function ConfirmModal({
           textAlign: "left",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Destinataire</span>
-            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{pending.employee.name}</span>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Destinataire(s)</span>
+            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{pending.targetName}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Montant</span>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Montant unitaire</span>
             <span className="token-badge" style={{ fontSize: "1rem" }}>{pending.amount}</span>
           </div>
           {pending.reason && (
@@ -83,10 +87,17 @@ function ConfirmModal({
               <span style={{ fontSize: "0.85rem", textAlign: "right" }}>{pending.reason}</span>
             </div>
           )}
+          {pending.target_account === 'team' && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Compte Cible</span>
+              <span style={{ fontSize: "0.85rem" }}>Compte Équipe</span>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 12 }}>
           <button
+            type="button"
             className="btn btn-outline"
             style={{ flex: 1 }}
             onClick={onCancel}
@@ -95,6 +106,7 @@ function ConfirmModal({
             Annuler
           </button>
           <button
+            type="button"
             className="btn btn-primary"
             style={{ flex: 1 }}
             onClick={onConfirm}
@@ -108,9 +120,18 @@ function ConfirmModal({
   );
 }
 
-export default function TransferForm({ employees, onSuccess }: Props) {
+export default function TransferForm({ employees, teams, onSuccess }: Props) {
   const { refreshCompany } = useAuth();
-  const [receiverId, setReceiverId] = useState("");
+  
+  const [targetType, setTargetType] = useState<string>("user");
+  const [receiverId, setReceiverId] = useState<string | null>(null);
+  const [targetTeamId, setTargetTeamId] = useState<string | null>(null);
+  const [excludedUserIds, setExcludedUserIds] = useState<string[]>([]);
+  const [targetAccount, setTargetAccount] = useState<"personal" | "team">("personal");
+  
+  const [showSelectModal, setShowSelectModal] = useState(false);
+  const [showMotifModal, setShowMotifModal] = useState(false);
+
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -118,26 +139,70 @@ export default function TransferForm({ employees, onSuccess }: Props) {
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState<PendingAlloc | null>(null);
 
+  const getTargetName = () => {
+    if (targetType === 'user' && receiverId) {
+      const u = employees.find(e => e.id === receiverId);
+      return u ? `${u.name} ${u.first_name}` : "Sélectionner...";
+    } else if (targetType === 'all_employees') {
+      return "Tous les collaborateurs";
+    } else if (targetType === 'all_managers') {
+      return "Tous les managers";
+    } else if (targetType === 'team' && targetTeamId) {
+      const t = teams.find(t => t.id === targetTeamId);
+      return t ? `Équipe : ${t.name}` : "Équipe...";
+    } else if (targetType === 'team_and_manager' && targetTeamId) {
+      const t = teams.find(t => t.id === targetTeamId);
+      return t ? `Équipe : ${t.name} (avec manager)` : "Équipe...";
+    } else if (targetType === 'all_company') {
+      return "Toute la boîte";
+    }
+    return "Sélectionner...";
+  };
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
-    const employee = employees.find((emp) => String(emp.id) === receiverId);
-    if (!employee) return;
-    setPending({ employee, amount: Number(amount), reason });
+    
+    if (targetType === 'user' && !receiverId) {
+      setError("Veuillez sélectionner un bénéficiaire.");
+      return;
+    }
+
+    setPending({ 
+      target_type: targetType,
+      receiver_id: receiverId,
+      target_team_id: targetTeamId,
+      excluded_user_ids: excludedUserIds,
+      amount: Number(amount), 
+      reason,
+      targetName: getTargetName(),
+      target_account: targetAccount
+    });
   }
 
   async function handleConfirm() {
     if (!pending) return;
     setLoading(true);
     try {
-      await tokenService.allocate({
-        receiver_id: String(pending.employee.id),
+      const res = await tokenService.allocate({
+        target_type: pending.target_type,
+        receiver_id: pending.receiver_id,
+        target_team_id: pending.target_team_id,
+        excluded_user_ids: pending.excluded_user_ids,
         amount: pending.amount,
         reason: pending.reason || undefined,
+        target_account: pending.target_account,
       });
-      setSuccess(`${pending.amount} tokens alloués à ${pending.employee.name}.`);
-      setReceiverId("");
+      
+      const count = (res as any).count || 1;
+      const total = (res as any).total || pending.amount;
+      
+      setSuccess(`${total} tokens alloués (${count} destinataire${count > 1 ? 's' : ''}).`);
+      setReceiverId(null);
+      setTargetTeamId(null);
+      setExcludedUserIds([]);
+      setTargetType("user");
       setAmount("");
       setReason("");
       setPending(null);
@@ -163,31 +228,76 @@ export default function TransferForm({ employees, onSuccess }: Props) {
         />
       )}
 
-      <div className="card">
+      <div className="card" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
         <h2 style={{ marginBottom: 20, fontSize: "1rem", fontWeight: 600 }}>
           Allouer des tokens
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Employé</label>
-            <select
+            <label className="form-label">Bénéficiaire</label>
+            <div
               className="form-select"
-              value={receiverId}
-              onChange={(e) => setReceiverId(e.target.value)}
-              required
+              style={{ cursor: 'pointer', lineHeight: '1.5', minHeight: '40px', display: 'flex', alignItems: 'center' }}
+              onClick={() => setShowSelectModal(true)}
             >
-              <option value="">Sélectionner un employé…</option>
-              {Array.isArray(employees) &&
-                employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name} — {emp.token_balance} tokens
-                  </option>
-                ))}
-            </select>
+              {getTargetName()}
+            </div>
+            
+            {showSelectModal && (
+              <TargetSelectionModal
+                users={employees}
+                teams={teams}
+                initialTargetType={targetType}
+                initialTargetTeamId={targetTeamId}
+                initialReceiverId={receiverId}
+                initialExcludedIds={excludedUserIds}
+                onSelect={(payload) => { 
+                  setTargetType(payload.target_type);
+                  setReceiverId(payload.receiver_id);
+                  setTargetTeamId(payload.target_team_id);
+                  setExcludedUserIds(payload.excluded_user_ids);
+                  setShowSelectModal(false); 
+                }}
+                onClose={() => setShowSelectModal(false)}
+              />
+            )}
           </div>
 
+          {targetType === 'user' && receiverId && employees.find(e => e.id === receiverId && e.role === 'manager') && (
+            <div className="form-group">
+              <label className="form-label">Compte cible du manager</label>
+              <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  <input 
+                    type="radio" 
+                    name="tf_target_account" 
+                    value="personal" 
+                    checked={targetAccount === 'personal'} 
+                    onChange={() => setTargetAccount('personal')}
+                  />
+                  Compte Personnel
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  <input 
+                    type="radio" 
+                    name="tf_target_account" 
+                    value="team" 
+                    checked={targetAccount === 'team'} 
+                    onChange={() => setTargetAccount('team')}
+                  />
+                  Compte Équipe
+                </label>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
+                {targetAccount === 'personal' 
+                  ? "Le manager pourra utiliser ces tokens pour ses propres achats."
+                  : "Le manager pourra distribuer ces tokens à son équipe."}
+              </p>
+            </div>
+          )}
+
           <div className="form-group">
-            <label className="form-label">Montant</label>
+            <label className="form-label">Montant unitaire</label>
             <input
               className="form-input"
               type="number"
@@ -200,14 +310,34 @@ export default function TransferForm({ employees, onSuccess }: Props) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Motif (facultatif)</label>
-            <input
+            <label className="form-label">
+              Motif {targetType === 'team' || targetAccount === 'team' ? <span style={{ fontWeight: 'normal', color: 'var(--text-muted)' }}>(optionnel)</span> : null}
+            </label>
+            <div
+              onClick={() => setShowMotifModal(true)}
               className="form-input"
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="ex. Excellent travail sur le projet X"
-            />
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                color: reason ? "var(--text)" : "var(--text-muted)",
+              }}
+            >
+              {reason ? reason : "Sélectionner un motif..."}
+            </div>
+            {/* Validation native bypass */}
+            <input type="hidden" value={reason} required={targetType !== 'team' && targetAccount !== 'team'} />
+            
+            {showMotifModal && (
+              <MotifSelectionModal
+                initialMotif={reason}
+                onSelect={(motif) => {
+                  setReason(motif);
+                  setShowMotifModal(false);
+                }}
+                onClose={() => setShowMotifModal(false)}
+              />
+            )}
           </div>
 
           {error && <p className="form-error">{error}</p>}

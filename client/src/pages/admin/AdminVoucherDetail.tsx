@@ -1,3 +1,13 @@
+/**
+ * pages/admin/AdminVoucherDetail.tsx — Full voucher editor for the admin.
+ *
+ * Fetches a single voucher by :id and pre-fills all form fields. Allows editing partner name,
+ * title, promo code, token cost, category, and availability. Image management lets the admin
+ * add new images (up to 5, with local preview) and remove existing ones. Separate toggle
+ * buttons control the is_featured and is_weekly flags with instant API calls. Saving submits
+ * a multipart/form-data request that handles both updated metadata and any new image files.
+ * Voucher deletion navigates back to AdminBons.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
@@ -139,14 +149,25 @@ export default function AdminVoucherDetail() {
   return (
     <div>
       <style>{`
+        .voucher-header-text {
+          width: 100%;
+          text-align: left;
+          padding-right: 90px;
+        }
+        @media (min-width: 768px) {
+          .voucher-header-text {
+            text-align: center;
+            padding-right: 0;
+          }
+        }
         .page-header .back-btn {
           position: absolute !important;
           right: 24px !important;
           top: 50% !important;
           transform: translateY(-50%) !important;
           background-color: transparent !important;
-          color: white !important;
-          border-color: white !important;
+          color: var(--primary) !important;
+          border-color: var(--primary) !important;
         }
         @media (min-width: 768px) {
           .page-header .back-btn {
@@ -159,11 +180,11 @@ export default function AdminVoucherDetail() {
           }
         }
         .page-header .back-btn:hover {
-          background-color: rgba(255, 255, 255, 0.15) !important;
+          background-color: rgba(0, 168, 128, 0.1) !important;
         }
       `}</style>
-      <div className="page-header">
-        <div style={{ width: '100%', textAlign: 'center' }}>
+      <div className="page-header page-header--clean">
+        <div className="voucher-header-text">
           <h1>{voucher.partner}</h1>
           <p>{voucher.title}</p>
         </div>
@@ -175,7 +196,7 @@ export default function AdminVoucherDetail() {
         </button>
       </div>
 
-      <div style={{ maxWidth: 560, paddingBottom: 48 }}>
+      <div style={{ maxWidth: 560, paddingBottom: 48, margin: '24px auto' }}>
         <form onSubmit={handleSave}>
           <div className="card" style={{ marginBottom: 20 }}>
             <p style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>Informations</p>

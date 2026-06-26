@@ -1,6 +1,21 @@
+/**
+ * pages/employer/EmployeeDetail.tsx — Individual employee detail page for employers.
+ *
+ * Fetches the employee profile and token transaction history by :id param. Displays:
+ * - Stat cards (current token balance, account creation date)
+ * - Read-only personal info fields
+ * - An editable entry date (saved via userService.updateEntryDate)
+ * - Token history table with colour-coded credits (+) and debits (−)
+ * - A two-step deletion confirmation section
+ *
+ * Navigates back to the employer dashboard on deletion or when the back button is clicked.
+ */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";
+import { managerService } from "../../services/manager.service";
+import { tokenService } from "../../services/token.service";
+import { useAuth } from "../../context/AuthContext";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 
@@ -23,6 +38,8 @@ function IconArrowLeft() {
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   const [employee, setEmployee] = useState<User | null>(null);
   const [history, setHistory] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +48,13 @@ export default function EmployeeDetail() {
   const [error, setError] = useState("");
   const [entryDate, setEntryDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+
+  const [quickTarget, setQuickTarget] = useState<boolean>(false);
+  const [quickAmount, setQuickAmount] = useState("");
+  const [quickReason, setQuickReason] = useState("");
+  const [quickSuccess, setQuickSuccess] = useState("");
+  const [quickError, setQuickError] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -44,12 +68,43 @@ export default function EmployeeDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  async function handleQuickSend(e: React.FormEvent) {
+    e.preventDefault();
+    setQuickError("");
+    try {
+      await tokenService.allocate({
+        target_type: "user",
+        receiver_id: employee?.id,
+        amount: parseInt(quickAmount) || 0,
+        reason: quickReason || undefined,
+      });
+      setQuickSuccess(`${quickAmount} tokens envoyés à ${employee?.first_name} !`);
+      
+      // Update UI
+      if (employee) {
+         setEmployee({ ...employee, token_balance: (employee.token_balance || 0) + parseInt(quickAmount) });
+      }
+
+      // Refresh history
+      if (id) {
+        userService.getHistory(id).then(setHistory);
+      }
+
+      setTimeout(() => {
+        setQuickTarget(false);
+        setQuickSuccess("");
+      }, 2000);
+    } catch (err: any) {
+      setQuickError(err.response?.data?.error || "Erreur lors de l'envoi.");
+    }
+  }
+
   async function handleDelete() {
     if (!id) return;
     setDeleting(true);
     try {
       await userService.delete(id);
-      navigate("/employer/dashboard");
+      navigate(-1);
     } catch {
       setError("Erreur lors de la suppression.");
       setDeleting(false);
@@ -70,40 +125,70 @@ export default function EmployeeDetail() {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '16px' }}>
+        <div className="card" style={{ padding: '16px 24px', margin: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
             {employee.first_name} {employee.name}
           </h1>
-          <p>{employee.email}</p>
+          <p style={{ color: 'var(--text-muted)', margin: 0, marginTop: '4px' }}>Collaborateur</p>
         </div>
         <button
-          className="back-btn"
-          onClick={() => navigate("/employer/dashboard")}
+          className="btn btn-outline back-btn"
+          style={{
+            borderColor: 'var(--primary)',
+            color: 'var(--primary)',
+            background: 'transparent',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            height: 'fit-content',
+            padding: '10px 18px',
+            borderRadius: '12px',
+            transition: 'all 0.2s ease',
+          }}
+          onClick={() => navigate('/employer/dashboard')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 161, 154, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
-          <IconArrowLeft /> Retour
+          <IconArrowLeft />
+          Retour
         </button>
       </div>
 
       {error && <p className="form-error">{error}</p>}
 
       {/* Stats */}
-      <div className="grid-3" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
+      <div style={{ marginBottom: 28 }}>
+        <div 
+          className="stat-card" 
+          style={{ maxWidth: '300px', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+          onClick={() => { setQuickTarget(true); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}
+          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }}
+        >
           <p className="stat-label">Tokens</p>
           <p className="stat-value">{employee.token_balance}</p>
           <p className="stat-sub">solde actuel</p>
+          <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>+ Ajouter tokens</span>
+          </div>
         </div>
         <div className="stat-card">
           <p className="stat-label">Membre depuis</p>
           <p className="stat-value" style={{ fontSize: "1.1rem" }}>
-            {fmt(employee.created_at)}
+            {fmt(employee.createdAt || employee.created_at)}
           </p>
         </div>
       </div>
 
       {/* Informations */}
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card" style={{ marginBottom: 20, background: '#f0fdf4', borderColor: '#bbf7d0' }}>
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
           Informations
         </h2>
@@ -112,7 +197,7 @@ export default function EmployeeDetail() {
             { label: "Prénom", value: employee.first_name },
             { label: "Nom", value: employee.name },
             { label: "Email", value: employee.email },
-            { label: "Rôle", value: employee.role },
+            { label: "Rôle", value: employee.role === 'employee' ? 'Collaborateur' : employee.role },
           ].map(({ label, value }) => (
             <div key={label} className="info-field-card">
               <span className="info-field-label">{label}</span>
@@ -123,7 +208,7 @@ export default function EmployeeDetail() {
       </div>
 
       {/* Date d'entrée*/}
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card" style={{ marginBottom: 20, background: '#fff1f1', borderColor: '#fecaca' }}>
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
           Date d'entrée
         </h2>
@@ -136,29 +221,41 @@ export default function EmployeeDetail() {
           style={{ width: 200 }}
         />
 
-        <button
-          className="btn btn-primary btn-sm"
-          style={{ marginTop: 10 }}
-          disabled={saving}
-          onClick={async () => {
-            try {
-              setSaving(true);
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ margin: 0 }}
+            disabled={saving}
+            onClick={async () => {
+              try {
+                setSaving(true);
+                setUpdateSuccess(false);
 
-              await userService.updateEntryDate(id!, entryDate);
+                await userService.updateEntryDate(id!, entryDate);
 
-              const updated = await userService.getById(id!);
-              setEmployee(updated);
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          {saving ? "Sauvegarde..." : "Mettre à jour"}
-        </button>
+                const updated = await userService.getById(id!);
+                setEmployee(updated);
+                setUpdateSuccess(true);
+                setTimeout(() => setUpdateSuccess(false), 3000);
+              } catch {
+                setError("Erreur lors de la mise à jour.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? "Sauvegarde..." : "Mettre à jour"}
+          </button>
+          {updateSuccess && (
+            <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>
+              ✓ Date d'entrée mise à jour avec succès !
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Historique des transactions */}
-      <div className="card" style={{ marginBottom: 28 }}>
+      <div className="card" style={{ marginBottom: 28, background: '#fefce8', borderColor: '#fef08a' }}>
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
           Historique des tokens
         </h2>
@@ -183,7 +280,7 @@ export default function EmployeeDetail() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {fmt(tx.created_at)}
+                      {fmt(tx.createdAt || tx.created_at)}
                     </td>
                     <td>
                       <span
@@ -216,6 +313,35 @@ export default function EmployeeDetail() {
           </div>
         )}
       </div>
+
+      {/* Zone promotion — masquée pour l'admin */}
+      {!isAdmin && <div className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}>
+          Promouvoir en Manager
+        </h2>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: 14 }}>
+          En promouvant cet employé, il pourra gérer une équipe et distribuer des tokens.
+        </p>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={async () => {
+            try {
+              if (!id) return;
+              const teamName = window.prompt(
+                "Nom de l'équipe pour ce manager :",
+                `Équipe de ${employee?.first_name || ""} ${employee?.name || ""}`.trim() || "Nouvelle équipe"
+              );
+              if (!teamName || !teamName.trim()) return;
+              await managerService.promoteToManager(id, teamName.trim());
+              navigate(-1);
+            } catch {
+              alert("Erreur lors de la promotion.");
+            }
+          }}
+        >
+          Promouvoir
+        </button>
+      </div>}
 
       {/* Zone suppression */}
       <div
@@ -281,6 +407,61 @@ export default function EmployeeDetail() {
           </div>
         )}
       </div>
+
+      {/* ══ Quick send modal ══ */}
+      {quickTarget && (
+        <div className="emp-modal-overlay" onClick={() => { setQuickTarget(false); setQuickError(''); setQuickSuccess(''); }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'var(--primary-light)', color: 'var(--primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem', fontWeight: 700, flexShrink: 0,
+              }}>
+                {(employee.first_name[0] ?? '').toUpperCase()}{(employee.name[0] ?? '').toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{employee.first_name} {employee.name}</p>
+                <span className="token-badge" style={{ fontSize: '0.72rem' }}>
+                  {employee.token_balance} tkn actuels
+                </span>
+              </div>
+            </div>
+
+            {quickSuccess ? (
+              <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
+                <p style={{ fontSize: '1.5rem', marginBottom: 8 }}>🎉</p>
+                <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.95rem' }}>{quickSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleQuickSend}>
+                <div className="form-group">
+                  <label className="form-label">Montant de tokens</label>
+                  <input className="form-input" type="number" min={1} value={quickAmount}
+                    onChange={(e) => setQuickAmount(e.target.value)}
+                    placeholder="ex. 20" required autoFocus />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Motif</label>
+                  <input className="form-input" type="text" value={quickReason}
+                    onChange={(e) => setQuickReason(e.target.value)}
+                    placeholder="ex. Bonus trimestriel" required />
+                </div>
+                {quickError && <p className="form-error" style={{ marginBottom: 16 }}>{quickError}</p>}
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button type="button" className="btn" onClick={() => setQuickTarget(false)} style={{ padding: '8px 16px' }}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px' }} disabled={!quickAmount}>
+                    Allouer
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

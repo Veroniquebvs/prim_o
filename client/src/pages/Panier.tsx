@@ -1,24 +1,43 @@
+/**
+ * pages/Panier.tsx — Shopping cart page where users review and redeem saved vouchers.
+ *
+ * Cart contents are sourced from useCart (localStorage) and cross-referenced with the live
+ * voucher list from the API to get current availability and token cost. Each voucher can be
+ * redeemed individually or all redeemable items can be redeemed at once via handleRedeemAll.
+ *
+ * The "Valider le panier" button in the desktop TopNav dispatches a custom 'panier:validate'
+ * browser event; this page listens for that event and triggers handleRedeemAll, allowing the
+ * checkout action to be triggered from outside the component tree.
+ *
+ * On successful redemption the promo code is displayed in-page, the item is removed from the
+ * cart, and the user/company balance is refreshed via AuthContext.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
 import { useCart } from '../hooks/useCart';
+import { useFavorites } from '../hooks/useFavorites';
+import { CarouselRow } from '../components/CarouselRow';
 import type { Voucher } from '../types';
 import { fmtShort } from '../utils/date';
 
 export default function Panier() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
-  const { remove, isInCart, addedAt } = useCart();
+  const { remove, isInCart, addedAt, toggle: toggleCart } = useCart();
+  const { isFavorite, toggle: toggleFav } = useFavorites();
   const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, { code: string; redeemed_at: string }>>({});
   const [error, setError] = useState('');
+  const isManager = user?.role === 'manager' || user?.role === 'employer' || user?.role === 'employee';
 
   useEffect(() => {
     marketplaceService.getItems().then(setAllVouchers).finally(() => setLoading(false));
   }, []);
 
   const cartVouchers = allVouchers.filter((v) => isInCart(v.id));
+  const weeklyOffers = allVouchers.filter((v) => v.available && v.is_weekly);
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
   const handleRedeemAll = useCallback(async () => {
@@ -62,18 +81,11 @@ export default function Panier() {
 
   return (
     <div>
-      <div className="page-header page-header--centered">
+      <div className={`page-header page-header--centered ${isManager ? 'page-header--manager' : ''}`}>
         <h1>Vos bons d'achat sauvegardés</h1>
       </div>
 
-      {/* Solde — masqué sur desktop (affiché dans la TopNav) */}
-      <div className="stat-card panier-desktop-hidden" style={{ marginBottom: 24, display: 'inline-flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
-         <p className="stat-label">Solde disponible</p>
-        <p className="stat-value">{balance}</p>
-        <p className="stat-sub">tokens</p>
-      </div>
-
-      {error && <p className="form-error">{error}</p>}
+      {error &&<p className="form-error">{error}</p>}
 
       {/* Codes déjà obtenus dans cette session */}
       {Object.keys(promoCodes).length > 0 && (
@@ -90,8 +102,23 @@ export default function Panier() {
         </div>
       )}
 
+      {/* Offres de la semaine (Carousel) */}
+      {weeklyOffers.length > 0 && (
+        <div style={{ marginBottom: 24, margin: '0 calc(-1 * var(--page-px)) 24px', padding: '0 var(--page-px)' }}>
+          <CarouselRow
+            title="Offres de la semaine"
+            vouchers={weeklyOffers}
+            userBalance={balance}
+            isFavorite={isFavorite}
+            onToggle={toggleFav}
+            isInCart={isInCart}
+            onCartToggle={toggleCart}
+          />
+        </div>
+      )}
+
       {cartVouchers.length === 0 ? (
-        <div className="card">
+        <div className="card" style={{ background: '#fefce8', borderColor: '#fef08a' }}>
           <p className="empty-state">
             Votre panier est vide.
             <br />
@@ -101,7 +128,7 @@ export default function Panier() {
           </p>
         </div>
       ) : (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#fefce8', borderColor: '#fef08a' }}>
           {cartVouchers.map((v) => (
             <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -120,7 +147,7 @@ export default function Panier() {
                   disabled={redeeming === v.id || balance < v.token_cost}
                   onClick={() => handleRedeem(v)}
                 >
-                  {redeeming === v.id ? '…' : 'Racheter'}
+                  {redeeming === v.id ? '…' : 'Acheter'}
                 </button>
               )}
               <button
@@ -156,11 +183,12 @@ export default function Panier() {
         );
         return (
           <button
-            className="btn btn-primary btn-full panier-desktop-hidden"
+            className="btn btn-primary btn-full"
             style={{
               marginTop: 16,
               opacity: canBuy ? 1 : 0.45,
               cursor: canBuy ? 'pointer' : 'not-allowed',
+              borderRadius: '999px',
             }}
             disabled={!canBuy}
             onClick={handleRedeemAll}
