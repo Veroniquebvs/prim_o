@@ -56,10 +56,13 @@ export default function Layout({ children }: Props) {
       {/* Mobile only — sticky brand bar (hidden on hero pages) */}
       {!isHeroPage && (
         <header className={`top-bar ${isPourToi ? 'top-bar--manager' : ''} ${!isPourToi ? 'no-shadow' : ''}`}>
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: 2, flex: 1, visibility: isPourToi ? 'hidden' : 'visible' }}>
+          <Link
+            to={user?.role === 'employer' ? '/employer/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/pour-toi'}
+            style={{ display: 'flex', alignItems: 'baseline', gap: 2, flex: 1, visibility: isPourToi ? 'hidden' : 'visible', textDecoration: 'none' }}
+          >
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '2.8rem', color: 'var(--text)', letterSpacing: '0.5px' }}>prim'</span>
             <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '4rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
-          </span>
+          </Link>
 
           {user && user.role !== 'admin' && (
             <div className="top-bar-right">
