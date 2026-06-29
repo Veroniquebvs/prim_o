@@ -22,11 +22,6 @@ const requireTeamScope = async (req, res, next) => {
       return res.status(400).json({ error: 'employee_id required', code: 400 });
     }
 
-    // A manager is allowed to allocate tokens to themselves
-    if (String(employeeId) === String(req.user.id)) {
-      return next();
-    }
-
     const membership = await TeamMember.findOne({
       where: { user_id: employeeId, left_at: null },
       include: [

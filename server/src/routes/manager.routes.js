@@ -54,7 +54,7 @@ router.post(
   '/tokens/give',
   [
     body('employee_id').isUUID().withMessage('employee_id must be a valid UUID'),
-    body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
+    body('amount').isFloat({ min: 0.01 }).withMessage('amount must be a positive number'),
     body('reason').optional().isString().trim().withMessage('reason must be a string'),
     validate,
   ],

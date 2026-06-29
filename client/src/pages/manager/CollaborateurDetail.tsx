@@ -12,6 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
+import { formatTokens } from "../../utils/tokens";
 import { resolveAvatarIndex } from "../../utils/avatar";
 
 function IconArrowLeft() {
@@ -78,7 +79,7 @@ export default function CollaborateurDetail() {
       <div className="grid-2" style={{ marginBottom: 28 }}>
         <div className="stat-card">
           <p className="stat-label">Solde tokens</p>
-          <p className="stat-value">{collab.token_balance}</p>
+          <p className="stat-value">{formatTokens(collab.token_balance)}</p>
           <p className="stat-sub">disponibles</p>
         </div>
         <div className="stat-card">
@@ -195,7 +196,7 @@ export default function CollaborateurDetail() {
                             : { background: "var(--danger-light)", color: "var(--danger)" }
                         }
                       >
-                        {tx.receiver_id === id ? "+" : "−"}{tx.amount}
+                        {tx.receiver_id === id ? "+" : "−"}{formatTokens(tx.amount)}
                       </span>
                     </td>
                     <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>

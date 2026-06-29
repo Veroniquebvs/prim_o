@@ -121,6 +121,7 @@ export interface Team {
   company_id: string;
   manager_id: string;
   token_balance: number;
+  retribution_rate: number;
   dissolved_at: string | null;
   created_at: string;
   members?: TeamMember[];

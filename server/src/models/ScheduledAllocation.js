@@ -47,7 +47,7 @@ const initScheduledAllocation = (sequelize) => {
         allowNull: false,
       },
       amount: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
       label: {

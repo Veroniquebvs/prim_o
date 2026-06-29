@@ -5,6 +5,7 @@
  * Intended for use on employee-facing pages such as the wallet/dashboard area.
  */
 import { useAuth } from '../context/AuthContext';
+import { formatTokens } from '../utils/tokens';
 
 export default function TokenBalance() {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ export default function TokenBalance() {
   return (
     <div className="stat-card">
       <p className="stat-label">Mes tokens</p>
-      <p className="stat-value">{user?.token_balance ?? 0}</p>
+      <p className="stat-value">{formatTokens(user?.token_balance)}</p>
       <p className="stat-sub">disponibles à l'échange</p>
     </div>
   );

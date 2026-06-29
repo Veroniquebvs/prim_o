@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import { resolveAvatarIndex } from '../utils/avatar';
+import { formatTokens } from '../utils/tokens';
 /**
  * Desktop top navigation bar (hidden on mobile, shown on wider screens).
  *
@@ -45,8 +46,8 @@ export default function TopNav() {
   }
 
   const tokenBalance = user?.role === 'employer'
-    ? (company?.token_balance ?? '…')
-    : (user?.token_balance ?? 0);
+    ? (company?.token_balance != null ? formatTokens(company.token_balance) : '…')
+    : formatTokens(user?.token_balance);
 
   return (
     <header className="top-nav">

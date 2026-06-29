@@ -34,17 +34,9 @@ export default function HomePage() {
       }}
     >
       <div style={{ maxWidth: 600 }}>
-        <div
-          style={{
-            fontSize: '2.8rem',
-            fontWeight: 800,
-            color: '#00a19a',
-            marginBottom: 20,
-            letterSpacing: '-0.04em',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          PRIM'O
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: 20 }}>
+          <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '3.2rem', color: 'var(--text)', letterSpacing: '0.5px' }}>prim'</span>
+          <span style={{ fontFamily: "'Pacifico', cursive", fontWeight: 400, fontSize: '4.5rem', color: 'var(--primary)', lineHeight: 1 }}>o</span>
         </div>
 
         <h1

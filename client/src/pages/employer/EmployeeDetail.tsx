@@ -16,6 +16,7 @@ import { userService } from "../../services/user.service";
 import { managerService } from "../../services/manager.service";
 import { tokenService } from "../../services/token.service";
 import { useAuth } from "../../context/AuthContext";
+import { formatTokens } from "../../utils/tokens";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 
@@ -173,7 +174,7 @@ export default function EmployeeDetail() {
           onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }}
         >
           <p className="stat-label">Tokens</p>
-          <p className="stat-value">{employee.token_balance}</p>
+          <p className="stat-value">{formatTokens(employee.token_balance)}</p>
           <p className="stat-sub">solde actuel</p>
           <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span>+ Ajouter tokens</span>
@@ -295,7 +296,7 @@ export default function EmployeeDetail() {
                         }
                       >
                         {tx.receiver_id === id ? "+" : "−"}
-                        {tx.amount}
+                        {formatTokens(tx.amount)}
                       </span>
                     </td>
                     <td
@@ -424,7 +425,7 @@ export default function EmployeeDetail() {
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{employee.first_name} {employee.name}</p>
                 <span className="token-badge" style={{ fontSize: '0.72rem' }}>
-                  {employee.token_balance} tkn actuels
+                  {formatTokens(employee.token_balance)} tkn actuels
                 </span>
               </div>
             </div>

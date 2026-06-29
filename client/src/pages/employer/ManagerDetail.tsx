@@ -17,6 +17,7 @@ import { userService } from "../../services/user.service";
 import { tokenService } from "../../services/token.service";
 import type { User, Team, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
+import { formatTokens } from "../../utils/tokens";
 import { useAuth } from "../../context/AuthContext";
 import { resolveAvatarIndex } from "../../utils/avatar";
 
@@ -54,6 +55,11 @@ export default function ManagerDetail() {
   const [saving, setSaving] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
+  const [retributionRate, setRetributionRate] = useState<string>("0");
+  const [savingRate, setSavingRate] = useState(false);
+  const [rateSuccess, setRateSuccess] = useState(false);
+  const [rateError, setRateError] = useState("");
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
@@ -65,6 +71,7 @@ export default function ManagerDetail() {
         setTeam(teamData.team);
         setHistory(hist);
         setEntryDate(teamData.manager.entry_date || "");
+        setRetributionRate(String(parseFloat(String(teamData.team?.retribution_rate ?? 0))));
       })
       .catch(() => setError("Impossible de charger les données."))
       .finally(() => setLoading(false));
@@ -190,7 +197,7 @@ export default function ManagerDetail() {
           onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }}
         >
           <p className="stat-label">Solde équipe</p>
-          <p className="stat-value">{team?.token_balance ?? 0}</p>
+          <p className="stat-value">{formatTokens(team?.token_balance)}</p>
           <p className="stat-sub">tokens à distribuer</p>
           <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <span>+ Ajouter tokens</span>
@@ -204,7 +211,7 @@ export default function ManagerDetail() {
           onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }}
         >
           <p className="stat-label">Solde personnel</p>
-          <p className="stat-value">{manager.token_balance}</p>
+          <p className="stat-value">{formatTokens(manager.token_balance)}</p>
           <p className="stat-sub">tokens persos</p>
           <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <span>+ Ajouter tokens</span>
@@ -278,6 +285,75 @@ export default function ManagerDetail() {
         </div>
       </div>
 
+      {/* Taux de rétribution manager */}
+      {team && (
+        <div className="card" style={{ marginBottom: 20, background: '#f5f3ff', borderColor: '#c4b5fd' }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+            Rétribution manager
+          </h2>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+            À chaque distribution vers un collaborateur, ce pourcentage est automatiquement crédité
+            sur le solde personnel du manager, prélevé du solde équipe.
+          </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={retributionRate}
+                onChange={(e) => setRetributionRate(e.target.value)}
+                className="form-input"
+                style={{ width: 100, paddingRight: 28 }}
+              />
+              <span style={{ position: 'absolute', right: 10, color: 'var(--text-muted)', fontSize: '0.9rem', pointerEvents: 'none' }}>%</span>
+            </div>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ margin: 0 }}
+              disabled={savingRate}
+              onClick={async () => {
+                setRateError("");
+                setRateSuccess(false);
+                const parsedRate = parseFloat(retributionRate);
+                if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+                  setRateError("Le taux doit être entre 0 et 100.");
+                  return;
+                }
+                try {
+                  setSavingRate(true);
+                  await managerService.updateTeamRetributionRate(team.id, parsedRate);
+                  setRateSuccess(true);
+                  setTimeout(() => setRateSuccess(false), 3000);
+                } catch {
+                  setRateError("Erreur lors de la mise à jour du taux.");
+                } finally {
+                  setSavingRate(false);
+                }
+              }}
+            >
+              {savingRate ? "Sauvegarde..." : "Mettre à jour"}
+            </button>
+            {rateSuccess && (
+              <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>
+                ✓ Taux mis à jour !
+              </span>
+            )}
+          </div>
+          {rateError && <p className="form-error" style={{ marginTop: 10 }}>{rateError}</p>}
+
+          {parseFloat(retributionRate) > 0 && (
+            <p style={{ fontSize: '0.8rem', color: '#7c3aed', marginTop: 12, fontStyle: 'italic' }}>
+              Exemple : pour une distribution de 100 tokens, l'équipe sera débitée de{' '}
+              {formatTokens(100 + parseFloat(retributionRate))} tokens
+              ({retributionRate}% de rétribution = {formatTokens(parseFloat(retributionRate))} tokens pour le manager).
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Membres de l'équipe */}
       <div className="card" style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>
@@ -308,7 +384,7 @@ export default function ManagerDetail() {
                   </div>
                   <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{m.user?.first_name} {m.user?.name}</span>
                 </div>
-                <span className="token-badge">{m.user?.token_balance ?? 0}</span>
+                <span className="token-badge">{formatTokens(m.user?.token_balance)}</span>
               </div>
             ))}
           </div>
@@ -348,7 +424,7 @@ export default function ManagerDetail() {
                               : { background: "var(--danger-light)", color: "var(--danger)" }
                           }
                         >
-                          {isCredit ? "+" : "−"}{tx.amount}
+                          {isCredit ? "+" : "−"}{formatTokens(tx.amount)}
                         </span>
                       </td>
                       <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
@@ -413,7 +489,7 @@ export default function ManagerDetail() {
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{manager.first_name} {manager.name}</p>
                 <span className="token-badge" style={{ fontSize: '0.72rem' }}>
-                  {quickTarget === 'team' ? (team?.token_balance ?? 0) : manager.token_balance} tkn actuels (Compte {quickTarget === 'team' ? 'Équipe' : 'Personnel'})
+                  {formatTokens(quickTarget === 'team' ? team?.token_balance : manager.token_balance)} tkn actuels (Compte {quickTarget === 'team' ? 'Équipe' : 'Personnel'})
                 </span>
               </div>
             </div>

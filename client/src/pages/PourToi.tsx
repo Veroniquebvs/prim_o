@@ -14,6 +14,7 @@ import AvatarPickerModal from '../components/AvatarPickerModal';
 import { getStoredAvatar, saveAvatar, resolveAvatarIndex } from '../utils/avatar';
 import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
+import { formatTokens } from '../utils/tokens';
 
 function getFontSizeForNumber(num: number): string {
   const len = String(num).length;
@@ -419,16 +420,16 @@ function ManagerPourToi() {
             />
             <div style={{ display: 'flex', gap: 12 }}>
               <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 16px 10px 16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '110px' }}>
-                <p style={{ color: '#ffffff', fontSize: getFontSizeForNumber(user?.team_token_balance ?? 0), fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
-                  {user?.team_token_balance ?? 0}
+                <p style={{ color: '#ffffff', fontSize: getFontSizeForNumber(parseFloat(String(user?.team_token_balance ?? 0))), fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
+                  {formatTokens(user?.team_token_balance)}
                 </p>
                 <p style={{ color: '#ffffff', fontSize: '0.75rem', fontWeight: 500, marginTop: 4, opacity: 0.8, whiteSpace: 'nowrap' }}>
                   Stock Équipe
                 </p>
               </div>
               <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 16px 10px 16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '110px' }}>
-                <p style={{ color: '#ffffff', fontSize: getFontSizeForNumber(user?.token_balance ?? 0), fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
-                  {user?.token_balance ?? 0}
+                <p style={{ color: '#ffffff', fontSize: getFontSizeForNumber(parseFloat(String(user?.token_balance ?? 0))), fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
+                  {formatTokens(user?.token_balance)}
                 </p>
                 <p style={{ color: '#ffffff', fontSize: '0.75rem', fontWeight: 500, marginTop: 4, opacity: 0.8, whiteSpace: 'nowrap' }}>
                   Mes Tokens
@@ -439,26 +440,7 @@ function ManagerPourToi() {
         </div>
       </div>
 
-      {/* ══ M'attribuer des tokens ══ */}
-      {user?.role === 'manager' && (
-        <div style={{ marginBottom: 28, marginTop: 80 }}>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'linear-gradient(135deg, rgba(240, 168, 0, 0.1), rgba(240, 168, 0, 0.05))', border: '1px solid rgba(240, 168, 0, 0.2)' }}>
-            <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
-              <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>M'attribuer des tokens</p>
-              <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.3 }}>
-                Transférer depuis le stock équipe vers mon compte personnel.
-              </p>
-            </div>
-            <button 
-              className="manager-collab-btn"
-              onClick={(e) => { e.stopPropagation(); setQuickMember(user); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}
-              style={{ flexShrink: 0 }}
-            >
-              + Transférer
-            </button>
-          </div>
-        </div>
-      )}
+      {/* M'attribuer des tokens — supprimé : la rétribution est automatique à chaque distribution */}
 
       {/* ══ Mes collaborateurs ══ */}
       <div style={{ marginBottom: 28, marginTop: 55 }}>
@@ -489,7 +471,7 @@ function ManagerPourToi() {
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{m.token_balance} tkn</span>
+                  <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{formatTokens(m.token_balance)} tkn</span>
                   <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>Allouer</button>
                 </div>
               </div>
@@ -640,7 +622,7 @@ function ManagerPourToi() {
                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                      <span className="token-badge" style={{ marginRight: 6 }}>{r.amount}</span>{who}
+                      <span className="token-badge" style={{ marginRight: 6 }}>{formatTokens(r.amount)}</span>{who}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                       {when} — {r.label || 'sans motif'} · Prochaine : {fmtShort(r.next_run_at)}
@@ -689,7 +671,7 @@ function ManagerPourToi() {
               </div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{quickMember.first_name} {quickMember.name}</p>
-                <span className="token-badge" style={{ fontSize: '0.72rem' }}>{quickMember.token_balance} tkn actuels</span>
+                <span className="token-badge" style={{ fontSize: '0.72rem' }}>{formatTokens(quickMember.token_balance)} tkn actuels</span>
               </div>
             </div>
 
@@ -1001,7 +983,7 @@ function EmployeePourToi() {
             />
             <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '18px 24px 10px 24px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '180px' }}>
               <p style={{ color: '#ffffff', fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
-                {balance}
+                {formatTokens(balance)}
               </p>
               <p style={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
                 Tokens stock
@@ -1075,7 +1057,7 @@ function EmployeePourToi() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>
-                      Vous avez gagné {tx.amount} Tokens !
+                      Vous avez gagné {formatTokens(tx.amount)} Tokens !
                     </p>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
                       Envoyé par {senderName} {tx.reason ? ` - "${tx.reason}"` : ''}

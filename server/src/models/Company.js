@@ -75,9 +75,9 @@ const initCompany = (sequelize) => {
           len: [14, 14], // Forces the length to be exactly 14 characters
         },
       },
-      // 6. Token Balance (Required, Integer)
+      // 6. Token Balance (Required, decimal to support retribution fractions)
       token_balance: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
       },

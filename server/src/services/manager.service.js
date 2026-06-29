@@ -126,28 +126,43 @@ const addTeamMember = async (manager, { employee_id }) => {
 };
 
 /**
- * Transfers tokens from the manager's personal balance to an employee.
- * manager is the authenticated manager user object. employee_id is the UUID of the target employee.
- * amount must be a positive integer. Throws 402 if the manager's balance is insufficient.
- * Throws 404 if the employee does not exist. The balance change and transaction record are
- * committed atomically with row-level locks. Returns the created TokenTransaction record.
+ * Transfers tokens from the team balance to an employee, then credits the manager with a
+ * retribution bonus (team.retribution_rate % of the distributed amount).
+ * The total debit from the team is: amount + retribution. Both the employee credit and the
+ * manager retribution credit are committed atomically with row-level locks.
+ * Throws 403 if the manager tries to allocate tokens to themselves.
+ * Throws 402 if the team balance is insufficient to cover amount + retribution.
  */
 const giveTokens = async (manager, { employee_id, amount, reason }) => {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    throw httpError('amount must be a positive integer', 400);
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+    throw httpError('amount must be a positive number', 400);
+  }
+
+  if (employee_id === manager.id) {
+    throw httpError('Vous ne pouvez pas vous attribuer des tokens directement', 403);
   }
 
   const t = await sequelize.transaction();
   try {
     const team = await Team.findOne({ where: { manager_id: manager.id, dissolved_at: null }, lock: true, transaction: t });
-    if (!team || team.token_balance < amount) {
+    if (!team) throw httpError('No active team found', 404);
+
+    const retributionRate = parseFloat(team.retribution_rate) || 0;
+    const retribution = parseFloat((amount * retributionRate / 100).toFixed(2));
+    const totalDebit = parseFloat((amount + retribution).toFixed(2));
+
+    if (parseFloat(team.token_balance) < totalDebit) {
       throw httpError('Insufficient team token balance', 402);
     }
 
     const employee = await User.findByPk(employee_id, { lock: true, transaction: t });
     if (!employee) throw httpError('Employee not found', 404);
 
-    await team.decrement('token_balance', { by: amount, transaction: t });
+    const managerUser = retribution > 0
+      ? await User.findByPk(manager.id, { lock: true, transaction: t })
+      : null;
+
+    await team.decrement('token_balance', { by: totalDebit, transaction: t });
     await employee.increment('token_balance', { by: amount, transaction: t });
 
     const tx = await TokenTransaction.create(
@@ -161,6 +176,21 @@ const giveTokens = async (manager, { employee_id, amount, reason }) => {
       },
       { transaction: t }
     );
+
+    if (retribution > 0 && managerUser) {
+      await managerUser.increment('token_balance', { by: retribution, transaction: t });
+      await TokenTransaction.create(
+        {
+          sender_id: null,
+          receiver_id: manager.id,
+          company_id: manager.company_id,
+          amount: retribution,
+          type: 'manager_retribution',
+          reason: `Rétribution ${retributionRate}% sur distribution`,
+        },
+        { transaction: t }
+      );
+    }
 
     await t.commit();
     return tx;

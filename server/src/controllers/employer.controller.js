@@ -64,4 +64,14 @@ const listTeams = async (req, res, next) => {
   }
 };
 
-module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam, listTeams };
+/** Updates the retribution rate (%) for a team. Rate must be between 0 and 100. */
+const updateRetributionRate = async (req, res, next) => {
+  try {
+    const data = await employerService.updateRetributionRate(req.user, req.params.teamId, req.body.rate);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam, listTeams, updateRetributionRate };

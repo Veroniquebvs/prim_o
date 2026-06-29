@@ -72,11 +72,11 @@ const initUser = (sequelize) => {
           isIn: [['admin', 'employer', 'employee', 'manager']],
         },
       },
-      // 7. Token Balance (Required, Integer for whole numbers)
+      // 7. Token Balance (Required, decimal to support retribution fractions)
       token_balance: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
-        defaultValue: 0, // A user starts with 0 tokens by default
+        defaultValue: 0,
       },
       // 8. employee status
       status: {

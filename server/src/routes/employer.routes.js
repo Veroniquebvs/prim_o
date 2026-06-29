@@ -74,4 +74,14 @@ router.patch(
   employerController.updateAllocation
 );
 
+router.patch(
+  '/teams/:teamId/retribution-rate',
+  [
+    param('teamId').isUUID().withMessage('teamId must be a valid UUID'),
+    body('rate').isFloat({ min: 0, max: 100 }).withMessage('rate must be a number between 0 and 100'),
+    validate,
+  ],
+  employerController.updateRetributionRate
+);
+
 module.exports = router;

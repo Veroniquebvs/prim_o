@@ -37,9 +37,9 @@ const initTokenTransaction = (sequelize) => {
         primaryKey: true,
         allowNull: false,
       },
-      // 2. Amount of tokens transferred (Required)
+      // 2. Amount of tokens transferred (Required, decimal to support retribution fractions)
       amount: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
       // 3. Transaction Type (Restricted to specific internal system values)

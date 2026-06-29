@@ -27,6 +27,7 @@ import TransferForm from "../../components/TransferForm";
 import type { User, Company, ScheduledAllocation, Redemption } from "../../types";
 import { PrintableQRCode } from "../../components/PrintableQRCode";
 import { fmtShort } from "../../utils/date";
+import { formatTokens } from "../../utils/tokens";
 import UserSelectionModal from "../../components/UserSelectionModal";
 import TargetSelectionModal from "../../components/TargetSelectionModal";
 import MotifSelectionModal from "../../components/MotifSelectionModal";
@@ -106,7 +107,7 @@ export default function EmployerDashboard() {
         userService.getAll({ companyId: user.company_id, role: "employee" }),
         companyService.getById(user.company_id),
         userService.getPending(user.company_id),
-        scheduledService.list(),
+        scheduledService.list().catch(() => []),
         userService.getAll({ companyId: user.company_id, role: "manager" }),
         companyService.getTeams(),
         marketplaceService.getOrders().catch(() => []),
@@ -312,7 +313,7 @@ export default function EmployerDashboard() {
               />
               <div style={{ background: '#303236', border: '3px solid #ffffff', borderRadius: '16px', padding: '12px 16px 8px 16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '140px' }}>
                 <p style={{ color: '#ffffff', fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>
-                  {company?.token_balance ?? 0}
+                  {formatTokens(company?.token_balance)}
                 </p>
                 <p style={{ color: '#ffffff', fontSize: '0.75rem', fontWeight: 500, marginTop: 4, opacity: 0.8 }}>
                   Tokens stock
@@ -428,7 +429,7 @@ export default function EmployerDashboard() {
                         {mgr.role ? (mgr.role === 'employee' ? 'Collaborateur' : mgr.role === 'employer' ? 'Employeur' : mgr.role.charAt(0).toUpperCase() + mgr.role.slice(1)) : '—'}
                       </td>
                       <td style={{ padding: "8px 10px", textAlign: "right" }}>
-                        <span className="token-badge">{mgr.token_balance}</span>
+                        <span className="token-badge">{formatTokens(mgr.token_balance)}</span>
                       </td>
                     </tr>
                   ))}
@@ -472,7 +473,7 @@ export default function EmployerDashboard() {
                         })()}
                       </td>
                       <td style={{ padding: "8px 10px", textAlign: "right" }}>
-                        <span className="token-badge">{emp.token_balance}</span>
+                        <span className="token-badge">{formatTokens(emp.token_balance)}</span>
                       </td>
                     </tr>
                   ))}
@@ -605,7 +606,7 @@ export default function EmployerDashboard() {
                 <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--bg)", borderRadius: 10, border: "1px solid var(--border)" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-                      <span className="token-badge" style={{ marginRight: 6 }}>{r.amount}</span>
+                      <span className="token-badge" style={{ marginRight: 6 }}>{formatTokens(r.amount)}</span>
                       {who}
                     </p>
                     <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 2 }}>

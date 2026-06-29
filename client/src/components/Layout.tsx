@@ -11,6 +11,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TopNav from './TopNav';
 import BottomNav from './BottomNav';
+import { formatTokens } from '../utils/tokens';
 
 interface Props {
   children: React.ReactNode;
@@ -68,7 +69,7 @@ export default function Layout({ children }: Props) {
             <div className="top-bar-right">
               <div className="top-bar-tokens top-bar-tokens--large">
                 <img src="/icons/token-logo-SF.png" alt="Token" style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                <span>{user.role === 'employer' ? (company?.token_balance ?? '…') : (user.token_balance ?? 0)}</span>
+                <span>{user.role === 'employer' ? (company?.token_balance != null ? formatTokens(company.token_balance) : '…') : formatTokens(user.token_balance)}</span>
               </div>
             </div>
           )}

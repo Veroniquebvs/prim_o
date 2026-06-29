@@ -278,4 +278,20 @@ const getManagerTeam = async (employer, managerId) => {
   return { manager, team: team || null };
 };
 
-module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam, listTeams };
+/**
+ * Updates the retribution rate for a team within the employer's company.
+ * employer is the authenticated employer. teamId is the UUID of the active team to update.
+ * rate must be between 0 and 100 (percentage of each distribution credited back to the manager).
+ * Throws 404 if the team is not found in the employer's company.
+ * Returns the updated Team record.
+ */
+const updateRetributionRate = async (employer, teamId, rate) => {
+  const team = await Team.findOne({
+    where: { id: teamId, company_id: employer.company_id, dissolved_at: null },
+  });
+  if (!team) throw httpError('Team not found', 404);
+  await team.update({ retribution_rate: rate });
+  return team;
+};
+
+module.exports = { changeRole, createAllocation, listAllocations, updateAllocation, getManagerTeam, listTeams, updateRetributionRate };

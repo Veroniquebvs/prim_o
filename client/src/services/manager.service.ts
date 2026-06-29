@@ -11,6 +11,14 @@ import type { ApiResponse, User, Team, ScheduledAllocation } from "../types";
 
 export const managerService = {
   /* ── Employer-facing ── */
+  async updateTeamRetributionRate(teamId: string, rate: number): Promise<Team> {
+    const { data } = await api.patch<ApiResponse<Team>>(
+      `/employer/teams/${teamId}/retribution-rate`,
+      { rate }
+    );
+    return data.data;
+  },
+
   async getManagerTeam(managerId: string): Promise<{ manager: User; team: Team | null }> {
     const { data } = await api.get<ApiResponse<{ manager: User; team: Team | null }>>(
       `/employer/managers/${managerId}/team`

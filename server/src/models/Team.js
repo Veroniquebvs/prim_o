@@ -34,7 +34,12 @@ const initTeam = (sequelize) => {
         defaultValue: null,
       },
       token_balance: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        allowNull: false,
+      },
+      retribution_rate: {
+        type: DataTypes.DECIMAL(5, 2),
         defaultValue: 0,
         allowNull: false,
       },

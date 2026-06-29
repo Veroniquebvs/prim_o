@@ -15,6 +15,7 @@ import { userService } from '../services/user.service';
 import { marketplaceService } from '../services/marketplace.service';
 import { tokenService } from '../services/token.service';
 import { companyService } from '../services/company.service';
+import { formatTokens } from '../utils/tokens';
 import type { TokenTransaction, Redemption, AdminRedemption, Team } from '../types';
 import { fmtShort as fmt, fmtDateTime } from '../utils/date';
 
@@ -209,7 +210,7 @@ export default function Historique() {
                   return (
                     <div key={`tx-${tx.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                       <div>
-                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tokens reçus <span className="token-badge" style={{ marginLeft: 6 }}>+{tx.amount}</span></p>
+                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tokens reçus <span className="token-badge" style={{ marginLeft: 6 }}>+{formatTokens(tx.amount)}</span></p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Motif : {tx.reason || tx.type || '—'}</p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(tx.createdAt || tx.created_at)}</p>
                       </div>
@@ -325,7 +326,7 @@ export default function Historique() {
                       />
                     </span>
                     <span className="feed-text">
-                      <span className="token-badge feed-badge">+{tx.amount}</span> tokens gagnés
+                      <span className="token-badge feed-badge">+{formatTokens(tx.amount)}</span> tokens gagnés
                       {tx.reason && (
                         <> pour : <strong>{tx.reason}</strong></>
                       )}

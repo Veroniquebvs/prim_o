@@ -126,7 +126,7 @@ export default function AdminCompanyDetail() {
         </div>
 
         {/* Infos */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', background: '#fefce8', borderColor: '#fef08a' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr style={rowStyle}>
@@ -187,7 +187,7 @@ export default function AdminCompanyDetail() {
             <button
               className="btn btn-outline"
               onClick={() => setShowManagersModal(true)}
-              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer' }}
+              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius)', cursor: 'pointer' }}
             >
               <span style={{ fontWeight: 600 }}>Managers</span>
               <span className="token-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none' }}>{managers.length}</span>
@@ -195,7 +195,7 @@ export default function AdminCompanyDetail() {
             <button
               className="btn btn-outline"
               onClick={() => setShowCollaboratorsModal(true)}
-              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer' }}
+              style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius)', cursor: 'pointer' }}
             >
               <span style={{ fontWeight: 600 }}>Collaborateurs</span>
               <span className="token-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none' }}>{collaborateurs.length}</span>
