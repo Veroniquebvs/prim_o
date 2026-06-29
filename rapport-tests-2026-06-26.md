@@ -3,24 +3,24 @@
 > [!NOTE]
 > This report presents the complete summary of the test strategy executed and validated on **June 26, 2026** by Véronique on the `feature/tests` branch.
 > 
-> **Global Result**: **141 tests executed, 141 tests passed (100% success rate)**.
+> **Global Result** : **141 tests executed, 141 tests passed (100% success rate)**.
 > All tests run in isolation using Jest and Supertest within the Docker environment.
 
 ---
 
-## 📊 Results Summary by Module
+## Results Summary by Module
 
 | Module | Test Type | Test File(s) | Passed Tests | Status |
 | :--- | :--- | :--- | :---: | :---: |
-| **Authentication** | Unit & Integration | `auth.service.test.js` <br> `auth.integration.test.js` | **19** | ✅ Success |
-| **Token Management & Stripe** | Unit & Integration | `token.service.test.js` <br> `stripe.service.test.js` <br> `tokens.integration.test.js` | **26** | ✅ Success |
-| **Marketplace & Vouchers** | Unit & Integration | `marketplace.service.test.js` <br> `marketplace.integration.test.js` | **26** | ✅ Success |
-| **Users & Multi-tenancy** | Unit & Integration | `users.service.test.js` <br> `users.integration.test.js` | **70** | ✅ Success |
+| **Authentication** | Unit & Integration | `auth.service.test.js` <br> `auth.integration.test.js` | **19** | Success |
+| **Token Management & Stripe** | Unit & Integration | `token.service.test.js` <br> `stripe.service.test.js` <br> `tokens.integration.test.js` | **26** | Success |
+| **Marketplace & Vouchers** | Unit & Integration | `marketplace.service.test.js` <br> `marketplace.integration.test.js` | **26** | Success |
+| **Users & Multi-tenancy** | Unit & Integration | `users.service.test.js` <br> `users.integration.test.js` | **70** | Success |
 | **Total** | | | **141** | **100% Success** |
 
 ---
 
-## 🔍 Test Details by Module
+## Test Details by Module
 
 ### 1. Authentication (`Auth`)
 
@@ -28,60 +28,60 @@ This suite validates user registration, secure password management, JSON Web Tok
 
 #### A. Unit Tests (`auth.service.test.js`)
 * **Registration (`register`)**
-  * *Description*: Validates user creation in the database. Verifies that a "clean" user object (without sensitive data) and access tokens are returned.
-  * *Result*: **Success**. The user is created successfully.
-  * *Description*: Verifies that the Access Token contains the required claims (`id`, `role`, `company_id`).
-  * *Result*: **Success**. Role and company information are correctly encoded.
-  * *Description*: Registration attempt with an email that is already in use.
+  * *Description* : Validates user creation in the database. Verifies that a "clean" user object (without sensitive data) and access tokens are returned.
+  * *Result  **Success**. The user is created successfully.
+  * *Description* : Verifies that the Access Token contains the required claims (`id`, `role`, `company_id`).
+  * *Result* : **Success**. Role and company information are correctly encoded.
+  * *Description* : Registration attempt with an email that is already in use.
   * *Result*: **Success**. A conflict exception (HTTP 409) is correctly thrown.
-  * *Description*: Validates password hashing using Bcrypt (minimum 12 rounds) before storing it in the database.
-  * *Result*: **Success**. The plain text password is never stored.
+  * *Description* : Validates password hashing using Bcrypt (minimum 12 rounds) before storing it in the database.
+  * *Result* : **Success**. The plain text password is never stored.
 * **Login (`login`)**
-  * *Description*: Log in with valid credentials.
-  * *Result*: **Success**. Returns the Access Token, Refresh Token, and the user object without their password.
-  * *Description*: Log in attempt with a non-existent email.
-  * *Result*: **Success**. An unauthorized exception (HTTP 401) is thrown.
-  * *Description*: Log in attempt with an incorrect password.
-  * *Result*: **Success**. Throws an HTTP 401 exception.
+  * *Description* : Log in with valid credentials.
+  * *Result* : **Success**. Returns the Access Token, Refresh Token, and the user object without their password.
+  * *Description* : Log in attempt with a non-existent email.
+  * *Result* : **Success**. An unauthorized exception (HTTP 401) is thrown.
+  * *Description* : Log in attempt with an incorrect password.
+  * *Result* : **Success**. Throws an HTTP 401 exception.
 * **Logout (`logout`)**
-  * *Description*: Stateless logout on the server.
-  * *Result*: **Success**. Resolves without error.
+  * *Description* : Stateless logout on the server.
+  * *Result* : **Success**. Resolves without error.
 * **User Profile (`getProfile`)**
-  * *Description*: Retrieves the user profile.
-  * *Result*: **Success**. The user object is returned while hiding the `password_hash` field.
-  * *Description*: Retrieves a profile that does not exist.
-  * *Result*: **Success**. Throws a resource not found exception (HTTP 404).
+  * *Description* : Retrieves the user profile.
+  * *Result* : **Success**. The user object is returned while hiding the `password_hash` field.
+  * *Description* : Retrieves a profile that does not exist.
+  * *Result* : **Success**. Throws a resource not found exception (HTTP 404).
 * **Token Refresh (`refreshToken`)**
-  * *Description*: Renews the Access Token using a valid Refresh Token.
+  * *Description* : Renews the Access Token using a valid Refresh Token.
   * *Result*: **Success**. A new Access Token is generated.
-  * *Description*: Token refresh request without providing a token.
+  * *Description* : Token refresh request without providing a token.
   * *Result*: **Success**. Throws an HTTP 400 error.
-  * *Description*: Using an expired Refresh Token or one signed with an invalid secret key.
-  * *Result*: **Success**. Throws an HTTP 401 authentication error.
-  * *Description*: Refresh attempt for a user who has been deleted from the database.
-  * *Result*: **Success**. Throws an HTTP 404 error.
+  * *Description* : Using an expired Refresh Token or one signed with an invalid secret key.
+  * *Result* : **Success**. Throws an HTTP 401 authentication error.
+  * *Description* : Refresh attempt for a user who has been deleted from the database.
+  * *Result* : **Success**. Throws an HTTP 404 error.
 
 #### B. Integration Tests (`auth.integration.test.js`)
 * **Route `/api/auth/register`**
-  * *Description*: Account creation via real HTTP POST request.
-  * *Result*: **Success** (HTTP 201).
-  * *Description*: Incomplete registration request (missing required fields).
-  * *Result*: **Success** (HTTP 400 Bad Request).
-  * *Description*: Registration with duplicate email.
-  * *Result*: **Success** (HTTP 409 Conflict).
+  * *Description* : Account creation via real HTTP POST request.
+  * *Result* : **Success** (HTTP 201).
+  * *Description* : Incomplete registration request (missing required fields).
+  * *Result* : **Success** (HTTP 400 Bad Request).
+  * *Description* : Registration with duplicate email.
+  * *Result* : **Success** (HTTP 409 Conflict).
 * **Route `/api/auth/login`**
-  * *Description*: Login attempt via POST request.
-  * *Result*: **Success** (HTTP 200) with tokens returned.
-  * *Description*: Login with incorrect credentials.
-  * *Result*: **Success** (HTTP 401 Unauthorized).
+  * *Description* : Login attempt via POST request.
+  * *Result* : **Success** (HTTP 200) with tokens returned.
+  * *Description* : Login with incorrect credentials.
+  * *Result* : **Success** (HTTP 401 Unauthorized).
 * **Route `/api/auth/me`**
-  * *Description*: Accesses the authenticated user profile using the `Authorization` header.
-  * *Result*: **Success** (HTTP 200).
-  * *Description*: Accesses the profile without an authorization header.
-  * *Result*: **Success** (HTTP 401).
+  * *Description* : Accesses the authenticated user profile using the `Authorization` header.
+  * *Result* : **Success** (HTTP 200).
+  * *Description* : Accesses the profile without an authorization header.
+  * *Result* : **Success** (HTTP 401).
 * **Route `/api/auth/refresh`**
-  * *Description*: Refresh request via HTTP route.
-  * *Result*: **Success** (HTTP 200) with a new token returned.
+  * *Description* : Refresh request via HTTP route.
+  * *Result* : **Success** (HTTP 200) with a new token returned.
 
 ---
 
@@ -230,7 +230,7 @@ This suite validates user update processes and enforces multi-tenant boundary co
 
 ---
 
-## 💡 Technical Conclusion of the Report
+## Technical Conclusion of the Report
 The tests completed on June 26, 2026 confirm:
 1. **Transactional Integrity**: No tokens can be created, moved, or exchanged without being wrapped in a PostgreSQL transaction. In case of network failure, database error, or insufficient balance, the database performs an immediate and clean Rollback to the initial state.
 2. **Robustness of Multi-tenant Isolation**: Companies hosted on the PRIM'O platform are hermetically isolated from each other. Cross-tenant information leakage is blocked at the API level.
