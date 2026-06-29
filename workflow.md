@@ -990,3 +990,19 @@ Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manag
     - Fichier créé : `manual_qa_protocol.md` décrivant les flux à tester localement via Docker.
     - Fourniture des identifiants locaux de test : `jean.dupont@techcorp.com` (Employeur) et `alice.martin@techcorp.com` (Collaboratrice).
     - Protocole pas à pas pour tester l'abonnement Stripe (carte de test `4242 4242 4242 4242`), l'attribution de jetons et le rachat de bons dans le catalogue (Fnac 20€).
+
+---
+
+## Consolidation des tests & Rapport de recette — 29/06/26 (fait par Véronique)
+
+### Étape 1 — Finalisation des tests unitaires Marketplace
+*   **Complément des tests du catalogue** :
+    - Fichier modifié : [marketplace.service.test.js](file:///c:/Users/Chantal/.antigravity-ide/prim_o/server/tests/marketplace/marketplace.service.test.js).
+    - Ajout de cas de tests unitaires pour valider les commandes utilisateurs (`listOrders`) et la complétion des scénarios d'échange (`redeem`).
+
+### Étape 2 — Production du rapport de test officiel
+*   **Création du rapport de couverture et de recette** :
+    - Fichier créé à la racine : [rapport-tests-2026-06-26.md](file:///c:/Users/Chantal/.antigravity-ide/prim_o/rapport-tests-2026-06-26.md).
+    - **Contenu** : Synthèse exhaustive au format Markdown de l'ensemble des **141 tests** unitaires et d'intégration écrits pour le projet (les modules Authentification, Tokens/Stripe, Marketplace, et Users y sont détaillés avec la description de chaque cas de test et son résultat de validation à 100%).
+    - **Traduction** : Le rapport de test a été traduit intégralement en anglais afin de servir de documentation technique officielle et de support lors d'éventuels audits de sécurité.
+
