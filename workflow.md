@@ -877,6 +877,24 @@ Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manag
 - Résolution du bug `Cannot find module 'vite-plugin-pwa'` : volume anonyme `node_modules` obsolète → `docker compose rm -f client` + `docker volume prune -f` + `docker compose build --no-cache client`
 
 ---
+## Refonte des Historiques, Tableaux de bord & Admin (feature/improve_front) — 23/06/26 au 24/06/26 (fait par Véronique)
+
+**Suivi d'activité et Historique complets (23/06/26)** :
+- Implémentation du tableau de bord complet d'historique de l'utilisateur (`Historique.tsx`).
+- Mise en place du flux d'activité en temps réel pour l'employeur et le manager (`PourToi.tsx`).
+- Création de la fiche détaillée des salariés (`EmployeeDetail.tsx`) et des managers (`ManagerDetail.tsx`) pour permettre aux employeurs de suivre les soldes individuels et l'historique d'équipe.
+- Création des routes et services backend pour les managers (`manager.routes.js`, `manager.service.js`).
+
+**Sécurisation des Jetons, Allocations & Administration (24/06/26)** :
+- Liaison complète du tableau de bord d'administration système (`AdminDashboard.tsx`) pour gérer les entreprises abonnées.
+- Implémentation de la page de statistiques des motifs d'attribution (`AdminStatMotifs.tsx`).
+- Création de la page de détail des bons d'achat côté collaborateur (`VoucherDetail.tsx`).
+- Création de la vue de gestion détaillée du collaborateur côté manager (`CollaborateurDetail.tsx`).
+- Développement des endpoints et des services d'administration des entreprises côté serveur (`companies.routes.js`, `companies.service.js`, `companies.controller.js`).
+- Sécurisation et optimisation de la logique d'allocation transactionnelle PostgreSQL (ACID) dans `token.service.js`.
+
+
+---
 
 ## Système d'avatars & polissage UI — 24/06/26 (fait par Loïc)
 
@@ -932,3 +950,43 @@ Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manag
 #### Modal QR Code (employeur)
 - Rendu via `ReactDOM.createPortal(…, document.body)` → échappe aux stacking contexts créés par le hero `position: relative`, passe devant la TopNav quelle que soit la hiérarchie DOM
 - `maxHeight: calc(100vh - 32px)` + `overflowY: auto` → le modal ne déborde plus hors écran
+
+---
+
+## Stratégie de Test Complète, Sécurisation & Recette (feature/tests) — 26/06/26 (fait par Véronique)
+
+### Étape 1 — Configuration de l'environnement de test (Fondation)
+*   **Mise en place technique** :
+    - Configuration de **Jest** et de **Supertest** pour l'exécution des tests dans le conteneur Docker de l'API.
+    - Création des scripts npm dédiés au lancement des suites en isolation (`npm test`) pour éviter les conflits de ports réseau.
+    - Isolation de l'environnement de test avec configuration de clés secrètes et de variables d'environnement dédiées aux mocks.
+
+### Étape 2 — Écriture des tests unitaires (Cœur de métier)
+*   **Validation des services et de la logique interne** :
+    - **`AuthService`** : Tests unitaires sur le hachage des mots de passe (bcrypt), la génération et la vérification des signatures JWT.
+    - **`TokenService`** : Tests de la logique métier d'allocation, de la vérification de la cohérence des soldes, et des contrôles avant débit.
+    - **`StripeService`** : Validation de la création de clients et d'abonnements récurrents en mode test.
+    - **Middlewares** : Validation du fonctionnement autonome de `verifyToken.js` et de `roleGuard.js`.
+
+### Étape 3 — Tests d'intégration des routes critiques (/auth, /tokens, /marketplace)
+*   **Alignement des routes réelles** :
+    - **`auth.integration.test.js`** : Remplacement du chemin `/profile` par l'endpoint `/me` et adaptation des assertions d'erreurs au middleware de validation (propriété `error` attendue). Exclusion du champ `password_hash` dans le mock de profil.
+    - **`tokens.integration.test.js` & `marketplace.integration.test.js`** : Remplacement des identifiants temporaires par des chaînes au format **UUID v4** valide pour satisfaire les validateurs de routes stricts `.isUUID()`.
+*   **Résultat** : Réussite complète des 109 tests unitaires et d'intégration initiaux.
+
+### Étape 4 — Sécurisation de l'API (RBAC, isolation multi-entreprises et contraintes individuelles)
+*   **Création de la suite de tests des utilisateurs** :
+    - Fichier créé : `server/tests/users/users.integration.test.js`.
+    - **Contrôles de rôles (RBAC)** : Validation du blocage (403) des collaborateurs sur la liste des utilisateurs, la liste des comptes en attente, les activations et les dates d'entrée. Blocage des employeurs sur la suppression de profils.
+    - **Isolation multi-entreprises (Multi-tenant)** : Validation du fait que toute requête d'un employeur/manager visant à lire, modifier, activer ou gérer la date d'un collaborateur d'une autre entreprise retourne un code `404 User not found`.
+    - **Contrainte personnelle** : Validation du blocage (403) lors de la tentative de modification de l'avatar d'un tiers.
+*   **Sécurité étendue sur les jetons et le catalogue** :
+    - Vérification du blocage des collaborateurs sur les déductions de jetons et abonnements Stripe (`tokens.integration.test.js`).
+    - Vérification du blocage des collaborateurs et employeurs sur le CRUD du catalogue de bons et sur l'historique d'achat global (`marketplace.integration.test.js`).
+*   **Résultat** : **141 tests sur 141 validés avec succès** (100% de réussite).
+
+### Étape 5 — Protocole de recette (Manual QA)
+*   **Création du guide de recette** :
+    - Fichier créé : `manual_qa_protocol.md` décrivant les flux à tester localement via Docker.
+    - Fourniture des identifiants locaux de test : `jean.dupont@techcorp.com` (Employeur) et `alice.martin@techcorp.com` (Collaboratrice).
+    - Protocole pas à pas pour tester l'abonnement Stripe (carte de test `4242 4242 4242 4242`), l'attribution de jetons et le rachat de bons dans le catalogue (Fnac 20€).

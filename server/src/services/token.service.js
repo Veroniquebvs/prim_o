@@ -143,6 +143,28 @@ const listTransactions = async ({ company_id, userId, date, type, managerTeamId 
     where.company_id = company_id;
   }
 
+  if (userId) {
+    where[Op.or] = [
+      { sender_id: userId },
+      { receiver_id: userId }
+    ];
+  }
+
+  if (date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    where.created_at = {
+      [Op.gte]: start,
+      [Op.lte]: end
+    };
+  }
+
+  if (type) {
+    where.type = type;
+  }
+
   if (managerTeamId) {
     const team = await Team.findByPk(managerTeamId);
     const teamMembers = await TeamMember.findAll({ where: { team_id: managerTeamId } });
