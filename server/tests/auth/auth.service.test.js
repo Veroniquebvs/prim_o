@@ -21,6 +21,10 @@ jest.mock('../../src/models', () => ({
     findByPk: jest.fn(),
     create: jest.fn(),
   },
+  Team: {
+    findOne: jest.fn(),
+  },
+  Company: {},
 }));
 
 const { User } = require('../../src/models');
@@ -35,6 +39,10 @@ const fakeUser = {
   token_balance: 0,
   company_id: null,
   password_hash: bcrypt.hashSync('password123', 10),
+  toJSON() {
+    const { toJSON, ...plain } = this;
+    return plain;
+  },
 };
 
 beforeEach(() => jest.clearAllMocks());

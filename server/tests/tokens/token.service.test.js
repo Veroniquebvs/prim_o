@@ -23,8 +23,26 @@ jest.mock('../../src/config/database', () => ({
 
 // ─── Mock models ──────────────────────────────────────────────────────────────
 const mockCompany = { token_balance: 100, decrement: jest.fn().mockResolvedValue(undefined) };
-const mockReceiver = { token_balance: 0, increment: jest.fn().mockResolvedValue(undefined) };
-const mockTxRecord = { id: 'tx-uuid', amount: 20, type: 'allocation' };
+const mockReceiver = {
+  id: 'receiver-uuid',
+  company_id: 'company-uuid',
+  status: 'active',
+  role: 'employee',
+  token_balance: 0,
+  increment: jest.fn().mockResolvedValue(undefined)
+};
+const mockTxRecord = {
+  id: 'tx-uuid',
+  amount: 20,
+  type: 'allocation',
+  get: function(options) {
+    if (options && options.plain) {
+      const { get, ...plain } = this;
+      return plain;
+    }
+    return this;
+  }
+};
 
 jest.mock('../../src/models', () => ({
   User: { findOne: jest.fn(), findByPk: jest.fn() },
@@ -45,6 +63,7 @@ describe('allocate', () => {
   beforeEach(() => {
     Company.findOne.mockResolvedValue(mockCompany);
     User.findOne.mockResolvedValue(mockReceiver);
+    User.findByPk.mockResolvedValue(mockReceiver);
     TokenTransaction.create.mockResolvedValue(mockTxRecord);
   });
 
@@ -54,18 +73,18 @@ describe('allocate', () => {
     expect(mockCompany.decrement).toHaveBeenCalledWith('token_balance', { by: 20, transaction: mockTx });
     expect(mockReceiver.increment).toHaveBeenCalledWith('token_balance', { by: 20, transaction: mockTx });
     expect(TokenTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ sender_id: sender.id, receiver_id: 'receiver-uuid', amount: 20, type: 'allocation' }),
+      expect.objectContaining({ sender_id: sender.id, receiver_id: 'receiver-uuid', amount: 20, type: 'employer_to_employee' }),
       { transaction: mockTx }
     );
     expect(mockTx.commit).toHaveBeenCalled();
     expect(mockTx.rollback).not.toHaveBeenCalled();
-    expect(result).toBe(mockTxRecord);
+    expect(result).toEqual({ success: true, count: 1, total: 20 });
   });
 
-  it('uses provided reason as type', async () => {
-    await allocate(sender, { receiver_id: 'r-uuid', amount: 5, reason: 'performance' });
+  it('uses provided reason', async () => {
+    await allocate(sender, { receiver_id: 'receiver-uuid', amount: 5, reason: 'performance' });
     expect(TokenTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'performance' }),
+      expect.objectContaining({ reason: 'performance' }),
       expect.anything()
     );
   });
@@ -73,7 +92,7 @@ describe('allocate', () => {
   it('throws 402 and rolls back when company balance is insufficient', async () => {
     Company.findOne.mockResolvedValue({ ...mockCompany, token_balance: 5 });
 
-    await expect(allocate(sender, { receiver_id: 'r-uuid', amount: 20 }))
+    await expect(allocate(sender, { receiver_id: 'receiver-uuid', amount: 20 }))
       .rejects.toMatchObject({ status: 402 });
     expect(mockTx.rollback).toHaveBeenCalled();
     expect(mockTx.commit).not.toHaveBeenCalled();
@@ -82,23 +101,23 @@ describe('allocate', () => {
   it('throws 404 and rolls back when company is not found', async () => {
     Company.findOne.mockResolvedValue(null);
 
-    await expect(allocate(sender, { receiver_id: 'r-uuid', amount: 10 }))
+    await expect(allocate(sender, { receiver_id: 'receiver-uuid', amount: 10 }))
       .rejects.toMatchObject({ status: 404, message: 'Company not found' });
     expect(mockTx.rollback).toHaveBeenCalled();
   });
 
-  it('throws 404 and rolls back when receiver is not in company', async () => {
-    User.findOne.mockResolvedValue(null);
+  it('throws 404 and does not start transaction when receiver is not in company', async () => {
+    User.findByPk.mockResolvedValue(null);
 
     await expect(allocate(sender, { receiver_id: 'unknown-uuid', amount: 10 }))
-      .rejects.toMatchObject({ status: 404, message: 'Employee not found in your company' });
-    expect(mockTx.rollback).toHaveBeenCalled();
+      .rejects.toMatchObject({ status: 404, message: 'Aucun destinataire trouvé' });
+    expect(mockTx.rollback).not.toHaveBeenCalled();
   });
 
   it('throws 400 for non-positive amount', async () => {
-    await expect(allocate(sender, { receiver_id: 'r-uuid', amount: 0 }))
+    await expect(allocate(sender, { receiver_id: 'receiver-uuid', amount: 0 }))
       .rejects.toMatchObject({ status: 400 });
-    await expect(allocate(sender, { receiver_id: 'r-uuid', amount: -5 }))
+    await expect(allocate(sender, { receiver_id: 'receiver-uuid', amount: -5 }))
       .rejects.toMatchObject({ status: 400 });
   });
 });

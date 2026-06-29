@@ -9,7 +9,7 @@
  * - history: returns the user's token transaction history
  */
 jest.mock('../../src/models', () => ({
-  User: { findAll: jest.fn(), findByPk: jest.fn() },
+  User: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
   TokenTransaction: { findAll: jest.fn() },
 }));
 
@@ -81,15 +81,15 @@ describe('list', () => {
 
 describe('getById', () => {
   it('returns the user without password_hash', async () => {
-    User.findByPk.mockResolvedValue(fakeUser);
+    User.findOne.mockResolvedValue(fakeUser);
     const result = await getById('user-uuid');
     expect(result).toBe(fakeUser);
-    const call = User.findByPk.mock.calls[0];
-    expect(call[1].attributes.exclude).toContain('password_hash');
+    const call = User.findOne.mock.calls[0];
+    expect(call[0].attributes.exclude).toContain('password_hash');
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
+    User.findOne.mockResolvedValue(null);
     await expect(getById('ghost-uuid')).rejects.toMatchObject({ status: 404 });
   });
 });
@@ -99,7 +99,7 @@ describe('getById', () => {
 describe('update', () => {
   it('updates allowed fields and strips password_hash from response', async () => {
     const user = { ...fakeUser, save: jest.fn().mockResolvedValue(undefined), toJSON: fakeUser.toJSON };
-    User.findByPk.mockResolvedValue(user);
+    User.findOne.mockResolvedValue(user);
 
     const result = await update('user-uuid', { name: 'Smith', first_name: 'Jane' });
 
@@ -111,7 +111,7 @@ describe('update', () => {
 
   it('ignores sensitive fields (role, token_balance, company_id, password_hash)', async () => {
     const user = { ...fakeUser, save: jest.fn().mockResolvedValue(undefined), toJSON: fakeUser.toJSON };
-    User.findByPk.mockResolvedValue(user);
+    User.findOne.mockResolvedValue(user);
 
     await update('user-uuid', { role: 'admin', token_balance: 9999, password_hash: 'evil' });
 
@@ -121,7 +121,7 @@ describe('update', () => {
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
+    User.findOne.mockResolvedValue(null);
     await expect(update('ghost-uuid', { name: 'X' })).rejects.toMatchObject({ status: 404 });
   });
 });

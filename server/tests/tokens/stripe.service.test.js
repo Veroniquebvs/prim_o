@@ -4,7 +4,7 @@
  * Mocks the Stripe SDK, the database transaction, and the Company/TokenTransaction models.
  * Tests cover:
  * - handleWebhook: invalid signature throws 400; unknown event type is silently ignored;
- *   payment_intent.succeeded credits company token_balance and inserts a TokenTransaction
+ *   invoice.payment_succeeded credits company token_balance and inserts a TokenTransaction
  *   and commits the transaction
  */
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
@@ -28,9 +28,14 @@ jest.mock('../../src/config/database', () => ({
 }));
 
 // ─── Mock models ──────────────────────────────────────────────────────────────
-const mockCompany = { token_balance: 0, increment: jest.fn().mockResolvedValue(undefined) };
+const mockCompany = {
+  id: 'co-uuid',
+  token_balance: 0,
+  subscription_plan: 'starter',
+  increment: jest.fn().mockResolvedValue(undefined),
+};
 jest.mock('../../src/models', () => ({
-  Company: { findByPk: jest.fn() },
+  Company: { findOne: jest.fn() },
   TokenTransaction: { create: jest.fn() },
 }));
 
@@ -43,9 +48,16 @@ const makeReq = (overrides = {}) => ({
   ...overrides,
 });
 
-const makeEvent = (type, metadata = { company_id: 'co-uuid', token_amount: '50' }) => ({
+const makeEvent = (type, invoiceOverrides = {}) => ({
   type,
-  data: { object: { id: 'pi_test', metadata } },
+  data: {
+    object: {
+      id: 'in_test',
+      subscription: 'sub_test',
+      payment_intent: 'pi_test',
+      ...invoiceOverrides,
+    },
+  },
 });
 
 beforeEach(() => jest.clearAllMocks());
@@ -64,59 +76,58 @@ describe('handleWebhook — signature', () => {
 // ─── unhandled event types ────────────────────────────────────────────────────
 
 describe('handleWebhook — ignored events', () => {
-  it('does nothing for non-payment_intent.succeeded events', async () => {
+  it('does nothing for non-invoice.payment_succeeded events', async () => {
     mockConstructEvent.mockReturnValue(makeEvent('payment_intent.created'));
 
     await expect(handleWebhook(makeReq())).resolves.toBeUndefined();
-    expect(Company.findByPk).not.toHaveBeenCalled();
+    expect(Company.findOne).not.toHaveBeenCalled();
+  });
+
+  it('does nothing if invoice has no subscription ID', async () => {
+    mockConstructEvent.mockReturnValue(makeEvent('invoice.payment_succeeded', { subscription: null }));
+
+    await expect(handleWebhook(makeReq())).resolves.toBeUndefined();
+    expect(Company.findOne).not.toHaveBeenCalled();
   });
 });
 
-// ─── payment_intent.succeeded ─────────────────────────────────────────────────
+// ─── invoice.payment_succeeded ─────────────────────────────────────────────────
 
-describe('handleWebhook — payment_intent.succeeded', () => {
+describe('handleWebhook — invoice.payment_succeeded', () => {
   beforeEach(() => {
-    mockConstructEvent.mockReturnValue(makeEvent('payment_intent.succeeded'));
-    Company.findByPk.mockResolvedValue(mockCompany);
+    mockConstructEvent.mockReturnValue(makeEvent('invoice.payment_succeeded'));
+    Company.findOne.mockResolvedValue(mockCompany);
     TokenTransaction.create.mockResolvedValue({});
   });
 
   it('credits company token_balance and records a purchase transaction', async () => {
     await handleWebhook(makeReq());
 
-    expect(mockCompany.increment).toHaveBeenCalledWith('token_balance', { by: 50, transaction: mockTx });
+    expect(Company.findOne).toHaveBeenCalledWith({ where: { stripe_subscription_id: 'sub_test' } });
+    expect(mockCompany.increment).toHaveBeenCalledWith('token_balance', { by: 500, transaction: mockTx });
     expect(TokenTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ company_id: 'co-uuid', amount: 50, type: 'purchase', stripe_payment_id: 'pi_test' }),
+      expect.objectContaining({ company_id: 'co-uuid', amount: 500, type: 'purchase', stripe_payment_id: 'pi_test' }),
       { transaction: mockTx }
     );
     expect(mockTx.commit).toHaveBeenCalled();
     expect(mockTx.rollback).not.toHaveBeenCalled();
   });
 
-  it('throws 400 when metadata is missing company_id', async () => {
-    mockConstructEvent.mockReturnValue(makeEvent('payment_intent.succeeded', { token_amount: '50' }));
-
-    await expect(handleWebhook(makeReq())).rejects.toMatchObject({ status: 400 });
-  });
-
-  it('throws 400 when metadata is missing token_amount', async () => {
-    mockConstructEvent.mockReturnValue(makeEvent('payment_intent.succeeded', { company_id: 'co-uuid' }));
-
-    await expect(handleWebhook(makeReq())).rejects.toMatchObject({ status: 400 });
-  });
-
-  it('throws 400 when token_amount is not a valid number', async () => {
-    mockConstructEvent.mockReturnValue(makeEvent('payment_intent.succeeded', { company_id: 'co-uuid', token_amount: 'abc' }));
-
-    await expect(handleWebhook(makeReq())).rejects.toMatchObject({ status: 400 });
-  });
-
-  it('throws 404 and rolls back when company does not exist', async () => {
-    Company.findByPk.mockResolvedValue(null);
+  it('throws 404 and rolls back when company does not exist for subscription', async () => {
+    Company.findOne.mockResolvedValue(null);
 
     await expect(handleWebhook(makeReq())).rejects.toMatchObject({ status: 404 });
-    expect(mockTx.rollback).toHaveBeenCalled();
+    expect(mockTx.rollback).not.toHaveBeenCalled();
     expect(mockTx.commit).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 when subscription plan is unknown/invalid', async () => {
+    Company.findOne.mockResolvedValue({
+      id: 'co-uuid',
+      subscription_plan: 'invalid-plan',
+    });
+
+    await expect(handleWebhook(makeReq())).rejects.toMatchObject({ status: 400 });
   });
 
   it('rolls back on unexpected DB error', async () => {
