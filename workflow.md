@@ -990,3 +990,10 @@ Intégrer la maquette client (moodboard mobile) pour les pages **Pour Toi (Manag
     - Fichier créé : `manual_qa_protocol.md` décrivant les flux à tester localement via Docker.
     - Fourniture des identifiants locaux de test : `jean.dupont@techcorp.com` (Employeur) et `alice.martin@techcorp.com` (Collaboratrice).
     - Protocole pas à pas pour tester l'abonnement Stripe (carte de test `4242 4242 4242 4242`), l'attribution de jetons et le rachat de bons dans le catalogue (Fnac 20€).
+
+---
+
+## Session du 01 Juillet 2026 — Améliorations de l'Onboarding (Register)
+*   **Password visibility toggle** : Ajout d'un état `showPassword` et d'un bouton d'icône d'œil (SVG de l'œil ouvert/barré) sur le champ de mot de passe de la page [RegisterPage.tsx](file:///c:/Users/Chantal/.antigravity-ide/prim_o/client/src/pages/RegisterPage.tsx) pour s'aligner sur la page de connexion.
+*   **Intégration du logo officiel** : Remplacement du logo textuel `PRIM'O` au sommet de la page [RegisterPage.tsx](file:///c:/Users/Chantal/.antigravity-ide/prim_o/client/src/pages/RegisterPage.tsx) par le fichier image `/assets/logo_1.png` pour harmoniser l'identité visuelle de l'application mobile.
+
