@@ -65,6 +65,12 @@ const handleWebhook = async (req) => {
   const plan = PLANS[company.subscription_plan];
   if (!plan) throw httpError('Unknown plan for subscription', 400);
 
+  // Idempotence — if this payment_intent was already processed, ignore the Stripe retry
+  const existingTx = await TokenTransaction.findOne({
+    where: { stripe_payment_id: invoice.payment_intent, type: 'purchase' },
+  });
+  if (existingTx) return;
+
   const t = await sequelize.transaction();
   try {
     await company.increment('token_balance', { by: plan.tokens, transaction: t });

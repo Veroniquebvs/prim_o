@@ -11,8 +11,8 @@
  * during the QR-code employee registration flow.
  */
 const { Op } = require('sequelize');
-const { Company } = require('../models');
 const sequelize = require('../config/database');
+const { Company } = require('../models');
 
 const httpError = (message, status) => {
   const err = new Error(message);
@@ -28,7 +28,7 @@ const httpError = (message, status) => {
 const create = async ({ name, email, street, zip_code, city, siret }) => {
   if (email) {
     const existing = await Company.findOne({ where: { email } });
-    if (existing) throw httpError('A company with this email already exists', 409);
+    if (existing) throw httpError('Company registration could not be completed', 409);
   }
   return Company.create({
     name,
@@ -108,19 +108,27 @@ const remove = async (id) => {
   const company = await Company.findByPk(id);
   if (!company) throw httpError('Company not found', 404);
 
-  const users = await User.findAll({ where: { company_id: id } });
-  const userIds = users.map((u) => u.id);
+  const t = await sequelize.transaction();
+  try {
+    const users = await User.findAll({ where: { company_id: id }, transaction: t });
+    const userIds = users.map((u) => u.id);
 
-  if (userIds.length > 0) {
-    await Redemption.destroy({ where: { user_id: userIds } });
-    await TokenTransaction.destroy({
-      where: { [Op.or]: [{ sender_id: userIds }, { receiver_id: userIds }] },
-    });
-    await User.destroy({ where: { company_id: id } });
+    if (userIds.length > 0) {
+      await Redemption.destroy({ where: { user_id: userIds }, transaction: t });
+      await TokenTransaction.destroy({
+        where: { [Op.or]: [{ sender_id: userIds }, { receiver_id: userIds }] },
+        transaction: t,
+      });
+      await User.destroy({ where: { company_id: id }, transaction: t });
+    }
+
+    await TokenTransaction.destroy({ where: { company_id: id }, transaction: t });
+    await company.destroy({ transaction: t });
+    await t.commit();
+  } catch (err) {
+    await t.rollback();
+    throw err;
   }
-
-  await TokenTransaction.destroy({ where: { company_id: id } });
-  await company.destroy();
 };
 
 /**
@@ -160,21 +168,23 @@ const grantTokens = async (companyId, amount) => {
 /**
  * Admin-only: Creates a new company and its primary employer account atomically.
  * Verifies email uniqueness for both the company and user.
- * Hashes the employer's password (defaulting to 'Primo2026' if not provided).
+ * Hashes the employer's password with bcrypt (12 rounds). password is required.
  */
 const adminCreate = async ({ name, street, zip_code, city, siret, employer_name, employer_first_name, employer_email, password }) => {
   const { User } = require('../models');
   const bcrypt = require('bcrypt');
   const BCRYPT_ROUNDS = 12;
 
+  const normalizedEmail = employer_email.toLowerCase();
+
   // 1. Check if email is already in use by any user
-  const existingUser = await User.findOne({ where: { email: employer_email } });
+  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
   if (existingUser) {
     throw httpError('Cet email est déjà utilisé par un utilisateur.', 409);
   }
 
   // 2. Check if company email is already in use
-  const existingCompany = await Company.findOne({ where: { email: employer_email } });
+  const existingCompany = await Company.findOne({ where: { email: normalizedEmail } });
   if (existingCompany) {
     throw httpError('Une entreprise avec cet email existe déjà.', 409);
   }
@@ -184,7 +194,7 @@ const adminCreate = async ({ name, street, zip_code, city, siret, employer_name,
     // 3. Create Company
     const company = await Company.create({
       name,
-      email: employer_email,
+      email: normalizedEmail,
       street,
       zip_code,
       city,
@@ -199,7 +209,7 @@ const adminCreate = async ({ name, street, zip_code, city, siret, employer_name,
     const employer = await User.create({
       name: employer_name,
       first_name: employer_first_name,
-      email: employer_email,
+      email: normalizedEmail,
       password_hash,
       role: 'employer',
       company_id: company.id,

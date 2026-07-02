@@ -51,6 +51,7 @@ docker-compose.override.yml
 
 # ─── Generated reports ───────────────────────────────────────
 practical-test.md
+secureme_scan_results/
 
 # ─── Optional: Ignore specific files or directories ───────────────
 pratical-test.md

@@ -22,7 +22,7 @@ const allocate = async (req, res, next) => {
 /** Returns the token balance for the user identified by req.params.userId. */
 const getBalance = async (req, res, next) => {
   try {
-    const data = await tokenService.getBalance(req.params.userId);
+    const data = await tokenService.getBalance(req.params.userId, req.user);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -58,7 +58,7 @@ const listTransactions = async (req, res, next) => {
 /** Returns a single transaction record by its UUID. */
 const getTransaction = async (req, res, next) => {
   try {
-    const data = await tokenService.getTransaction(req.params.id);
+    const data = await tokenService.getTransaction(req.params.id, req.user);
     res.json({ success: true, data });
   } catch (err) {
     next(err);

@@ -20,7 +20,13 @@ const errorHandler = (err, req, res, _next) => {
     console.error(`[${status}] ${message}`, err.stack); // eslint-disable-line no-console
   }
 
-  res.status(status).json({ error: message, code: status });
+  // Never expose internal error details to the client in production
+  const clientMessage =
+    status < 500 || process.env.NODE_ENV !== 'production'
+      ? message
+      : 'Internal server error';
+
+  res.status(status).json({ error: clientMessage, code: status });
 };
 
 module.exports = { errorHandler };

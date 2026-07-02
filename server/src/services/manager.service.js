@@ -55,7 +55,8 @@ const getTeam = async (managerId) => {
  * Returns the created employee object without the password hash.
  */
 const createEmployee = async (manager, { email, first_name, name, password, entry_date }) => {
-  const existing = await User.findOne({ where: { email } });
+  const normalizedEmail = email.toLowerCase();
+  const existing = await User.findOne({ where: { email: normalizedEmail } });
   if (existing) throw httpError('Email already in use', 409);
 
   const team = await Team.findOne({
@@ -69,7 +70,7 @@ const createEmployee = async (manager, { email, first_name, name, password, entr
   try {
     const employee = await User.create(
       {
-        email,
+        email: normalizedEmail,
         first_name,
         name,
         password_hash,
