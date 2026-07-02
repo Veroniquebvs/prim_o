@@ -1,4 +1,4 @@
-# PRIM'O — MVP Development & Sprint Documentation
+# PRIM'O — MVP Development & Execution
 
 ## Project Overview
 
@@ -6,28 +6,28 @@
 Employers allocate tokens to employees instantly upon observed performance.  
 Employees redeem tokens for exclusive vouchers (promo codes) via an integrated marketplace.
 
-**Team:** Loïc Cerqueira (Tech Lead / Security) · Véronique Beauvais (UX / Data)  
-**Stage 4 period:** May 26 – July 2, 2026  
-**Repository:** [github.com/Veroniquebvs/prim_o](https://github.com/Veroniquebvs/prim_o)
+**Team :** Loïc Cerqueira (Tech Lead / Security) · Véronique Beauvais (UX / Data)  
+**Stage 4 period :** May 26 – July 2, 2026  
+**Repository :** [github.com/Veroniquebvs/prim_o](https://github.com/Veroniquebvs/prim_o)
 
 ---
 
 ## MVP Goal
 
-The goal of this MVP is to:
+The goal of this MVP is to :
 - Deliver a fully functional platform allowing employers to purchase tokens via Stripe and instantly allocate them to employees.
 - Provide employees with a mobile-friendly interface to view their balance, browse the marketplace, and redeem vouchers.
-- Introduce a **Manager** tier (new role added during development) so team leads can distribute tokens to their collaborators independently.
+- Introduce the role of the **Manager** (new role added during development) so team leads can distribute tokens to their collaborators independently.
 - Establish a secure, tested architecture ready for a pilot deployment with real SME customers.
 
 ---
 
-## v0. Sprint Planning
+## 0. Sprint Planning
 
 ### Objective
 Structure development into four focused sprints, each with a clear scope and deliverables, to cover the full stack in five weeks.
 
-### Methodology: MoSCoW (inherited from Stage 3)
+### Methodology : MoSCoW (inherited from Stage 3)
 
 | Priority | Description |
 |---|---|
@@ -38,26 +38,35 @@ Structure development into four focused sprints, each with a clear scope and del
 
 ### Sprint Structure
 
-- **Duration:** ~1–2 weeks per sprint.
-- **Tools:** GitHub Projects for issue tracking, GitHub Flow for SCM, Postman for API validation.
-- **Roles:**
-  - **Loïc:** Backend architecture, API, security, DevOps (Render deployment).
-  - **Véronique:** Frontend (React/TypeScript), UX, Vercel deployment.
-- **Merge policy:** All work goes through `feature/*` or `dev` branches, reviewed via PR before merging into `main`. No direct pushes to `main`.
+- **Duration :** ~1–2 weeks per sprint.
+- **Tools :** GitHub Projects for issue tracking, GitHub Flow for SCM, Postman for API validation.
+- **Roles :** 
+  - **Loïc :** Backend architecture, API, security, DevOps (Render deployment), Vercel deployment, UX.
+  - **Véronique :** Backend, Database, Frontend (React/TypeScript), UX.
+- **Merge policy :** All work goes through `feature/*` or `dev` branches, reviewed via PR before merging into `main`. No direct pushes to `main`.
+
+### Sprint Planning (MVP Execution)
+
+| Sprint | Period | Objective (Focus) | Priorities (MoSCoW) | Responsibility |
+| :--- | :--- | :--- | :--- | :--- |
+| **S1** | 05/11 - 05/25 | **Design & Doc** | Must Have: Architecture, User Stories | Loïc & Véronique |
+| **S2** | 05/26 - 06/15 | **Backend Development** | Must Have: API, Database | Loïc & Véronique |
+| **S3** | 06/16 - 06/26 | **Testing & Quality** | Must Have: Jest, Supertest, Unit Tests | Loïc & Véronique |
+| **S4** | 06/27 - 07/15 | **MVP Finalization** | Must Have: Polish, UI/UX, Deployment | Loïc & Véronique |
 
 ---
 
-## 1. Sprint 1 — Foundation (May 26 – June 7, 2026)
+## 1. Execute Development Tasks
 
 ### Goal
-Stand up the project skeleton: Express server, PostgreSQL models, JWT authentication, and core middleware.
+Stand up the project skeleton : Express server, PostgreSQL models, JWT authentication, and core middleware.
 
 ### Completed Tasks
 
 **Backend**
 - Initialized Node.js project with Express.js, ESLint, and Prettier.
 - Configured PostgreSQL connection via Sequelize ORM.
-- Implemented all database models: `User`, `Company`, `TokenTransaction`, `Voucher`, `Redemption`, `Team`, `TeamMember`, `ScheduledAllocation`, `Favorite`.
+- Implemented all database models : `User`, `Company`, `TokenTransaction`, `Voucher`, `Redemption`, `Team`, `TeamMember`, `ScheduledAllocation`, `Favorite`.
 - Scaffolded all route/controller/service layers for `auth`, `users`, `tokens`, `marketplace`, `companies`.
 - Implemented `verifyToken` JWT middleware with unit tests.
 - Implemented `roleGuard` middleware (employer / employee / admin / manager).
@@ -76,41 +85,41 @@ A running Express server connected to PostgreSQL, with auth working end-to-end (
 ## 2. Sprint 2 — Core Services & API (June 8 – June 18, 2026)
 
 ### Goal
-Implement the full backend business logic: token system, Stripe integration, and marketplace.
+Implement the full backend business logic : token system, Stripe integration, and marketplace.
 
 ### Completed Tasks
 
 **Token System**
 - Implemented `TokenService` with atomic allocation logic (PostgreSQL `BEGIN / COMMIT / ROLLBACK`).
-- `POST /api/tokens/allocate` — debits company balance, credits employee balance, inserts `TOKEN_TRANSACTIONS` row in a single transaction.
-- `GET /api/tokens/balance/:userId` — server-side balance recompute.
+- `POST /api/tokens/allocate` : debits company balance, credits employee balance, inserts `TOKEN_TRANSACTIONS` row in a single transaction.
+- `GET /api/tokens/balance/:userId` : server-side balance recompute.
 - `GET /api/tokens/transactions` and `GET /api/tokens/transactions/:id`.
 
 **Stripe Integration**
-- `POST /api/tokens/purchase` — creates a `PaymentIntent` server-side, returns `client_secret`.
-- `POST /api/tokens/webhook` — verifies Stripe signature with `stripe.webhooks.constructEvent()`, credits `companies.token_balance` on `payment_intent.succeeded`.
-- Raw card data never touches the backend — `Stripe.js` handles it client-side.
+- `POST /api/tokens/purchase` : creates a `PaymentIntent` server-side, returns `client_secret`.
+- `POST /api/tokens/webhook` : verifies Stripe signature with `stripe.webhooks.constructEvent()`, credits `companies.token_balance` on `payment_intent.succeeded`.
+- Raw card data never touches the backend : `Stripe.js` handles it client-side.
 
 **Marketplace**
 - Full voucher CRUD for admins (`POST`, `PUT`, `DELETE /api/marketplace/items`).
 - `GET /api/marketplace/items` with category and cost filters.
-- `POST /api/marketplace/redeem` — atomic redemption: deducts employee tokens, inserts `redemptions` row, returns promo code.
-- `GET /api/marketplace/orders` — employee redemption history.
+- `POST /api/marketplace/redeem`  atomic redemption : deducts employee tokens, inserts `redemptions` row, returns promo code.
+- `GET /api/marketplace/orders`  employee redemption history.
 
 **Companies**
-- `GET /api/companies` — list companies (admin).
-- `GET /api/companies/:id` — company detail with associated employees.
-- `POST /api/companies` — create company.
+- `GET /api/companies` : list companies (admin).
+- `GET /api/companies/:id` : company detail with associated employees.
+- `POST /api/companies` : create company.
 
 **Extras added beyond original spec**
-- `POST /api/upload` — image upload endpoint for voucher artwork.
-- `GET /api/favorites` · `POST /api/favorites` · `DELETE /api/favorites/:id` — employee favorites system for vouchers.
-- `GET/POST/PUT/DELETE /api/scheduled-allocations` — recurring token allocations (cron-driven, monthly/annual, per-employee or company-wide with exclusion list).
+- `POST /api/upload` : image upload endpoint for voucher artwork.
+- `GET /api/favorites` · `POST /api/favorites` · `DELETE /api/favorites/:id` : employee favorites system for vouchers.
+- `GET/POST/PUT/DELETE /api/scheduled-allocations` : recurring token allocations (cron-driven, monthly/annual, per-employee or company-wide with exclusion list).
 
 **Frontend scaffold**
 - Initialized React + TypeScript project (Vite).
 - Implemented `AuthContext` with JWT persistence.
-- Set up routing: public pages + `ProtectedRoute` with role-based redirect.
+- Set up routing : public pages + `ProtectedRoute` with role-based redirect.
 - Created `LoginPage`, `RegisterPage`, `HomePage`.
 - Added `ErrorBoundary` component.
 
@@ -128,48 +137,48 @@ Build all role-specific UI dashboards and introduce the Manager tier.
 
 **Employer Dashboard**
 - Company budget stat card + team size counter.
-- `TransferForm` — select employee, input amount, optional reason (via `MotifSelectionModal`), confirm allocation.
-- `PrintableQRCode` — generates a QR code poster for employee self-onboarding.
+- `TransferForm` : select employee, input amount, optional reason (via `MotifSelectionModal`), confirm allocation.
+- `PrintableQRCode` : generates a QR code poster for employee self-onboarding.
 - Pending employee validation (approve entry date before activating account).
-- Scheduled allocation manager: create/edit/toggle/delete recurring rules with modal form.
+- Scheduled allocation manager : create/edit/toggle/delete recurring rules with modal form.
 - Real-time activity feed toggle (`feedback_enabled` flag per company).
 - Manager list table.
 
 **Manager Role (new role, not in original Stage 3 spec)**
 - New `role: 'manager'` added to `USERS` table.
 - `Team` and `TeamMember` models for grouping employees under a manager.
-- `POST /api/manager/promote` — employer promotes an employee to manager and creates their team.
-- Manager-specific `PourToi` dashboard: lists collaborators, allocates tokens to them.
-- `CollaborateurDetail` page: read-only view of collaborator profile, balance history, stats.
+- `POST /api/manager/promote` : employer promotes an employee to manager and creates their team.
+- Manager-specific `PourToi` dashboard : lists collaborators, allocates tokens to them.
+- `CollaborateurDetail` page : read-only view of collaborator profile, balance history, stats.
 
 **Employee Pages**
-- `Catalogue` — marketplace with `CategoryFilter`, carousel rows by category, favorites toggle.
-- `VoucherDetail` — full voucher page with redemption CTA and promo code display.
-- `CategorieDetail` — filtered view per category.
-- `Historique` — color-coded token transaction history (received / spent).
-- `Profil` — personal info, avatar picker (`AvatarPickerModal`), account settings.
-- `Parameters` — notification preferences, subscription info, FAQ, CGU links.
-- `Panier` — cart managed by `useCart` hook with local persistence.
-- `Avis` — review/feedback page.
+- `Catalogue` : marketplace with `CategoryFilter`, carousel rows by category, favorites toggle.
+- `VoucherDetail` : full voucher page with redemption CTA and promo code display.
+- `CategorieDetail` : filtered view per category.
+- `Historique` : color-coded token transaction history (received / spent).
+- `Profil` : personal info, avatar picker (`AvatarPickerModal`), account settings.
+- `Parameters` : notification preferences, subscription info, FAQ, CGU links.
+- `Panier` : cart managed by `useCart` hook with local persistence.
+- `Avis` : review/feedback page.
 
 **Admin Pages**
-- `AdminDashboard` — company list with token budgets.
-- `AdminCompanyDetail` — per-company drill-down with colored token balance indicator.
-- `AdminBons` — voucher catalog management.
-- `AdminVoucherDetail` — edit/delete individual voucher.
-- `AdminRachats` — redemption log.
-- `AdminStats` — global platform statistics.
-- `AdminStatMotifs`, `AdminStatRachats`, `AdminTauxRachat` — analytics sub-pages.
+- `AdminDashboard` : company list with token budgets.
+- `AdminCompanyDetail` : per-company drill-down with colored token balance indicator.
+- `AdminBons` : voucher catalog management.
+- `AdminVoucherDetail` : edit/delete individual voucher.
+- `AdminRachats` : redemption log.
+- `AdminStats` : global platform statistics.
+- `AdminStatMotifs`, `AdminStatRachats`, `AdminTauxRachat` : analytics sub-pages.
 
 **Layout & Navigation**
-- `Layout` component — role-aware: renders `TotalTokenBalance` for employers, `TokenBalance` for employees/managers, wraps every protected page.
-- `BottomNav` + `TopNav` — persistent navigation with swipe-to-go-back gesture support.
-- `SplashScreen` — animated intro on first load.
+- `Layout` component — role-aware : renders `TotalTokenBalance` for employers, `TokenBalance` for employees/managers, wraps every protected page.
+- `BottomNav` and `TopNav` : persistent navigation with swipe-to-go-back gesture support.
+- `SplashScreen` : animated intro on first load.
 
 **UI Components added**
-- `AvatarPickerModal` — 10-avatar selection palette, persisted via `PUT /api/users/:id`.
-- `CompanySelectionModal`, `TargetSelectionModal`, `UserSelectionModal` — reusable selection modals.
-- `CarouselRow` — horizontal scroll row for voucher categories.
+- `AvatarPickerModal` : 10-avatar selection palette, persisted via `PUT /api/users/:id`.
+- `CompanySelectionModal`, `TargetSelectionModal`, `UserSelectionModal` : reusable selection modals.
+- `CarouselRow` : horizontal scroll row for voucher categories.
 
 ### Deliverable
 Full UI for all three roles (employer, employee, admin) plus the new manager role. Mobile-first, responsive layout with swipe navigation.
@@ -184,23 +193,23 @@ Write comprehensive test suites, fix identified bugs, and ship production-ready 
 ### Completed Tasks
 
 **Test suites written**
-- `auth.service.test.js` — unit tests for `AuthService` (register, login, JWT generation, bcrypt comparison).
-- `auth.integration.test.js` — full route coverage: `POST /register`, `POST /login`, `GET /profile`, `POST /refresh`.
-- `token.service.test.js` — unit tests for `TokenService` (allocate with insufficient balance → 402, successful allocation → commit, intermediate failure → rollback, `getBalance`, `listTransactions`).
-- `tokens.integration.test.js` — route-level tests for all `/api/tokens/*` endpoints.
-- `stripe.service.test.js` — unit tests for `StripeService` (PaymentIntent creation, webhook verification).
-- `marketplace.service.test.js` — unit tests for `MarketplaceService` (list items, redeem with sufficient/insufficient balance, atomic rollback on failure).
-- `marketplace.integration.test.js` — end-to-end route tests for `/api/marketplace/*`.
-- `users.service.test.js` — unit tests for `UsersService`.
-- `users.integration.test.js` — route coverage for `/api/users/*`.
-- `verifyToken.test.js` — middleware tests (valid token, expired token, missing header).
-- `roleGuard.test.js` — middleware tests (correct role passes, wrong role → 403, no user → 401).
+- `auth.service.test.js` : unit tests for `AuthService` (register, login, JWT generation, bcrypt comparison).
+- `auth.integration.test.js` full route coverage : `POST /register`, `POST /login`, `GET /profile`, `POST /refresh`.
+- `token.service.test.js` unit tests for `TokenService` (allocate with insufficient balance → 402, successful allocation → commit, intermediate failure → rollback, `getBalance`, `listTransactions`).
+- `tokens.integration.test.js` route-level tests for all `/api/tokens/*` endpoints.
+- `stripe.service.test.js` unit tests for `StripeService` (PaymentIntent creation, webhook verification).
+- `marketplace.service.test.js` unit tests for `MarketplaceService` (list items, redeem with sufficient/insufficient balance, atomic rollback on failure).
+- `marketplace.integration.test.js` end-to-end route tests for `/api/marketplace/*`.
+- `users.service.test.js` unit tests for `UsersService`.
+- `users.integration.test.js` route coverage for `/api/users/*`.
+- `verifyToken.test.js` middleware tests (valid token, expired token, missing header).
+- `roleGuard.test.js` middleware tests (correct role passes, wrong role → 403, no user → 401).
 
 **Bug fixes**
 - Fixed CORS configuration preventing frontend calls from Vercel domain.
-- Fixed layout structure — duplicate/missing closing tags in `Layout.tsx` and `PourToi.tsx`.
+- Fixed layout structure, duplicate/missing closing tags in `Layout.tsx` and `PourToi.tsx`.
 - Fixed top-nav link visibility on white-background pages.
-- Fixed `scheduled.service` crash when the API returns an error — added error boundary around fetch.
+- Fixed `scheduled.service` crash when the API returns an error ; added error boundary around fetch.
 - Fixed voucher and transaction ID mismatches in seed scripts.
 - Fixed avatar index resolution returning `undefined` on fresh profiles.
 - Disabled verbose Sequelize logging during schema sync in development.
@@ -208,7 +217,7 @@ Write comprehensive test suites, fix identified bugs, and ship production-ready 
 **Polish**
 - `formatTokens` utility — consistent token number formatting across all pages (e.g., `1 250 ₮`).
 - Logo image replaced with styled text fallback on `HomePage` (image load failure recovery).
-- Admin company detail page: colored token balance backgrounds (green / orange / red tiers).
+- Admin company detail page : colored token balance backgrounds (green / orange / red tiers).
 - `Layout` component made fully responsive with role-based token display switching.
 
 ### Deliverable
@@ -220,54 +229,54 @@ Write comprehensive test suites, fix identified bugs, and ship production-ready 
 
 ### Sprint 1 Review (June 7, 2026)
 
-**Demonstrated:**
+**Demonstrated :**
 - Express server running and responding to `/health`.
 - `POST /api/auth/register` → `POST /api/auth/login` → protected `GET /api/auth/profile` flow working end-to-end with JWT.
 - All Sequelize models in sync with the PostgreSQL schema.
 - `verifyToken` middleware blocking unauthenticated requests.
 
-**Acceptance:** Backend skeleton validated. Database schema locked and matches Stage 3 specification.
+**Acceptance :** Backend skeleton validated. Database schema locked and matches Stage 3 specification.
 
 ---
 
 ### Sprint 2 Review (June 18, 2026)
 
-**Demonstrated:**
-- Stripe flow: employer selects amount → `PaymentIntent` created → Stripe.js form → payment confirmed → webhook fires → `companies.token_balance` incremented.
-- Token allocation: employer allocates 50 tokens to an employee → company balance decremented, employee balance incremented, `TOKEN_TRANSACTIONS` row inserted — all in a single atomic transaction.
-- Marketplace: employee browses vouchers, redeems one → tokens deducted, promo code returned, `redemptions` row inserted.
+**Demonstrated :**
+- Stripe flow : employer selects amount → `PaymentIntent` created → Stripe.js form → payment confirmed → webhook fires → `companies.token_balance` incremented.
+- Token allocation : employer allocates 50 tokens to an employee → company balance decremented, employee balance incremented, `TOKEN_TRANSACTIONS` row inserted ; all in a single atomic transaction.
+- Marketplace : employee browses vouchers, redeems one → tokens deducted, promo code returned, `redemptions` row inserted.
 - Stripe test card `4242 4242 4242 4242` validated.
 - Favorites and scheduled allocation endpoints working.
 
-**Acceptance:** All Must Have backend features delivered. Stripe webhook signature verification confirmed. Atomic transaction rollback on failure verified manually.
+**Acceptance :** All Must Have backend features delivered. Stripe webhook signature verification confirmed. Atomic transaction rollback on failure verified manually.
 
 ---
 
 ### Sprint 3 Review (June 25, 2026)
 
-**Demonstrated:**
+**Demonstrated :**
 - Employer logs in → sees dashboard with company budget and employee list → allocates tokens via `TransferForm` modal → employee instantly sees updated balance.
 - Employee logs in → browses marketplace → filters by category → opens `VoucherDetail` → redeems voucher → promo code displayed.
-- Manager role: employer promotes employee → manager logs in → sees their team via `PourToi` → allocates tokens to a collaborator.
+- Manager role : employer promotes employee → manager logs in → sees their team via `PourToi` → allocates tokens to a collaborator.
 - QR code poster generated and printable.
 - Scheduled allocation rule created (monthly, all employees, 10 tokens) → triggers automatically via cron.
-- Admin dashboard: company list, per-company token drill-down, voucher CRUD.
-- Avatar selection: employee picks avatar → persisted across sessions.
+- Admin dashboard : company list, per-company token drill-down, voucher CRUD.
+- Avatar selection : employee picks avatar → persisted across sessions.
 
-**Acceptance:** Full user journey demonstrated for all four roles (admin, employer, manager, employee). Mobile-first layout validated on Chrome DevTools (375px iPhone viewport). Swipe-to-go-back gesture functional.
+**Acceptance :** Full user journey demonstrated for all four roles (admin, employer, manager, employee). Mobile-first layout validated on Chrome DevTools (375px iPhone viewport). Swipe-to-go-back gesture functional.
 
 ---
 
 ### Sprint 4 Review (July 2, 2026)
 
-**Demonstrated:**
-- `npm test` runs all 11 test suites — all passing in CI.
-- Postman collection: all API routes validated with correct status codes and response shapes.
-- Production URLs live: Vercel frontend + Render backend communicating correctly.
+**Demonstrated :**
+- `npm test` runs all 11 test suites ; all passing in CI.
+- Postman collection : all API routes validated with correct status codes and response shapes.
+- Production URLs live : Vercel frontend + Render backend communicating correctly.
 - `formatTokens` utility rendering consistent token display across all pages.
-- Bug regression: all fixed issues confirmed resolved on production build.
+- Bug regression : all fixed issues confirmed resolved on production build.
 
-**Acceptance:** Definition of Done met — CI green, peer review approved, no ESLint errors, Stripe-touching flows manually tested.
+**Acceptance :** Definition of Done met — CI green, peer review approved, no ESLint errors, Stripe-touching flows manually tested.
 
 ---
 
@@ -308,14 +317,14 @@ Write comprehensive test suites, fix identified bugs, and ship production-ready 
 | Topic | Notes |
 |---|---|
 | ✅ What went well | Comprehensive test suites caught two edge cases in `TokenService` (insufficient balance returning the wrong HTTP code, rollback not being called on model-level failures) before they reached production. |
-| ⚠️ What didn't | Test setup time was higher than expected because models needed to be fully mocked — the mocking boilerplate is verbose. Avatar index resolution bug only appeared on fresh profiles with no saved avatar; it was not caught by any test because the tests always seeded a valid avatar index. |
+| ⚠️ What didn't | Test setup time was higher than expected because models needed to be fully mocked — the mocking boilerplate is verbose. Avatar index resolution bug only appeared on fresh profiles with no saved avatar ; it was not caught by any test because the tests always seeded a valid avatar index. |
 | 🔧 What to improve | Write a test fixture helper to reduce mocking boilerplate. Add edge-case tests for zero-state profiles (new user, empty balance, no redemptions). |
 
 ---
 
 ## 5. Source Repository
 
-**URL:** [https://github.com/Veroniquebvs/prim_o](https://github.com/Veroniquebvs/prim_o)
+**URL :** [https://github.com/Veroniquebvs/prim_o](https://github.com/Veroniquebvs/prim_o)
 
 ### Branching Strategy — GitHub Flow
 
@@ -341,8 +350,8 @@ Write comprehensive test suites, fix identified bugs, and ship production-ready 
 | #31 | feature/improve_front | Responsive layout, swipe nav | Merged |
 | #32 | dev | Admin polish, avatar management | Merged |
 
-**Total commits:** 241  
-**Commit format:** `type(scope): description` — `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
+**Total commits :** 241  
+**Commit format :** `type(scope): description` — `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
 
 ---
 
@@ -459,9 +468,9 @@ Browser / Mobile
 
 ### Environment Variables (production)
 
-All secrets injected at runtime from platform environment variable stores — never committed to the repository.
+All secrets injected at runtime from platform environment variable stores ; never committed to the repository.
 
-**Render (backend):**
+**Render (backend) :**
 ```
 PORT
 NODE_ENV=production
@@ -475,7 +484,7 @@ STRIPE_WEBHOOK_SECRET
 FRONTEND_URL
 ```
 
-**Vercel (frontend):**
+**Vercel (frontend) :**
 ```
 VITE_API_URL
 VITE_STRIPE_PUBLIC_KEY
