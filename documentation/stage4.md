@@ -17,7 +17,7 @@ Employees redeem tokens for exclusive vouchers (promo codes) via an integrated m
 The goal of this MVP is to :
 - Deliver a fully functional platform allowing employers to purchase tokens via Stripe and instantly allocate them to employees.
 - Provide employees with a mobile-friendly interface to view their balance, browse the marketplace, and redeem vouchers.
-- Introduce a **Manager** tier (new role added during development) so team leads can distribute tokens to their collaborators independently.
+- Introduce the role of the **Manager** (new role added during development) so team leads can distribute tokens to their collaborators independently.
 - Establish a secure, tested architecture ready for a pilot deployment with real SME customers.
 
 ---
