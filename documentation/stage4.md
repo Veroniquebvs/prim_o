@@ -1,4 +1,4 @@
-# PRIM'O — MVP Development & Sprint Documentation
+# PRIM'O — MVP Development & Execution
 
 ## Project Overview
 
@@ -27,7 +27,7 @@ The goal of this MVP is to :
 ### Objective
 Structure development into four focused sprints, each with a clear scope and deliverables, to cover the full stack in five weeks.
 
-### Methodology: MoSCoW (inherited from Stage 3)
+### Methodology : MoSCoW (inherited from Stage 3)
 
 | Priority | Description |
 |---|---|
@@ -49,14 +49,14 @@ Structure development into four focused sprints, each with a clear scope and del
 
 | Sprint | Period | Objective (Focus) | Priorities (MoSCoW) | Responsibility |
 | :--- | :--- | :--- | :--- | :--- |
-| **S1** | 05/11 - 05/25 | **Design & Doc** | Must Have: Architecture, User Stories | Loïc & Véro |
-| **S2** | 05/26 - 06/15 | **Backend Development** | Must Have: API, Database | Loïc & Véro |
-| **S3** | 06/16 - 06/26 | **Testing & Quality** | Must Have: Jest, Supertest, Unit Tests | Loïc & Véro |
-| **S4** | 06/27 - 07/15 | **MVP Finalization** | Must Have: Polish, UI/UX, Deployment | Loïc & Véro |
+| **S1** | 05/11 - 05/25 | **Design & Doc** | Must Have: Architecture, User Stories | Loïc & Véronique |
+| **S2** | 05/26 - 06/15 | **Backend Development** | Must Have: API, Database | Loïc & Véronique |
+| **S3** | 06/16 - 06/26 | **Testing & Quality** | Must Have: Jest, Supertest, Unit Tests | Loïc & Véronique |
+| **S4** | 06/27 - 07/15 | **MVP Finalization** | Must Have: Polish, UI/UX, Deployment | Loïc & Véronique |
 
 ---
 
-## 1. Sprint 1 — Foundation (May 26 – June 7, 2026)
+## 1. Execute Development Tasks
 
 ### Goal
 Stand up the project skeleton : Express server, PostgreSQL models, JWT authentication, and core middleware.
