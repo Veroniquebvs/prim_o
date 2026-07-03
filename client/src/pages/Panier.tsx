@@ -12,7 +12,7 @@
  * On successful redemption the promo code is displayed in-page, the item is removed from the
  * cart, and the user/company balance is refreshed via AuthContext.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
 import { useCart } from '../hooks/useCart';
@@ -42,18 +42,29 @@ export default function Panier() {
   // still in the cart. Fetch those individually so they show as "Indisponible" instead of
   // silently vanishing (which left the cart badge out of sync with an apparently-empty page).
   // A genuinely deleted voucher (404) is pruned from the cart instead.
+  const fetchingIds = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const knownIds = new Set([...allVouchers, ...extraVouchers].map((v) => v.id));
-    const missing = saved.map((s) => s.id).filter((id) => !knownIds.has(id));
+    const missing = saved.map((s) => s.id).filter((id) => !knownIds.has(id) && !fetchingIds.current.has(id));
     missing.forEach((id) => {
+      fetchingIds.current.add(id);
       marketplaceService.getItemById(id)
-        .then((v) => setExtraVouchers((prev) => [...prev, v]))
-        .catch(() => remove(id));
+        .then((v) => setExtraVouchers((prev) => (prev.some((p) => p.id === id) ? prev : [...prev, v])))
+        .catch(() => remove(id))
+        .finally(() => fetchingIds.current.delete(id));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved, allVouchers]);
 
-  const cartVouchers = [...allVouchers, ...extraVouchers].filter((v) => isInCart(v.id));
+  // allVouchers is the authoritative/fresh source; extraVouchers only fills in vouchers
+  // missing from it, so dedupe by id with allVouchers taking priority.
+  const cartVouchers = useMemo(() => {
+    const byId = new Map<string, Voucher>();
+    for (const v of extraVouchers) byId.set(v.id, v);
+    for (const v of allVouchers) byId.set(v.id, v);
+    return [...byId.values()].filter((v) => isInCart(v.id));
+  }, [allVouchers, extraVouchers, isInCart]);
   const weeklyOffers = allVouchers.filter((v) => v.available && v.is_weekly);
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
