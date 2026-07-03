@@ -1,8 +1,29 @@
 # PRIM'O — MVP Development & Execution
 
 <p align="center">
-  <img src="../images/logo_2.png" alt="PRIM'O Logo" width="180" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../images/logo_4.png">
+    <source media="(prefers-color-scheme: light)" srcset="../images/logo_2.png">
+    <img alt="PRIM'O Logo" src="../images/logo_2.png" width="180">
+  </picture>
 </p>
+
+## Table of Contents
+- [Project Overview](#project-overview)
+- [MVP Goal](#mvp-goal)
+- [0. Sprint Planning](#0-sprint-planning)
+- [1. Execute Development Tasks](#1-execute-development-tasks)
+- [2. Monitor Progress and Adjust](#2-monitor-progress-and-adjust)
+- [3. Conduct Sprint Reviews and Retrospectives](#3-conduct-sprint-reviews-and-retrospectives)
+- [4. Final Integration and QA Testing](#4-final-integration-and-qa-testing)
+- [5. Bug Tracking](#5-bug-tracking)
+- [6. Testing Evidence and Results](#6-testing-evidence-and-results)
+- [7. Production Environment](#7-production-environment)
+- [MVP Delivery Summary](#mvp-delivery-summary)
+- [What's Next](#whats-next)
+- [Acknowledgements](#acknowledgements)
+
+---
 
 ## Project Overview
 
@@ -165,13 +186,7 @@ To ensure all components work together seamlessly and meet quality standards.
 
 ---
 
-## 5. Source Repository
-
-**URL :** [https://github.com/Veroniquebvs/prim_o](https://github.com/Veroniquebvs/prim_o)
-
----
-
-## 6. Bug Tracking
+## 5. Bug Tracking
 
 Bugs were identified through manual QA sessions, code review comments, and CI failures. Each was fixed in a dedicated `fix:` commit and merged via PR.
 
@@ -188,7 +203,7 @@ Bugs were identified through manual QA sessions, code review comments, and CI fa
 
 ---
 
-## 7. Testing Evidence and Results
+## 6. Testing Evidence and Results
 
 ### Test Stack
 
@@ -246,9 +261,11 @@ Critical flows tested against the Stripe test environment:
 | Employee redeems with insufficient balance | — | ✅ 403 returned, no DB change |
 | Stripe webhook with invalid signature | — | ✅ 400 returned, no tokens credited |
 
+For a detailed description and results of all 141 backend tests, refer to the [Full Test Execution Report](../rapport-tests-2026-06-26.md).
+
 ---
 
-## 8. Production Environment
+## 7. Production Environment
 
 ### Architecture
 
