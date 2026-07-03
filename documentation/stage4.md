@@ -1,5 +1,9 @@
 # PRIM'O — MVP Development & Execution
 
+<p align="center">
+  <img src="../images/logo_2.png" alt="PRIM'O Logo" width="180" />
+</p>
+
 ## Project Overview
 
 **PRIM'O** is a B2B2C SaaS platform enabling real-time meritocratic recognition in SMEs.  
