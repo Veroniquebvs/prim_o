@@ -1,4 +1,4 @@
-# <picture><source media="(prefers-color-scheme: dark)" srcset="../images/logo_4.png"><source media="(prefers-color-scheme: light)" srcset="../images/logo_2.png"><img alt="PRIM'O" src="../images/logo_2.png" height="36" style="vertical-align: middle;"></picture> ## MVP Development & Execution
+# <picture><source media="(prefers-color-scheme: dark)" srcset="../images/logo_4.png"><source media="(prefers-color-scheme: light)" srcset="../images/logo_2.png"><img alt="PRIM'O" src="../images/logo_2.png" height="36" style="vertical-align: middle;"></picture>  MVP Development & Execution
 
 
 ## Table of Contents
