@@ -15,6 +15,10 @@ import { userService } from '../../services/user.service';
 import type { TokenTransaction } from '../../types';
 import { fmtShort } from '../../utils/date';
 import { resolveAvatarIndex } from '../../utils/avatar';
+import { formatTokens } from '../../utils/tokens';
+import { Pager, paginate } from '../../components/Pager';
+
+const HISTORY_PAGE_SIZE = 10;
 
 export default function Profil() {
   const { user, company, refreshUser } = useAuth();
@@ -22,6 +26,7 @@ export default function Profil() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [history, setHistory] = useState<TokenTransaction[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
 
   useEffect(() => {
     if (user?.id) {
@@ -129,34 +134,40 @@ export default function Profil() {
           </h2>
           {history.length === 0 ? (
             <p className="empty-state">Aucune transaction.</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Montant</th>
-                    <th>Motif</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((tx) => (
-                    <tr key={tx.id}>
-                      <td>
-                        <span className="token-badge">{tx.amount}</span>
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                        {tx.reason}
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                        {fmtShort(tx.createdAt || tx.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          ) : (() => {
+            const { slice, totalPages, safePage } = paginate(history, historyPage, HISTORY_PAGE_SIZE);
+            return (
+              <>
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Montant</th>
+                        <th>Motif</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slice.map((tx) => (
+                        <tr key={tx.id}>
+                          <td>
+                            <span className="token-badge">{formatTokens(tx.amount)}</span>
+                          </td>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                            {tx.reason}
+                          </td>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                            {fmtShort(tx.createdAt || tx.created_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pager page={safePage} totalPages={totalPages} onChange={setHistoryPage} />
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>

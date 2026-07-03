@@ -103,7 +103,7 @@ export default function Historique() {
           );
         });
 
-        const sum = lastMonthAllocations.reduce((acc, tx) => acc + (tx.amount || 0), 0);
+        const sum = lastMonthAllocations.reduce((acc, tx) => acc + (parseFloat(String(tx.amount)) || 0), 0);
         setTotalLastMonthTokens(sum);
 
         const incoming = latest.filter((tx) => !knownIds.current.has(tx.id));
@@ -322,7 +322,7 @@ export default function Historique() {
             }}>
               <span>🎉</span>
               <span>
-                Le mois dernier, <strong>{totalLastMonthTokens}</strong> tokens ont été gagnés pour célébrer les réussites de l'équipe !
+                Le mois dernier, <strong>{formatTokens(totalLastMonthTokens)}</strong> tokens ont été gagnés pour célébrer les réussites de l'équipe !
               </span>
             </div>
           )}

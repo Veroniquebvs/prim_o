@@ -56,7 +56,7 @@ export default function CollaborateurDetail() {
   if (!collab)  return <div style={{ padding: 32, color: "var(--text-muted)" }}>Collaborateur introuvable. {error}</div>;
 
   const tokensReceived = history.filter((tx) => tx.receiver_id === id && tx.type === "manager_to_employee")
-    .reduce((s, tx) => s + tx.amount, 0);
+    .reduce((s, tx) => s + parseFloat(String(tx.amount)), 0);
 
   const initials = [collab.first_name, collab.name].map((w) => w?.[0] ?? "").join("").toUpperCase();
 
@@ -88,7 +88,7 @@ export default function CollaborateurDetail() {
         </div>
         <div className="stat-card">
           <p className="stat-label">Tokens reçus</p>
-          <p className="stat-value">{tokensReceived}</p>
+          <p className="stat-value">{formatTokens(tokensReceived)}</p>
           <p className="stat-sub">de votre part</p>
         </div>
         <div className="stat-card">

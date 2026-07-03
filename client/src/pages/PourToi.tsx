@@ -15,6 +15,9 @@ import { getStoredAvatar, saveAvatar, resolveAvatarIndex } from '../utils/avatar
 import type { Voucher, Redemption, Team, ScheduledAllocation, User, TokenTransaction } from '../types';
 import { fmtShort } from '../utils/date';
 import { formatTokens } from '../utils/tokens';
+import { Pager, paginate } from '../components/Pager';
+
+const ORDERS_PAGE_SIZE = 10;
 
 function getFontSizeForNumber(num: number): string {
   const len = String(num).length;
@@ -248,6 +251,8 @@ function ManagerPourToi() {
   const [loading, setLoading]       = useState(true);
   const [collabPage, setCollabPage] = useState(1);
   const COLLAB_PAGE_SIZE = 10;
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [schedPage, setSchedPage] = useState(1);
 
   const [history, setHistory]       = useState<TokenTransaction[]>([]);
 
@@ -656,33 +661,39 @@ function ManagerPourToi() {
           </button>
         </div>
 
-        {schedRules.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {schedRules.map((r) => {
-              const who = r.receiver ? `${r.receiver.first_name} ${r.receiver.name}` : '—';
-              const when = r.frequency === 'monthly'
-                ? `Chaque mois, le ${r.day_of_month}`
-                : `Chaque année, le ${r.day_of_month} ${MONTHS[(r.month ?? 1) - 1]}`;
-              return (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                      <span className="token-badge" style={{ marginRight: 6 }}>{formatTokens(r.amount)}</span>{who}
-                    </p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                      {when} — {r.label || 'sans motif'} · Prochaine : {fmtShort(r.next_run_at)}
-                    </p>
-                  </div>
-                  <button role="switch" aria-checked={r.active} onClick={() => handleToggleSched(r.id)}
-                    className={`param-toggle ${r.active ? 'param-toggle--on' : ''}`} style={{ flexShrink: 0 }} />
-                  <button onClick={() => handleDeleteSched(r.id)}
-                    style={{ color: 'var(--danger)', fontSize: '1.1rem', padding: '0 4px', flexShrink: 0 }}
-                    aria-label="Supprimer">×</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {schedRules.length > 0 && (() => {
+          const { slice, totalPages, safePage } = paginate(schedRules, schedPage, ORDERS_PAGE_SIZE);
+          return (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {slice.map((r) => {
+                  const who = r.receiver ? `${r.receiver.first_name} ${r.receiver.name}` : '—';
+                  const when = r.frequency === 'monthly'
+                    ? `Chaque mois, le ${r.day_of_month}`
+                    : `Chaque année, le ${r.day_of_month} ${MONTHS[(r.month ?? 1) - 1]}`;
+                  return (
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                          <span className="token-badge" style={{ marginRight: 6 }}>{formatTokens(r.amount)}</span>{who}
+                        </p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          {when} — {r.label || 'sans motif'} · Prochaine : {fmtShort(r.next_run_at)}
+                        </p>
+                      </div>
+                      <button role="switch" aria-checked={r.active} onClick={() => handleToggleSched(r.id)}
+                        className={`param-toggle ${r.active ? 'param-toggle--on' : ''}`} style={{ flexShrink: 0 }} />
+                      <button onClick={() => handleDeleteSched(r.id)}
+                        style={{ color: 'var(--danger)', fontSize: '1.1rem', padding: '0 4px', flexShrink: 0 }}
+                        aria-label="Supprimer">×</button>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pager page={safePage} totalPages={totalPages} onChange={setSchedPage} />
+            </>
+          );
+        })()}
       </div>
 
       {/* ══ Bons d'achat utilisés ══ */}
@@ -690,20 +701,26 @@ function ManagerPourToi() {
         <h2 className="carousel-title" style={{ marginBottom: 12 }}>Mes bons d'achat</h2>
         {orders.length === 0 ? (
           <div className="card" style={{ background: '#fefce8', borderColor: '#fef08a' }}><p className="empty-state">Tu n'as pas encore racheté de bon.</p></div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {orders.map((order) => (
-              <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: '#fefce8', borderColor: '#fef08a' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.createdAt || order.redeemed_at)}</p>
-                </div>
-                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
+        ) : (() => {
+          const { slice, totalPages, safePage } = paginate(orders, ordersPage, ORDERS_PAGE_SIZE);
+          return (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {slice.map((order) => (
+                  <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: '#fefce8', borderColor: '#fef08a' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.createdAt || order.redeemed_at)}</p>
+                    </div>
+                    <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+              <Pager page={safePage} totalPages={totalPages} onChange={setOrdersPage} />
+            </>
+          );
+        })()}
       </div>
 
       {/* ══ Quick send modal ══ */}
@@ -925,6 +942,7 @@ function EmployeePourToi() {
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [loading, setLoading]           = useState(true);
   const [redeeming, setRedeeming]       = useState<string | null>(null);
+  const [ordersPage, setOrdersPage]     = useState(1);
   const [promoCodes, setPromoCodes]     = useState<Record<string, string>>({});
   const [myTeam, setMyTeam]             = useState<{ team_name: string; manager: User } | null>(null);
   const { isFavorite, toggle }          = useFavorites();
@@ -1158,20 +1176,26 @@ function EmployeePourToi() {
           <div className="card" style={{ background: '#fff1f1', borderColor: '#fecaca' }}>
             <p className="empty-state">Tu n'as pas encore racheté de bon.</p>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {orders.map((order) => (
-              <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: '#fff1f1', borderColor: '#fecaca' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.createdAt || order.redeemed_at)}</p>
-                </div>
-                <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
+        ) : (() => {
+          const { slice, totalPages, safePage } = paginate(orders, ordersPage, ORDERS_PAGE_SIZE);
+          return (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {slice.map((order) => (
+                  <div key={order.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: '#fff1f1', borderColor: '#fecaca' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>{order.voucher?.partner ?? '—'}</p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.voucher?.title ?? '—'}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{fmtShort(order.createdAt || order.redeemed_at)}</p>
+                    </div>
+                    <span className="promo-code" style={{ fontSize: '0.8rem', flexShrink: 0 }}>{order.promo_code}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+              <Pager page={safePage} totalPages={totalPages} onChange={setOrdersPage} />
+            </>
+          );
+        })()}
       </div>
     </div>
   );
