@@ -1,12 +1,5 @@
-# PRIM'O — MVP Development & Execution
+# <picture><source media="(prefers-color-scheme: dark)" srcset="../images/logo_4.png"><source media="(prefers-color-scheme: light)" srcset="../images/logo_2.png"><img alt="PRIM'O" src="../images/logo_2.png" height="36" style="vertical-align: middle;"></picture> — MVP Development & Execution
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="../images/logo_4.png">
-    <source media="(prefers-color-scheme: light)" srcset="../images/logo_2.png">
-    <img alt="PRIM'O Logo" src="../images/logo_2.png" width="180">
-  </picture>
-</p>
 
 ## Table of Contents
 - [Project Overview](#project-overview)
