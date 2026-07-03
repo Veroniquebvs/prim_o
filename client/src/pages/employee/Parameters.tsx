@@ -11,7 +11,7 @@
  * the session is logged out and the user is redirected to /login.
  */
 import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
@@ -50,10 +50,17 @@ export default function Parameters() {
 
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const [installing, setInstalling] = useState(false);
+  const [installNotice, setInstallNotice] = useState('');
 
   async function handleInstall() {
     setInstalling(true);
-    await promptInstall();
+    setInstallNotice('');
+    const result = await promptInstall();
+    if (result === 'unavailable') {
+      setInstallNotice(
+        "Le téléchargement direct n'est pas disponible sur ce navigateur pour le moment. Suivez les instructions manuelles ci-dessous, ou réessayez depuis Chrome/Edge sur Android."
+      );
+    }
     setInstalling(false);
   }
 
@@ -126,11 +133,23 @@ export default function Parameters() {
                 </button>
               )}
 
-              {!isInstalled && !canInstall && (
-                <span className="param-desc" style={{ marginTop: 6 }}>
-                  Ouvrez le menu ⋮ de votre navigateur et choisissez "Installer l'application"
-                  (ou "Sur l'écran d'accueil" sur iPhone/Safari). Besoin d'aide ?{' '}
-                  <Link to="/faq">Consultez la FAQ</Link>.
+              {/* Second, always-visible entry point: same direct native install, no redirect.
+                  Covers the case where the first button is hidden because canInstall hasn't
+                  flipped true yet (browser hasn't fired beforeinstallprompt on this page load). */}
+              {!isInstalled && (
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={handleInstall}
+                  disabled={installing}
+                  style={{ marginTop: 10, alignSelf: 'flex-start' }}
+                >
+                  {installing ? 'Téléchargement…' : "Télécharger l'application"}
+                </button>
+              )}
+
+              {installNotice && (
+                <span className="param-desc" style={{ marginTop: 6, color: 'var(--danger)' }}>
+                  {installNotice}
                 </span>
               )}
             </div>

@@ -246,6 +246,8 @@ function ManagerPourToi() {
   const [schedRules, setSchedRules] = useState<ScheduledAllocation[]>([]);
   const [available, setAvailable]   = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [collabPage, setCollabPage] = useState(1);
+  const COLLAB_PAGE_SIZE = 10;
 
   const [history, setHistory]       = useState<TokenTransaction[]>([]);
 
@@ -327,6 +329,7 @@ function ManagerPourToi() {
       await managerService.addTeamMember(addingId);
       setAddingId(''); setAddMode('none'); setShowAddModal(false);
       await fetchAll();
+      setCollabPage(1);
     } catch (err: any) {
       setAddError(err?.response?.data?.error ?? "Erreur lors de l'ajout.");
     } finally { setAddingLoad(false); }
@@ -340,6 +343,7 @@ function ManagerPourToi() {
       setCreateForm({ first_name: '', name: '', email: '', password: '', entry_date: '' });
       setAddMode('none');
       await fetchAll();
+      setCollabPage(1);
     } catch (err: any) {
       setCreateError(err?.response?.data?.error ?? 'Erreur lors de la création.');
     } finally { setCreateLoad(false); }
@@ -451,33 +455,74 @@ function ManagerPourToi() {
         {/* List of collaborators */}
         {members.length === 0 ? (
           <p className="empty-state" style={{ marginBottom: 24 }}>Aucun collaborateur dans votre équipe.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-            {members.map((m) => (
-              <div
-                key={m.id}
-                className="manager-collab-row"
-                onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', flex: 1.5, minWidth: 0 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', marginRight: 12, border: '1.5px solid var(--border)' }}>
-                    <img src={`/assets/av_${resolveAvatarIndex(m)}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+        ) : (() => {
+          const totalPages = Math.max(1, Math.ceil(members.length / COLLAB_PAGE_SIZE));
+          const safePage = Math.min(collabPage, totalPages);
+          const paginated = members.slice((safePage - 1) * COLLAB_PAGE_SIZE, safePage * COLLAB_PAGE_SIZE);
+          return (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                {paginated.map((m) => (
+                  <div
+                    key={m.id}
+                    className="manager-collab-row"
+                    onClick={() => navigate(`/manager/collaborateurs/${m.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', flex: 1.5, minWidth: 0 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', marginRight: 12, border: '1.5px solid var(--border)' }}>
+                        <img src={`/assets/av_${resolveAvatarIndex(m)}.png`} alt={m.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#666' }}>Collaborateur</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 1, minWidth: 0 }}>
+                      <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{formatTokens(m.token_balance)} tkn</span>
+                      <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>Allouer</button>
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#000', marginBottom: 2 }}>{m.first_name} {m.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#666' }}>Collaborateur</p>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: 800, color: '#f0a800', fontSize: '0.9rem' }}>{formatTokens(m.token_balance)} tkn</span>
-                  <button className="manager-collab-btn" onClick={(e) => { e.stopPropagation(); setQuickMember(m); setQuickAmount(''); setQuickReason(''); setQuickError(''); setQuickSuccess(''); }}>Allouer</button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setCollabPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setCollabPage(n)}
+                      style={{
+                        minWidth: 32, height: 32, borderRadius: 8, border: '1.5px solid',
+                        borderColor: n === safePage ? 'var(--primary)' : 'var(--border)',
+                        background: n === safePage ? 'var(--primary)' : 'transparent',
+                        color: n === safePage ? '#fff' : 'var(--text)',
+                        fontWeight: n === safePage ? 700 : 400,
+                        fontSize: '0.82rem', cursor: 'pointer',
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setCollabPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Bouton pour ouvrir le modal */}
         <button

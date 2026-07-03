@@ -136,11 +136,11 @@ export default function ManagerDetail() {
 
   const tokensReceived = history
     .filter((tx) => tx.receiver_id === id && tx.type === "employer_to_manager")
-    .reduce((sum, tx) => sum + tx.amount, 0);
+    .reduce((sum, tx) => sum + (parseFloat(String(tx.amount)) || 0), 0);
 
   const tokensGiven = history
     .filter((tx) => tx.sender_id === id && tx.type === "manager_to_employee")
-    .reduce((sum, tx) => sum + tx.amount, 0);
+    .reduce((sum, tx) => sum + (parseFloat(String(tx.amount)) || 0), 0);
 
   const teamMembers = team?.members ?? [];
 

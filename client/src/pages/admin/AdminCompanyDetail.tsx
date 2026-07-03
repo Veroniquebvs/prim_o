@@ -15,6 +15,7 @@ import { userService } from '../../services/user.service';
 import { tokenService } from '../../services/token.service';
 import type { Company, User } from '../../types';
 import { fmt } from '../../utils/date';
+import { formatTokens } from '../../utils/tokens';
 import UserSelectionModal from '../../components/UserSelectionModal';
 
 export default function AdminCompanyDetail() {
@@ -58,7 +59,7 @@ export default function AdminCompanyDetail() {
   const managers   = employees.filter(u => u.role === 'manager');
   const collaborateurs = employees.filter(u => u.role === 'employee');
   const staff = [...managers, ...collaborateurs];
-  const totalTokens = employees.reduce((sum, u) => sum + u.token_balance, 0);
+  const totalTokens = employees.reduce((sum, u) => sum + (parseFloat(String(u.token_balance)) || 0), 0);
 
   const rowStyle: React.CSSProperties = { borderBottom: '1px solid var(--border)' };
   const tdMuted: React.CSSProperties  = { padding: '10px 16px', color: 'var(--text-muted)', fontSize: '0.82rem' };
@@ -117,11 +118,11 @@ export default function AdminCompanyDetail() {
           </div>
           <div className="stat-card">
             <p className="stat-label">Tokens distribués</p>
-            <p className="stat-value">{totalTokens}</p>
+            <p className="stat-value">{formatTokens(totalTokens)}</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Solde entreprise</p>
-            <p className="stat-value">{company.token_balance}</p>
+            <p className="stat-value">{formatTokens(company.token_balance)}</p>
           </div>
         </div>
 

@@ -36,6 +36,8 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [companyPage, setCompanyPage] = useState(1);
+  const COMPANY_PAGE_SIZE = 10;
 
   /* Donner des tokens */
   const [grantCompanyId, setGrantCompanyId] = useState('');
@@ -159,6 +161,7 @@ export default function AdminDashboard() {
       };
       const res = await companyService.adminCreate(payload);
       setCompanies(prev => [res.company, ...prev]);
+      setCompanyPage(1);
       setShowCreateModal(false);
       setCreateForm(EMPTY_COMPANY_FORM);
     } catch (err: any) {
@@ -212,7 +215,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card" style={{ marginBottom: 20, background: '#eff6ff', borderColor: '#bfdbfe' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
             Entreprises
@@ -226,33 +229,74 @@ export default function AdminDashboard() {
         </div>
         {companies.length === 0 ? (
           <p className="empty-state">Aucune entreprise enregistrée.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {companies.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => navigate(`/admin/companies/${c.id}`)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '14px 16px',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  cursor: 'pointer',
-                  transition: 'background 0.12s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                onMouseLeave={e => (e.currentTarget.style.background = '')}
-              >
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.name}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  {[c.street, c.city].filter(Boolean).join(', ') || '—'}
-                </span>
+        ) : (() => {
+          const totalPages = Math.max(1, Math.ceil(companies.length / COMPANY_PAGE_SIZE));
+          const safePage = Math.min(companyPage, totalPages);
+          const paginated = companies.slice((safePage - 1) * COMPANY_PAGE_SIZE, safePage * COMPANY_PAGE_SIZE);
+          return (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {paginated.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate(`/admin/companies/${c.id}`)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '14px 16px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius)',
+                      cursor: 'pointer',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '')}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.name}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      {[c.street, c.city].filter(Boolean).join(', ') || '—'}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setCompanyPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setCompanyPage(n)}
+                      style={{
+                        minWidth: 32, height: 32, borderRadius: 8, border: '1.5px solid',
+                        borderColor: n === safePage ? 'var(--primary)' : 'var(--border)',
+                        background: n === safePage ? 'var(--primary)' : 'transparent',
+                        color: n === safePage ? '#fff' : 'var(--text)',
+                        fontWeight: n === safePage ? 700 : 400,
+                        fontSize: '0.82rem', cursor: 'pointer',
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setCompanyPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Donner des tokens */}
@@ -439,7 +483,7 @@ export default function AdminDashboard() {
 
       {showCreateModal && (
         <div className="emp-modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="emp-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto', width: '100%', maxWidth: '500px' }}>
+          <div className="emp-modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto', width: '100%', maxWidth: '500px', background: '#eff6ff', borderColor: '#bfdbfe' }}>
             <h2 className="emp-modal-title" style={{ marginBottom: 20 }}>Créer une entreprise</h2>
 
             <form onSubmit={handleCreateCompany} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

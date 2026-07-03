@@ -23,9 +23,10 @@ import { fmtShort } from '../utils/date';
 
 export default function Panier() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
-  const { remove, isInCart, addedAt, toggle: toggleCart } = useCart();
+  const { saved, remove, isInCart, addedAt, toggle: toggleCart } = useCart();
   const { isFavorite, toggle: toggleFav } = useFavorites();
   const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
+  const [extraVouchers, setExtraVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, { code: string; redeemed_at: string }>>({});
@@ -36,7 +37,23 @@ export default function Panier() {
     marketplaceService.getItems().then(setAllVouchers).finally(() => setLoading(false));
   }, []);
 
-  const cartVouchers = allVouchers.filter((v) => isInCart(v.id));
+  // getItems() only returns available vouchers, so a saved voucher that has since been
+  // redeemed (by this user or a teammate) is missing from allVouchers even though it's
+  // still in the cart. Fetch those individually so they show as "Indisponible" instead of
+  // silently vanishing (which left the cart badge out of sync with an apparently-empty page).
+  // A genuinely deleted voucher (404) is pruned from the cart instead.
+  useEffect(() => {
+    const knownIds = new Set([...allVouchers, ...extraVouchers].map((v) => v.id));
+    const missing = saved.map((s) => s.id).filter((id) => !knownIds.has(id));
+    missing.forEach((id) => {
+      marketplaceService.getItemById(id)
+        .then((v) => setExtraVouchers((prev) => [...prev, v]))
+        .catch(() => remove(id));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved, allVouchers]);
+
+  const cartVouchers = [...allVouchers, ...extraVouchers].filter((v) => isInCart(v.id));
   const weeklyOffers = allVouchers.filter((v) => v.available && v.is_weekly);
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 
