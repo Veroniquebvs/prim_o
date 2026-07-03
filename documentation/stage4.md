@@ -289,7 +289,7 @@ Browser / Mobile
 
 | Service | Provider | URL | Notes |
 |---|---|---|---|
-| Frontend | Vercel | `prim-o.vercel.app` | Auto-deploys on merge to `main` |
+| Frontend | Vercel | [prim-o.vercel.app](www.https://prim-o.vercel.app/) | Auto-deploys on merge to `main` |
 | Backend API | Render | `prim-o-api.onrender.com` | Web Service — auto-deploys on merge to `main` |
 | Database | Render PostgreSQL | Internal connection string | Managed, daily backups |
 | Payments | Stripe | — | Test mode — no real charges |
