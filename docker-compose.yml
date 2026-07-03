@@ -1,26 +1,9 @@
 version: "3.9"
 
 services:
-  # ── PostgreSQL ─────────────────────────────────────────────
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: primo_dev
-      POSTGRES_USER: primo
-      POSTGRES_PASSWORD: primo_password
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U primo -d primo_dev"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   # ── Backend API ────────────────────────────────────────────
+  # Connects to the Render-hosted PostgreSQL instance via DATABASE_URL,
+  # which must be set in server/.env (see server/.env.example).
   api:
     build:
       context: ./server
@@ -28,22 +11,14 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    env_file:
+      - ./server/.env
     environment:
       NODE_ENV: development
       PORT: 5000
-      DATABASE_URL: postgresql://primo:primo_password@postgres:5432/primo_dev
-      JWT_SECRET: dev_jwt_secret_change_in_production
-      JWT_EXPIRES_IN: 7d
-      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
-      JWT_REFRESH_EXPIRES_IN: 30d
-      # Stripe keys are loaded from server/.env by dotenv (mounted via ./server:/app)
-      # Set them only here if you need to override the .env value at runtime.
     volumes:
       - ./server:/app
       - /app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   # ── Frontend ───────────────────────────────────────────────
   client:
@@ -63,6 +38,3 @@ services:
       - /app/node_modules
     depends_on:
       - api
-
-volumes:
-  postgres_data:

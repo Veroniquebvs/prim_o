@@ -20,6 +20,9 @@ import { fmt } from "../../utils/date";
 import { formatTokens } from "../../utils/tokens";
 import { useAuth } from "../../context/AuthContext";
 import { resolveAvatarIndex } from "../../utils/avatar";
+import { Pager, paginate } from "../../components/Pager";
+
+const HISTORY_PAGE_SIZE = 10;
 
 function IconArrowLeft() {
   return (
@@ -59,6 +62,7 @@ export default function ManagerDetail() {
   const [savingRate, setSavingRate] = useState(false);
   const [rateSuccess, setRateSuccess] = useState(false);
   const [rateError, setRateError] = useState("");
+  const [historyPage, setHistoryPage] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -396,53 +400,59 @@ export default function ManagerDetail() {
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Historique des tokens</h2>
         {history.length === 0 ? (
           <p className="empty-state">Aucune transaction.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Montant</th>
-                  <th>Type</th>
-                  <th>Vers / De</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((tx) => {
-                  const isCredit = tx.receiver_id === id;
-                  return (
-                    <tr key={tx.id}>
-                      <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                        {fmt(tx.createdAt || tx.created_at)}
-                      </td>
-                      <td>
-                        <span
-                          className="token-badge"
-                          style={
-                            isCredit
-                              ? { background: "#f0fdf4", color: "var(--success)" }
-                              : { background: "var(--danger-light)", color: "var(--danger)" }
-                          }
-                        >
-                          {isCredit ? "+" : "−"}{formatTokens(tx.amount)}
-                        </span>
-                      </td>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                        {tx.type ?? "—"}
-                      </td>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                        {isCredit
-                          ? (tx.sender ? `${tx.sender.first_name} ${tx.sender.name}` : "—")
-                          : (tx.receiver ? `${tx.receiver.first_name} ${tx.receiver.name}` : "—")
-                        }
-                      </td>
+        ) : (() => {
+          const { slice, totalPages, safePage } = paginate(history, historyPage, HISTORY_PAGE_SIZE);
+          return (
+            <>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Montant</th>
+                      <th>Type</th>
+                      <th>Vers / De</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  </thead>
+                  <tbody>
+                    {slice.map((tx) => {
+                      const isCredit = tx.receiver_id === id;
+                      return (
+                        <tr key={tx.id}>
+                          <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                            {fmt(tx.createdAt || tx.created_at)}
+                          </td>
+                          <td>
+                            <span
+                              className="token-badge"
+                              style={
+                                isCredit
+                                  ? { background: "#f0fdf4", color: "var(--success)" }
+                                  : { background: "var(--danger-light)", color: "var(--danger)" }
+                              }
+                            >
+                              {isCredit ? "+" : "−"}{formatTokens(tx.amount)}
+                            </span>
+                          </td>
+                          <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                            {tx.type ?? "—"}
+                          </td>
+                          <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                            {isCredit
+                              ? (tx.sender ? `${tx.sender.first_name} ${tx.sender.name}` : "—")
+                              : (tx.receiver ? `${tx.receiver.first_name} ${tx.receiver.name}` : "—")
+                            }
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pager page={safePage} totalPages={totalPages} onChange={setHistoryPage} />
+            </>
+          );
+        })()}
       </div>
 
       {/* Zone rétrogradation — masquée pour l'admin */}

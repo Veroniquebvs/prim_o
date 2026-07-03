@@ -884,6 +884,15 @@ function EmployeePourToi() {
   const [myTeam, setMyTeam]             = useState<{ team_name: string; manager: User } | null>(null);
   const { isFavorite, toggle }          = useFavorites();
   const { isInCart, toggle: cartToggle } = useCart();
+  const [idCopied, setIdCopied]         = useState(false);
+
+  function handleCopyCompanyId() {
+    if (!company?.id) return;
+    navigator.clipboard.writeText(String(company.id)).then(() => {
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 1800);
+    }).catch(() => {});
+  }
 
   useEffect(() => {
     if (!user?.id) return;
@@ -1006,6 +1015,33 @@ function EmployeePourToi() {
           }}
           onClose={() => setShowAvatarPicker(false)}
         />
+      )}
+
+      {/* ══ Identifiant entreprise (employeur) ══ */}
+      {user?.role === 'employer' && company && (
+        <div className="card" style={{ marginBottom: 24, marginTop: 60 }}>
+          <p style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 4 }}>Identifiant entreprise</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+            Communiquez cet identifiant à vos collaborateurs : ils pourront l'utiliser sur la page d'inscription pour rejoindre {company.name}.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              flex: 1, minWidth: 0, fontFamily: 'monospace', fontWeight: 700, fontSize: '0.95rem',
+              padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'var(--bg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {company.id}
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              style={{ flexShrink: 0 }}
+              onClick={handleCopyCompanyId}
+            >
+              {idCopied ? 'Copié !' : 'Copier'}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ══ Mon équipe ══ */}

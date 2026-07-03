@@ -171,8 +171,6 @@ export default function AdminDashboard() {
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
-  const totalTokens = companies.reduce((sum, c) => sum + c.token_balance, 0);
-
   return (
     <div>
       <style>{`
@@ -207,14 +205,10 @@ export default function AdminDashboard() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div className="grid-2" style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 28 }}>
         <div className="stat-card">
           <p className="stat-label">Entreprises</p>
           <p className="stat-value">{companies.length}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Tokens en circulation</p>
-          <p className="stat-value">{totalTokens}</p>
         </div>
       </div>
 

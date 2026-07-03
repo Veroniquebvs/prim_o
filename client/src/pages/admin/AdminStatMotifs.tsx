@@ -36,7 +36,7 @@ export default function AdminStatMotifs() {
           tx => tx.sender_id !== null && tx.receiver_id !== null
         );
 
-        const NO_MOTIF_TYPES = new Set(['allocation', 'employer_to_team', 'manager_to_employee', 'role_change']);
+        const NO_MOTIF_TYPES = new Set(['employer_to_employee', 'employer_to_manager', 'employer_to_team', 'manager_to_employee', 'role_change', 'scheduled_allocation']);
 
         const counts: Record<string, number> = {};
         for (const tx of allocs) {
@@ -170,7 +170,7 @@ export default function AdminStatMotifs() {
                 <>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                     {paginated.map((tx, i) => {
-                      const motif = tx.reason || (tx.type === 'allocation' ? 'Sans motif' : tx.type || 'Sans motif');
+                      const motif = tx.reason || (tx.type === 'employer_to_employee' ? 'Sans motif' : tx.type || 'Sans motif');
                       const companyName = tx.company?.name || '—';
                       const dateStr = fmtShort(tx.createdAt || tx.created_at);
                       return (

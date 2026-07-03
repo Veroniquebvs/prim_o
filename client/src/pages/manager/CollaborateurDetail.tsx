@@ -14,6 +14,9 @@ import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 import { formatTokens } from "../../utils/tokens";
 import { resolveAvatarIndex } from "../../utils/avatar";
+import { Pager, paginate } from "../../components/Pager";
+
+const HISTORY_PAGE_SIZE = 10;
 
 function IconArrowLeft() {
   return (
@@ -35,6 +38,7 @@ export default function CollaborateurDetail() {
   const [entryDate, setEntryDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -171,43 +175,49 @@ export default function CollaborateurDetail() {
         <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Historique des tokens</h2>
         {history.length === 0 ? (
           <p className="empty-state">Aucune transaction.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Montant</th>
-                  <th>Motif</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((tx) => (
-                  <tr key={tx.id}>
-                    <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {fmt(tx.createdAt || tx.created_at)}
-                    </td>
-                    <td>
-                      <span
-                        className="token-badge"
-                        style={
-                          tx.receiver_id === id
-                            ? { background: "#f0fdf4", color: "var(--success)" }
-                            : { background: "var(--danger-light)", color: "var(--danger)" }
-                        }
-                      >
-                        {tx.receiver_id === id ? "+" : "−"}{formatTokens(tx.amount)}
-                      </span>
-                    </td>
-                    <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                      {tx.type ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        ) : (() => {
+          const { slice, totalPages, safePage } = paginate(history, historyPage, HISTORY_PAGE_SIZE);
+          return (
+            <>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Montant</th>
+                      <th>Motif</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {slice.map((tx) => (
+                      <tr key={tx.id}>
+                        <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                          {fmt(tx.createdAt || tx.created_at)}
+                        </td>
+                        <td>
+                          <span
+                            className="token-badge"
+                            style={
+                              tx.receiver_id === id
+                                ? { background: "#f0fdf4", color: "var(--success)" }
+                                : { background: "var(--danger-light)", color: "var(--danger)" }
+                            }
+                          >
+                            {tx.receiver_id === id ? "+" : "−"}{formatTokens(tx.amount)}
+                          </span>
+                        </td>
+                        <td style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                          {tx.type ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pager page={safePage} totalPages={totalPages} onChange={setHistoryPage} />
+            </>
+          );
+        })()}
       </div>
     </div>
   );

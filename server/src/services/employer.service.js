@@ -99,26 +99,30 @@ const changeRole = async (employer, targetId, newRole, teamName) => {
 
     await target.update({ role: newRole }, { transaction: t });
 
-    await TokenTransaction.create(
-      {
-        sender_id: employer.id,
-        receiver_id: targetId,
-        company_id: employer.company_id,
-        amount: 0,
-        type: 'role_change',
-        reason: newRole,
-      },
-      { transaction: t }
-    );
-
     await t.commit();
-
-    const { password_hash: _, ...safe } = target.toJSON();
-    return { ...safe, role: newRole };
   } catch (err) {
     await t.rollback();
     throw err;
   }
+
+  // Best-effort audit log entry for the history timeline. Kept outside the state-changing
+  // transaction above so a DB-level rejection of this zero-amount row (e.g. an amount/type
+  // constraint that predates the 'role_change' type) can never block a legitimate role change.
+  try {
+    await TokenTransaction.create({
+      sender_id: employer.id,
+      receiver_id: targetId,
+      company_id: employer.company_id,
+      amount: 0,
+      type: 'role_change',
+      reason: newRole,
+    });
+  } catch (err) {
+    console.error('Failed to record role_change audit entry:', err.message); // eslint-disable-line no-console
+  }
+
+  const { password_hash: _, ...safe } = target.toJSON();
+  return { ...safe, role: newRole };
 };
 
 /**

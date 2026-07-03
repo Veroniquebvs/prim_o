@@ -11,8 +11,9 @@
  * the session is logged out and the user is redirected to /login.
  */
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 import { userService } from '../../services/user.service';
 
@@ -46,6 +47,15 @@ export default function Parameters() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
+
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const [installing, setInstalling] = useState(false);
+
+  async function handleInstall() {
+    setInstalling(true);
+    await promptInstall();
+    setInstalling(false);
+  }
 
   const [emailOffers, toggleEmailOffers] = useLocalBool('pref_email_offers', true);
   const [notifications, toggleNotifications] = useLocalBool('pref_notifications', true);
@@ -92,6 +102,40 @@ export default function Parameters() {
       </div>
 
       <div className="param-list">
+
+        {/* Install app */}
+        <div className="param-card">
+          <div className="param-row" style={{ alignItems: 'flex-start' }}>
+            <img src="/icons/token-logo-SF.png" alt="" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+            <div className="param-info">
+              <span className="param-label">Installer l'application</span>
+              <span className="param-desc">
+                {isInstalled
+                  ? "L'application est déjà installée sur cet appareil."
+                  : "Ajoutez Prim'O à votre écran d'accueil pour y accéder comme une vraie application."}
+              </span>
+
+              {!isInstalled && canInstall && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleInstall}
+                  disabled={installing}
+                  style={{ marginTop: 10, alignSelf: 'flex-start' }}
+                >
+                  {installing ? 'Installation…' : "Installer l'application"}
+                </button>
+              )}
+
+              {!isInstalled && !canInstall && (
+                <span className="param-desc" style={{ marginTop: 6 }}>
+                  Ouvrez le menu ⋮ de votre navigateur et choisissez "Installer l'application"
+                  (ou "Sur l'écran d'accueil" sur iPhone/Safari). Besoin d'aide ?{' '}
+                  <Link to="/faq">Consultez la FAQ</Link>.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Email offers */}
         <div className="param-card">
