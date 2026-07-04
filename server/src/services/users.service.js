@@ -82,10 +82,6 @@ const update = async (id, body, companyId) => {
 };
 
 /**
- * Permanently deletes a user by their UUID. Admin-only operation.
- * id is the UUID of the user to delete. Throws 404 if the user does not exist.
- */
-/**
  * Updates the avatar_index for a user. Only the user themselves can call this.
  * id is the UUID of the user. index must be between 1 and 6.
  */
@@ -101,6 +97,10 @@ const updateAvatar = async (id, avatar_index) => {
   return safe;
 };
 
+/**
+ * Permanently deletes a user by their UUID. Admin-only operation.
+ * id is the UUID of the user to delete. Throws 404 if the user does not exist.
+ */
 const remove = async (id) => {
   const user = await User.findByPk(id);
   if (!user) throw httpError('User not found', 404);
