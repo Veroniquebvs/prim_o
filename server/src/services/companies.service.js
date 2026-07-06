@@ -158,7 +158,7 @@ const grantTokens = async (companyId, amount) => {
     );
 
     await t.commit();
-    return { company_id: companyId, amount, new_balance: company.token_balance + amount };
+    return { company_id: companyId, amount, new_balance: Number(company.token_balance) };
   } catch (err) {
     await t.rollback();
     throw err;
