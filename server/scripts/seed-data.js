@@ -1,11 +1,15 @@
 // Jeu de données de démonstration partagé entre seed-full.js (Render/prod) et
 // seed-local.js (base Docker locale). Module pur : aucun effet de bord, aucune
-// connexion DB, aucune lecture d'environnement.
+// connexion DB. Le mot de passe démo est lu depuis process.env.ADMIN_PASSWORD —
+// les scripts appelants sont responsables de charger .env avant de require() ce module.
 
 const img = (seed, w = 400, h = 300) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`;
 
-const PASSWORD = 'admin123456789';
+const PASSWORD = process.env.ADMIN_PASSWORD;
+if (!PASSWORD) {
+  throw new Error('ADMIN_PASSWORD doit être défini dans .env avant d\'utiliser seed-data.js');
+}
 
 const companies = [
   {

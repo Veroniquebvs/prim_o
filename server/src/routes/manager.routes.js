@@ -31,7 +31,7 @@ router.get('/team', managerController.getTeam);
 router.post(
   '/employees',
   [
-    body('email').isEmail().withMessage('email must be a valid email address'),
+    body('email').isEmail().normalizeEmail().withMessage('email must be a valid email address'),
     body('first_name').trim().notEmpty().withMessage('first_name is required'),
     body('name').trim().notEmpty().withMessage('name is required'),
     body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),

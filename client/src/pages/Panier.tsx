@@ -12,7 +12,7 @@
  * On successful redemption the promo code is displayed in-page, the item is removed from the
  * cart, and the user/company balance is refreshed via AuthContext.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService } from '../services/marketplace.service';
 import { useCart } from '../hooks/useCart';
@@ -23,9 +23,10 @@ import { fmtShort } from '../utils/date';
 
 export default function Panier() {
   const { user, company, refreshUser, refreshCompany } = useAuth();
-  const { remove, isInCart, addedAt, toggle: toggleCart } = useCart();
+  const { saved, remove, isInCart, addedAt, toggle: toggleCart } = useCart();
   const { isFavorite, toggle: toggleFav } = useFavorites();
   const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
+  const [extraVouchers, setExtraVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [promoCodes, setPromoCodes] = useState<Record<string, { code: string; redeemed_at: string }>>({});
@@ -36,7 +37,34 @@ export default function Panier() {
     marketplaceService.getItems().then(setAllVouchers).finally(() => setLoading(false));
   }, []);
 
-  const cartVouchers = allVouchers.filter((v) => isInCart(v.id));
+  // getItems() only returns available vouchers, so a saved voucher that has since been
+  // redeemed (by this user or a teammate) is missing from allVouchers even though it's
+  // still in the cart. Fetch those individually so they show as "Indisponible" instead of
+  // silently vanishing (which left the cart badge out of sync with an apparently-empty page).
+  // A genuinely deleted voucher (404) is pruned from the cart instead.
+  const fetchingIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const knownIds = new Set([...allVouchers, ...extraVouchers].map((v) => v.id));
+    const missing = saved.map((s) => s.id).filter((id) => !knownIds.has(id) && !fetchingIds.current.has(id));
+    missing.forEach((id) => {
+      fetchingIds.current.add(id);
+      marketplaceService.getItemById(id)
+        .then((v) => setExtraVouchers((prev) => (prev.some((p) => p.id === id) ? prev : [...prev, v])))
+        .catch(() => remove(id))
+        .finally(() => fetchingIds.current.delete(id));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved, allVouchers]);
+
+  // allVouchers is the authoritative/fresh source; extraVouchers only fills in vouchers
+  // missing from it, so dedupe by id with allVouchers taking priority.
+  const cartVouchers = useMemo(() => {
+    const byId = new Map<string, Voucher>();
+    for (const v of extraVouchers) byId.set(v.id, v);
+    for (const v of allVouchers) byId.set(v.id, v);
+    return [...byId.values()].filter((v) => isInCart(v.id));
+  }, [allVouchers, extraVouchers, isInCart]);
   const weeklyOffers = allVouchers.filter((v) => v.available && v.is_weekly);
   const balance = user?.role === 'employer' ? (company?.token_balance ?? 0) : (user?.token_balance ?? 0);
 

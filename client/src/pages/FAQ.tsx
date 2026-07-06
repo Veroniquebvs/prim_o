@@ -126,6 +126,14 @@ const sections = [
     ],
   },
   {
+    title: 'Installer l\'application',
+    questions: [
+      { q: 'Comment installer PRIM\'O sur mon téléphone ?', a: 'Dans le menu "Voir plus", accédez à "Paramètres" : un bouton "Installer l\'application" apparaît en haut de la page si votre navigateur le permet (Chrome sur Android). Vous pouvez aussi ouvrir le menu ⋮ de Chrome et choisir "Installer l\'application". Sur iPhone (Safari), utilisez le bouton Partager puis "Sur l\'écran d\'accueil".' },
+      { q: 'J\'ai supprimé l\'application et je n\'arrive plus à la réinstaller, que faire ?', a: 'Sur Android, il arrive que Chrome garde en mémoire que l\'application est "déjà installée" même après sa suppression, ce qui masque le bouton d\'installation. Pour réinitialiser : allez dans Chrome → Paramètres → Paramètres des sites → Voir tous les sites → cherchez prim-o.vercel.app → "Effacer et réinitialiser". Rechargez ensuite la page — l\'option d\'installation doit réapparaître. Si ce n\'est toujours pas le cas, vérifiez dans Paramètres Android → Applications qu\'aucune fiche "PRIM\'O" ne reste listée, et supprimez-la si besoin.' },
+      { q: 'Le bouton "Installer l\'application" n\'apparaît pas dans les Paramètres, est-ce normal ?', a: 'Oui, cela peut arriver si votre navigateur ne supporte pas l\'installation directe (Safari sur iPhone, par exemple) ou si l\'application est déjà installée. Suivez les instructions manuelles affichées à la place, ou consultez la question précédente si vous l\'avez récemment supprimée.' },
+    ],
+  },
+  {
     title: 'Paiement & facturation',
     questions: [
       { q: 'Quels moyens de paiement sont acceptés ?', a: 'Carte bancaire (Visa, Mastercard, American Express) via Stripe. Aucune donnée de carte n\'est stockée sur nos serveurs — tout est géré par Stripe de façon sécurisée.' },

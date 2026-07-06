@@ -14,6 +14,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const BCRYPT_ROUNDS = 12;
+// Pre-computed dummy hash used when a login email is not found, to keep response
+// timing consistent with the valid-email path and prevent email enumeration via timing.
+const DUMMY_HASH = '$2b$12$invalidhashfortimingprotectionXXXXXXXXXXXXXXXXXXXXXu';
 
 /**
  * Creates a plain Error object with an HTTP status code attached.
@@ -74,9 +77,12 @@ const safeUser = (user) => ({
  */
 const register = async ({ name, first_name, email, password, role, company_id }) => {
   const { User } = require('../models');
-  const existing = await User.findOne({ where: { email } });
+  const normalizedEmail = email.toLowerCase();
+  const existing = await User.findOne({ where: { email: normalizedEmail } });
   if (existing) {
-    throw httpError('Email already in use', 409);
+    // Return a generic success-like envelope so the HTTP status code (201 vs 409)
+    // cannot be used to confirm whether an email address is already registered.
+    return { message: 'If this email is new, your account has been created.' };
   }
 
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -84,7 +90,7 @@ const register = async ({ name, first_name, email, password, role, company_id })
   const user = await User.create({
     name,
     first_name,
-    email,
+    email: normalizedEmail,
     password_hash,
     role,
     token_balance: 0,
@@ -109,11 +115,11 @@ const login = async ({ email, password }) => {
     where: { email: email.toLowerCase() },
     include: [{ model: Company, as: 'company' }],
   });
-  if (!user) {
-    throw httpError('Invalid credentials', 401);
-  }
-  const isValid = await bcrypt.compare(password, user.password_hash);
-  if (!isValid) {
+  // Always run bcrypt.compare even when the user doesn't exist, to equalise
+  // response timing and prevent email enumeration via timing differences.
+  const hashToCompare = user ? user.password_hash : DUMMY_HASH;
+  const isValid = await bcrypt.compare(password, hashToCompare);
+  if (!user || !isValid) {
     throw httpError('Invalid credentials', 401);
   }
 

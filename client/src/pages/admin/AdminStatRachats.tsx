@@ -5,7 +5,7 @@
  * and time-series counts for three selectable periods (30 days, 90 days, all-time). Shows:
  * - A period selector (30j / 90j / tout)
  * - An SVG bar chart of redemptions over time (one bar per day/week)
- * - A top-10 most-redeemed vouchers table with redemption counts and colour-coded rate indicators
+ * - Paginated tables/lists for partner rates, never-redeemed vouchers, top sellers, and purchase history
  * rateColor uses green ≥50%, primary colour ≥20%, and muted for lower rates.
  */
 import { useState, useEffect } from 'react';
@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { marketplaceService } from '../../services/marketplace.service';
 import type { AdminVoucher, AdminRedemption } from '../../types';
 import { fmtShort as fmt } from '../../utils/date';
+import { Pager, paginate } from '../../components/Pager';
 
 type Period = '30j' | '90j' | 'tout';
 
@@ -30,6 +31,8 @@ function rateColor(rate: number): string {
   if (rate >= 20) return 'var(--primary)';
   return 'var(--text-muted)';
 }
+
+const PAGE_SIZE = 10;
 
 /* ── SVG Bar Chart ───────────────────────────────────────── */
 function BarChart({ data }: { data: { label: string; count: number }[] }) {
@@ -132,6 +135,11 @@ export default function AdminStatRachats() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('30j');
 
+  const [pagePartners, setPagePartners] = useState(1);
+  const [pageNeverRedeemed, setPageNeverRedeemed] = useState(1);
+  const [pageTop, setPageTop] = useState(1);
+  const [pageHistory, setPageHistory] = useState(1);
+
   useEffect(() => {
     Promise.all([
       marketplaceService.adminGetVouchers(),
@@ -140,6 +148,12 @@ export default function AdminStatRachats() {
       .then(([v, h]) => { setVouchers(v); setHistory(h); })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setPagePartners(1);
+    setPageTop(1);
+    setPageHistory(1);
+  }, [period]);
 
   if (loading) return <div style={{ padding: 32, color: 'var(--text-muted)' }}>Chargement…</div>;
 
@@ -174,7 +188,7 @@ export default function AdminStatRachats() {
     if (!byVoucher[key]) byVoucher[key] = { title: r.voucher?.title ?? '', partner: r.voucher?.partner ?? '', count: 0 };
     byVoucher[key].count++;
   }
-  const topVouchers = Object.values(byVoucher).sort((a, b) => b.count - a.count).slice(0, 10);
+  const topVouchers = Object.values(byVoucher).sort((a, b) => b.count - a.count);
 
   // Évolution temporelle (période filtrée)
   const timeBuckets = getTimeBuckets(filtered, period);
@@ -258,30 +272,36 @@ export default function AdminStatRachats() {
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {partnerStats.length === 0 ? (
               <p style={{ padding: 16, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucun rachat sur la période.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Partenaire</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Bons créés</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Rachats</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Taux</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {partnerStats.map(({ partner, vouchers: v, redemptions, rate }) => (
-                    <tr key={partner} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.875rem' }}>{partner}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{v}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--primary)' }}>{redemptions}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <span style={{ fontWeight: 700, color: rateColor(rate) }}>{rate}%</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            ) : (() => {
+              const { slice, totalPages, safePage } = paginate(partnerStats, pagePartners, PAGE_SIZE);
+              return (
+                <>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Partenaire</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Bons créés</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Rachats</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Taux</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slice.map(({ partner, vouchers: v, redemptions, rate }) => (
+                        <tr key={partner} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.875rem' }}>{partner}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{v}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--primary)' }}>{redemptions}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                            <span style={{ fontWeight: 700, color: rateColor(rate) }}>{rate}%</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <Pager page={safePage} totalPages={totalPages} onChange={setPagePartners} />
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -305,34 +325,40 @@ export default function AdminStatRachats() {
               <p style={{ padding: 16, color: '#16a34a', fontSize: '0.875rem', fontWeight: 500 }}>
                 Tous les bons disponibles ont été rachetés au moins une fois.
               </p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Bon d'achat</th>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Partenaire</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Coût</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {neverRedeemed.map(v => (
-                    <tr
-                      key={v.id}
-                      onClick={() => navigate(`/admin/bons/${v.id}`)}
-                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = '')}
-                    >
-                      <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.875rem' }}>{v.title}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>{v.partner}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <span className="token-badge">{v.token_cost}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            ) : (() => {
+              const { slice, totalPages, safePage } = paginate(neverRedeemed, pageNeverRedeemed, PAGE_SIZE);
+              return (
+                <>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Bon d'achat</th>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Partenaire</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Coût</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slice.map(v => (
+                        <tr
+                          key={v.id}
+                          onClick={() => navigate(`/admin/bons/${v.id}`)}
+                          style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = '')}
+                        >
+                          <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.875rem' }}>{v.title}</td>
+                          <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>{v.partner}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                            <span className="token-badge">{v.token_cost}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <Pager page={safePage} totalPages={totalPages} onChange={setPageNeverRedeemed} />
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -341,31 +367,41 @@ export default function AdminStatRachats() {
           <h2 className="faq-section-title">Top ventes{period !== 'tout' ? ` — ${period}` : ''}</h2>
           {topVouchers.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucun rachat sur la période.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {topVouchers.map((v, i) => (
-                <div key={i} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px' }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                    background: i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--primary-light)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 800, fontSize: '0.9rem',
-                    color: i < 3 ? '#fff' : 'var(--primary)',
-                  }}>
-                    {i + 1}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{v.partner}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{v.title}</p>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>{v.count}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>rachat{v.count > 1 ? 's' : ''}</p>
-                  </div>
+          ) : (() => {
+            const { slice, totalPages, safePage } = paginate(topVouchers, pageTop, PAGE_SIZE);
+            const rankOffset = (safePage - 1) * PAGE_SIZE;
+            return (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {slice.map((v, i) => {
+                    const rank = rankOffset + i;
+                    return (
+                      <div key={rank} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px' }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                          background: rank === 0 ? '#fbbf24' : rank === 1 ? '#9ca3af' : rank === 2 ? '#b45309' : 'var(--primary-light)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 800, fontSize: '0.9rem',
+                          color: rank < 3 ? '#fff' : 'var(--primary)',
+                        }}>
+                          {rank + 1}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{v.partner}</p>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{v.title}</p>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>{v.count}</p>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>rachat{v.count > 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
+                <Pager page={safePage} totalPages={totalPages} onChange={setPageTop} />
+              </>
+            );
+          })()}
         </div>
 
         {/* Historique des achats */}
@@ -374,42 +410,49 @@ export default function AdminStatRachats() {
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {filtered.length === 0 ? (
               <p style={{ padding: 16, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Aucun rachat sur la période.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Utilisateur</th>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Bon</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Tokens</th>
-                    <th style={{ ...thStyle, textAlign: 'left' }}>Code</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...filtered].sort((a, b) => new Date(b.createdAt || b.redeemed_at || b.created_at).getTime() - new Date(a.createdAt || a.redeemed_at || a.created_at).getTime()).map(r => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '10px 16px' }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.user?.first_name || r.user?.name || '—'}</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.user?.email}</p>
-                      </td>
-                      <td style={{ padding: '10px 16px' }}>
-                        <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.voucher?.partner}</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.voucher?.title}</p>
-                      </td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                        <span className="token-badge">{r.voucher?.token_cost}</span>
-                      </td>
-                      <td style={{ padding: '10px 16px' }}>
-                        <span className="promo-code">{r.promo_code}</span>
-                      </td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                        {fmt(r.createdAt || r.redeemed_at || r.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            ) : (() => {
+              const sorted = [...filtered].sort((a, b) => new Date(b.createdAt || b.redeemed_at || b.created_at).getTime() - new Date(a.createdAt || a.redeemed_at || a.created_at).getTime());
+              const { slice, totalPages, safePage } = paginate(sorted, pageHistory, PAGE_SIZE);
+              return (
+                <>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Utilisateur</th>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Bon</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Tokens</th>
+                        <th style={{ ...thStyle, textAlign: 'left' }}>Code</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slice.map(r => (
+                        <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '10px 16px' }}>
+                            <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.user?.first_name || r.user?.name || '—'}</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.user?.email}</p>
+                          </td>
+                          <td style={{ padding: '10px 16px' }}>
+                            <p style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.voucher?.partner}</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{r.voucher?.title}</p>
+                          </td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                            <span className="token-badge">{r.voucher?.token_cost}</span>
+                          </td>
+                          <td style={{ padding: '10px 16px' }}>
+                            <span className="promo-code">{r.promo_code}</span>
+                          </td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            {fmt(r.createdAt || r.redeemed_at || r.created_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <Pager page={safePage} totalPages={totalPages} onChange={setPageHistory} />
+                </>
+              );
+            })()}
           </div>
         </div>
 

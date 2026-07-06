@@ -106,7 +106,7 @@ export default function MotDePasse() {
     setSaving(true);
     setMsg('');
     try {
-      await userService.update(user.id, { current_password: current, password: next });
+      await userService.changePassword(user.id, current, next);
       setMsg('Mot de passe modifié avec succès.');
       setIsError(false);
       setCurrent('');

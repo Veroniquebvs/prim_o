@@ -18,8 +18,11 @@ import { companyService } from '../services/company.service';
 import { formatTokens } from '../utils/tokens';
 import type { TokenTransaction, Redemption, AdminRedemption, Team } from '../types';
 import { fmtShort as fmt, fmtDateTime } from '../utils/date';
+import { Pager, paginate } from '../components/Pager';
 
 type Tab = 'equipe' | 'perso';
+
+const HISTORY_PAGE_SIZE = 10;
 
 export default function Historique() {
   const { user, company } = useAuth();
@@ -27,7 +30,9 @@ export default function Historique() {
   
   // Default tab selection for manager
   const [tab, setTab] = useState<Tab>('equipe');
-  
+  const [personalPage, setPersonalPage] = useState(1);
+  const [teamPage, setTeamPage] = useState(1);
+
   // Employee-specific states
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]); 
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -98,7 +103,7 @@ export default function Historique() {
           );
         });
 
-        const sum = lastMonthAllocations.reduce((acc, tx) => acc + (tx.amount || 0), 0);
+        const sum = lastMonthAllocations.reduce((acc, tx) => acc + (parseFloat(String(tx.amount)) || 0), 0);
         setTotalLastMonthTokens(sum);
 
         const incoming = latest.filter((tx) => !knownIds.current.has(tx.id));
@@ -189,9 +194,12 @@ export default function Historique() {
         <div className="card" style={{ marginTop: 16, background: '#fefce8', borderColor: '#fef08a' }}>
           {personalTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique disponible.</p>
-          ) : (
+          ) : (() => {
+            const { slice, totalPages, safePage } = paginate(personalTimeline, personalPage, HISTORY_PAGE_SIZE);
+            return (
+            <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {personalTimeline.map((item) => {
+              {slice.map((item) => {
                 if (item._kind === 'token') {
                   const tx = item as TokenTransaction & { _kind: 'token' };
                   if (tx.type === 'role_change') {
@@ -233,7 +241,10 @@ export default function Historique() {
                 }
               })}
             </div>
-          )}
+            <Pager page={safePage} totalPages={totalPages} onChange={setPersonalPage} />
+            </>
+            );
+          })()}
         </div>
       )}
 
@@ -242,9 +253,12 @@ export default function Historique() {
         <div className="card" style={{ marginTop: 16, background: '#fefce8', borderColor: '#fef08a' }}>
           {managerTimeline.length === 0 ? (
             <p className="empty-state">Aucun historique d'équipe disponible.</p>
-          ) : (
+          ) : (() => {
+            const { slice, totalPages, safePage } = paginate(managerTimeline, teamPage, HISTORY_PAGE_SIZE);
+            return (
+            <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {managerTimeline.map((item) => {
+              {slice.map((item) => {
                 const tx = item as TokenTransaction;
                 const firstName = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
                 const motif = tx.reason || tx.type || '—';
@@ -277,7 +291,10 @@ export default function Historique() {
                 );
               })}
             </div>
-          )}
+            <Pager page={safePage} totalPages={totalPages} onChange={setTeamPage} />
+            </>
+            );
+          })()}
         </div>
       )}
 
@@ -305,7 +322,7 @@ export default function Historique() {
             }}>
               <span>🎉</span>
               <span>
-                Le mois dernier, <strong>{totalLastMonthTokens}</strong> tokens ont été gagnés pour célébrer les réussites de l'équipe !
+                Le mois dernier, <strong>{formatTokens(totalLastMonthTokens)}</strong> tokens ont été gagnés pour célébrer les réussites de l'équipe !
               </span>
             </div>
           )}

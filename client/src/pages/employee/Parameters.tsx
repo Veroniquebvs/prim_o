@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 import { userService } from '../../services/user.service';
 
@@ -46,6 +47,22 @@ export default function Parameters() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
+
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const [installing, setInstalling] = useState(false);
+  const [installNotice, setInstallNotice] = useState('');
+
+  async function handleInstall() {
+    setInstalling(true);
+    setInstallNotice('');
+    const result = await promptInstall();
+    if (result === 'unavailable') {
+      setInstallNotice(
+        "Le téléchargement direct n'est pas disponible sur ce navigateur pour le moment. Suivez les instructions manuelles ci-dessous, ou réessayez depuis Chrome/Edge sur Android."
+      );
+    }
+    setInstalling(false);
+  }
 
   const [emailOffers, toggleEmailOffers] = useLocalBool('pref_email_offers', true);
   const [notifications, toggleNotifications] = useLocalBool('pref_notifications', true);
@@ -92,6 +109,52 @@ export default function Parameters() {
       </div>
 
       <div className="param-list">
+
+        {/* Install app */}
+        <div className="param-card">
+          <div className="param-row" style={{ alignItems: 'flex-start' }}>
+            <img src="/icons/token-logo-SF.png" alt="" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+            <div className="param-info">
+              <span className="param-label">Installer l'application</span>
+              <span className="param-desc">
+                {isInstalled
+                  ? "L'application est déjà installée sur cet appareil."
+                  : "Ajoutez Prim'O à votre écran d'accueil pour y accéder comme une vraie application."}
+              </span>
+
+              {!isInstalled && canInstall && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleInstall}
+                  disabled={installing}
+                  style={{ marginTop: 10, alignSelf: 'flex-start' }}
+                >
+                  {installing ? 'Installation…' : "Installer l'application"}
+                </button>
+              )}
+
+              {/* Second, always-visible entry point: same direct native install, no redirect.
+                  Covers the case where the first button is hidden because canInstall hasn't
+                  flipped true yet (browser hasn't fired beforeinstallprompt on this page load). */}
+              {!isInstalled && (
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={handleInstall}
+                  disabled={installing}
+                  style={{ marginTop: 10, alignSelf: 'flex-start' }}
+                >
+                  {installing ? 'Téléchargement…' : "Télécharger l'application"}
+                </button>
+              )}
+
+              {installNotice && (
+                <span className="param-desc" style={{ marginTop: 6, color: 'var(--danger)' }}>
+                  {installNotice}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Email offers */}
         <div className="param-card">

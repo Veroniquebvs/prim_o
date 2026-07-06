@@ -82,10 +82,6 @@ const update = async (id, body, companyId) => {
 };
 
 /**
- * Permanently deletes a user by their UUID. Admin-only operation.
- * id is the UUID of the user to delete. Throws 404 if the user does not exist.
- */
-/**
  * Updates the avatar_index for a user. Only the user themselves can call this.
  * id is the UUID of the user. index must be between 1 and 6.
  */
@@ -101,6 +97,10 @@ const updateAvatar = async (id, avatar_index) => {
   return safe;
 };
 
+/**
+ * Permanently deletes a user by their UUID. Admin-only operation.
+ * id is the UUID of the user to delete. Throws 404 if the user does not exist.
+ */
 const remove = async (id) => {
   const user = await User.findByPk(id);
   if (!user) throw httpError('User not found', 404);
@@ -112,8 +112,10 @@ const remove = async (id) => {
  * id is the UUID of the user. Throws 404 if the user does not exist.
  * Results are ordered newest first and include sender and receiver name/email details.
  */
-const history = async (id) => {
-  const user = await User.findByPk(id, { attributes: ['id'] });
+const history = async (id, requesterCompanyId) => {
+  const where = { id };
+  if (requesterCompanyId) where.company_id = requesterCompanyId;
+  const user = await User.findOne({ where, attributes: ['id'] });
   if (!user) throw httpError('User not found', 404);
 
   return TokenTransaction.findAll({
@@ -152,4 +154,22 @@ const activateUser = async (id, companyId, entry_date) => {
   return user;
 };
 
-module.exports = { list, getById, update, updateAvatar, remove, history, activateUser };
+/**
+ * Changes a user's password after verifying the current one.
+ * Throws 404 if the user does not exist, 401 if current_password is wrong.
+ */
+const changePassword = async (id, { current_password, password }) => {
+  const bcrypt = require('bcrypt');
+  const BCRYPT_ROUNDS = 12;
+
+  const user = await User.findByPk(id);
+  if (!user) throw httpError('User not found', 404);
+
+  const isValid = await bcrypt.compare(current_password, user.password_hash);
+  if (!isValid) throw httpError('Mot de passe actuel incorrect', 401);
+
+  user.password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  await user.save();
+};
+
+module.exports = { list, getById, update, updateAvatar, remove, history, activateUser, changePassword };

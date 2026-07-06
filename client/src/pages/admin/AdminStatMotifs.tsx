@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { tokenService } from '../../services/token.service';
 import type { TokenTransaction } from '../../types';
 import { fmtShort } from '../../utils/date';
+import { formatTokens } from '../../utils/tokens';
 
 interface MotifRow {
   motif: string;
@@ -36,7 +37,7 @@ export default function AdminStatMotifs() {
           tx => tx.sender_id !== null && tx.receiver_id !== null
         );
 
-        const NO_MOTIF_TYPES = new Set(['allocation', 'employer_to_team', 'manager_to_employee', 'role_change']);
+        const NO_MOTIF_TYPES = new Set(['employer_to_employee', 'employer_to_manager', 'employer_to_team', 'manager_to_employee', 'role_change', 'scheduled_allocation']);
 
         const counts: Record<string, number> = {};
         for (const tx of allocs) {
@@ -50,7 +51,7 @@ export default function AdminStatMotifs() {
           .map(([motif, count]) => ({ motif, count, pct: 0 }));
 
         const totalCount = sorted.reduce((s, r) => s + r.count, 0);
-        const sumTokens = allocs.reduce((sum, tx) => sum + tx.amount, 0);
+        const sumTokens = allocs.reduce((sum, tx) => sum + (parseFloat(String(tx.amount)) || 0), 0);
         sorted.forEach(r => { r.pct = totalCount > 0 ? Math.round((r.count / totalCount) * 100) : 0; });
 
         setRows(sorted);
@@ -107,7 +108,7 @@ export default function AdminStatMotifs() {
         <div className="grid-2">
           <div className="stat-card">
             <p className="stat-label">Allocations totales</p>
-            <p className="stat-value">{totalTokens}</p>
+            <p className="stat-value">{formatTokens(totalTokens)}</p>
             <p className="stat-sub">{totalAllocations} don{totalAllocations !== 1 ? 's' : ''} de tokens effectué{totalAllocations !== 1 ? 's' : ''}</p>
           </div>
           <div className="stat-card">
@@ -170,7 +171,7 @@ export default function AdminStatMotifs() {
                 <>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                     {paginated.map((tx, i) => {
-                      const motif = tx.reason || (tx.type === 'allocation' ? 'Sans motif' : tx.type || 'Sans motif');
+                      const motif = tx.reason || (tx.type === 'employer_to_employee' ? 'Sans motif' : tx.type || 'Sans motif');
                       const companyName = tx.company?.name || '—';
                       const dateStr = fmtShort(tx.createdAt || tx.created_at);
                       return (
@@ -187,7 +188,7 @@ export default function AdminStatMotifs() {
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>
-                              <span className="token-badge" style={{ marginRight: 8 }}>+{tx.amount}</span>
+                              <span className="token-badge" style={{ marginRight: 8 }}>+{formatTokens(tx.amount)}</span>
                               {motif}
                             </p>
                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>

@@ -87,6 +87,10 @@ export default function EmployerDashboard() {
   const [teamNameForPromotion, setTeamNameForPromotion] = useState("");
 
   const [activeTab, setActiveTab] = useState<'managers' | 'employees'>('managers');
+  const [managerPage, setManagerPage] = useState(1);
+  const MANAGER_PAGE_SIZE = 10;
+  const [employeePage, setEmployeePage] = useState(1);
+  const EMPLOYEE_PAGE_SIZE = 10;
   const [teams, setTeams] = useState<Team[]>([]);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -347,7 +351,7 @@ export default function EmployerDashboard() {
 
       {error && <p className="form-error" style={{ marginTop: 65 }}>{error}</p>}
 
-      <div className="card" style={{ marginBottom: 24, marginTop: error ? 0 : 65 }}>
+      <div className="card" style={{ marginBottom: 24, marginTop: error ? 0 : 65, background: '#eff6ff', borderColor: '#bfdbfe' }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Équipes & Managers</h2>
           <div style={{ position: "relative" }}>
@@ -400,87 +404,173 @@ export default function EmployerDashboard() {
         {activeTab === 'managers' ? (
           managers.length === 0 ? (
             <p className="empty-state">Aucun manager dans votre entreprise.</p>
-          ) : (
-            <div className="table-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
-              <table className="table" style={{ minWidth: 0 }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "7px 10px" }}>Nom</th>
-                    <th style={{ padding: "7px 10px" }}>Rôle</th>
-                    <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {managers.map((mgr) => (
-                    <tr
-                      key={mgr.id}
-                      onClick={() => navigate(`/employer/managers/${mgr.id}`)}
-                      style={{ cursor: "pointer" }}
+          ) : (() => {
+            const totalPages = Math.max(1, Math.ceil(managers.length / MANAGER_PAGE_SIZE));
+            const safePage = Math.min(managerPage, totalPages);
+            const paginated = managers.slice((safePage - 1) * MANAGER_PAGE_SIZE, safePage * MANAGER_PAGE_SIZE);
+            return (
+              <>
+                <div className="table-wrap">
+                  <table className="table" style={{ minWidth: 0 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: "7px 10px" }}>Nom</th>
+                        <th style={{ padding: "7px 10px" }}>Rétribution / token</th>
+                        <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((mgr) => {
+                        const mgrTeam = teams.find(t => t.manager_id === mgr.id);
+                        const rate = mgrTeam ? parseFloat(String(mgrTeam.retribution_rate)) || 0 : null;
+                        return (
+                        <tr
+                          key={mgr.id}
+                          onClick={() => navigate(`/employer/managers/${mgr.id}`)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td style={{ fontWeight: 500, padding: "8px 10px" }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1.5px solid var(--border)' }}>
+                                <img src={`/assets/av_${resolveAvatarIndex(mgr)}.png`} alt={mgr.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                              </div>
+                              {mgr.first_name} {mgr.name}
+                            </div>
+                          </td>
+                          <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
+                            {rate !== null ? `${rate}% / token` : '—'}
+                          </td>
+                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                            <span className="token-badge">{formatTokens(mgr.token_balance)}</span>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setManagerPage(p => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
                     >
-                      <td style={{ fontWeight: 500, padding: "8px 10px" }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1.5px solid var(--border)' }}>
-                            <img src={`/assets/av_${resolveAvatarIndex(mgr)}.png`} alt={mgr.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
-                          </div>
-                          {mgr.first_name} {mgr.name}
-                        </div>
-                      </td>
-                      <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
-                        {mgr.role ? (mgr.role === 'employee' ? 'Collaborateur' : mgr.role === 'employer' ? 'Employeur' : mgr.role.charAt(0).toUpperCase() + mgr.role.slice(1)) : '—'}
-                      </td>
-                      <td style={{ padding: "8px 10px", textAlign: "right" }}>
-                        <span className="token-badge">{formatTokens(mgr.token_balance)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+                      ‹
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setManagerPage(n)}
+                        style={{
+                          minWidth: 32, height: 32, borderRadius: 8, border: '1.5px solid',
+                          borderColor: n === safePage ? 'var(--primary)' : 'var(--border)',
+                          background: n === safePage ? 'var(--primary)' : 'transparent',
+                          color: n === safePage ? '#fff' : 'var(--text)',
+                          fontWeight: n === safePage ? 700 : 400,
+                          fontSize: '0.82rem', cursor: 'pointer',
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setManagerPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()
         ) : (
           employees.length === 0 ? (
             <p className="empty-state">Aucun collaborateur dans votre entreprise.</p>
-          ) : (
-            <div className="table-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
-              <table className="table" style={{ minWidth: 0 }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "7px 10px" }}>Nom</th>
-                    <th style={{ padding: "7px 10px" }}>Manager</th>
-                    <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((emp) => (
-                    <tr
-                      key={emp.id}
-                      className="table-row-hover"
-                      onClick={() => navigate(`/employer/employees/${emp.id}`)}
-                      style={{ cursor: "pointer" }}
+          ) : (() => {
+            const totalPages = Math.max(1, Math.ceil(employees.length / EMPLOYEE_PAGE_SIZE));
+            const safePage = Math.min(employeePage, totalPages);
+            const paginated = employees.slice((safePage - 1) * EMPLOYEE_PAGE_SIZE, safePage * EMPLOYEE_PAGE_SIZE);
+            return (
+              <>
+                <div className="table-wrap">
+                  <table className="table" style={{ minWidth: 0 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: "7px 10px" }}>Nom</th>
+                        <th style={{ padding: "7px 10px" }}>Manager</th>
+                        <th style={{ padding: "7px 10px", textAlign: "right" }}>Tokens</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((emp) => (
+                        <tr
+                          key={emp.id}
+                          className="table-row-hover"
+                          onClick={() => navigate(`/employer/employees/${emp.id}`)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td style={{ fontWeight: 500, padding: "8px 10px" }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1.5px solid var(--border)' }}>
+                                <img src={`/assets/av_${resolveAvatarIndex(emp)}.png`} alt={emp.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                              </div>
+                              {emp.first_name} {emp.name}
+                            </div>
+                          </td>
+                          <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
+                            {(() => {
+                              const team = teams.find(t => t.members?.some(m => m.user_id === emp.id)) as any;
+                              return team?.manager ? `${team.manager.first_name} ${team.manager.name}` : "—";
+                            })()}
+                          </td>
+                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                            <span className="token-badge">{formatTokens(emp.token_balance)}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setEmployeePage(p => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
                     >
-                      <td style={{ fontWeight: 500, padding: "8px 10px" }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1.5px solid var(--border)' }}>
-                            <img src={`/assets/av_${resolveAvatarIndex(emp)}.png`} alt={emp.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
-                          </div>
-                          {emp.first_name} {emp.name}
-                        </div>
-                      </td>
-                      <td style={{ color: "var(--text-muted)", padding: "8px 10px", fontSize: "0.82rem" }}>
-                        {(() => {
-                          const team = teams.find(t => t.members?.some(m => m.user_id === emp.id)) as any;
-                          return team?.manager ? `${team.manager.first_name} ${team.manager.name}` : "—";
-                        })()}
-                      </td>
-                      <td style={{ padding: "8px 10px", textAlign: "right" }}>
-                        <span className="token-badge">{formatTokens(emp.token_balance)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+                      ‹
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setEmployeePage(n)}
+                        style={{
+                          minWidth: 32, height: 32, borderRadius: 8, border: '1.5px solid',
+                          borderColor: n === safePage ? 'var(--primary)' : 'var(--border)',
+                          background: n === safePage ? 'var(--primary)' : 'transparent',
+                          color: n === safePage ? '#fff' : 'var(--text)',
+                          fontWeight: n === safePage ? 700 : 400,
+                          fontSize: '0.82rem', cursor: 'pointer',
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setEmployeePage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()
         )}
       </div>
 
@@ -1021,6 +1111,7 @@ export default function EmployerDashboard() {
                         setShowAddManagerModal(false);
                         setSelectedEmpToPromote(null);
                         setTeamNameForPromotion("");
+                        setManagerPage(1);
                         fetchData();
                       } catch {
                         alert("Erreur lors de la promotion.");

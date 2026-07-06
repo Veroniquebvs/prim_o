@@ -1,3 +1,23 @@
+/**
+ * targetResolver.service.js — Resolves an allocation rule's target_type into a concrete
+ * list of active User records to credit.
+ *
+ * Shared by token.service.js (manual employer allocation) and cron.service.js (scheduled
+ * allocations), so both flows interpret target_type identically.
+ *
+ * target_type values:
+ *   'user'              — a single receiver_id, must belong to company_id
+ *   'all_company'        — every active user in the company
+ *   'all_employees'      — every active user with role 'employee'
+ *   'all_managers'       — every active user with role 'manager'
+ *   'team'               — every active member of target_team_id
+ *   'team_and_manager'   — every active member of target_team_id plus that team's manager
+ *
+ * excluded_user_ids removes specific users from any of the above result sets.
+ * When target_type is falsy, falls back to the pre-target_type behaviour (a single receiver_id,
+ * or every active employee) to stay compatible with allocation rules created before this field
+ * existed.
+ */
 const { Op } = require('sequelize');
 const { User, Team, TeamMember } = require('../models');
 

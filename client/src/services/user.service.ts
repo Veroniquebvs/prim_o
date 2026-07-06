@@ -55,6 +55,10 @@ export const userService = {
     });
   },
 
+  async changePassword(id: string, current_password: string, password: string): Promise<void> {
+    await api.patch(`/users/${id}/password`, { current_password, password });
+  },
+
   async updateAvatar(id: string, avatar_index: number): Promise<void> {
     await api.patch(`/users/${id}/avatar`, { avatar_index });
   },

@@ -7,6 +7,7 @@
  * company with token balances and demo vouchers. Safe to run on a fresh schema only; running
  * on an existing DB may produce duplicate-key errors.
  */
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 

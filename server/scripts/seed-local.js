@@ -17,11 +17,18 @@
 // On NE force PAS NODE_ENV=production → la config DB reste sans SSL (le Postgres
 // Docker local ne supporte pas le SSL, contrairement à Render).
 
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const bcrypt = require('bcrypt');
 
 const DATABASE_URL =
   process.argv[2] || 'postgresql://primo:primo_password@localhost:5433/primo_dev';
 process.env.DATABASE_URL = DATABASE_URL;
+
+const { ADMIN_EMAIL } = process.env;
+if (!ADMIN_EMAIL) {
+  console.error('ADMIN_EMAIL doit être défini dans .env');
+  process.exit(1);
+}
 
 const { sequelize, Company, User, Voucher } = require('../src/models');
 const {
@@ -42,9 +49,9 @@ async function main() {
 
   // ── Admin ──
   await User.findOrCreate({
-    where: { email: 'admin123@admin.com' },
+    where: { email: ADMIN_EMAIL },
     defaults: {
-      email: 'admin123@admin.com',
+      email: ADMIN_EMAIL,
       password_hash: hash,
       role: 'admin',
       name: 'Admin Primo',
@@ -53,7 +60,7 @@ async function main() {
       status: 'active',
     },
   });
-  console.log('Admin : admin123@admin.com');
+  console.log('Admin :', ADMIN_EMAIL);
 
   // ── Entreprises + employeurs + employés ──
   for (let i = 0; i < companies.length; i++) {

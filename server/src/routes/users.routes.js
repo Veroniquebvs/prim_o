@@ -52,6 +52,14 @@ router.get(
 router.put(
   '/:id',
   verifyToken,
+  (req, res, next) => {
+    const isSelf = req.params.id === req.user.id;
+    const isAdminOrEmployer = ['admin', 'employer'].includes(req.user.role);
+    if (!isSelf && !isAdminOrEmployer) {
+      return res.status(403).json({ error: 'Forbidden', code: 403 });
+    }
+    next();
+  },
   [
     param('id').isUUID().withMessage('id must be a valid UUID'),
     body('name').optional().trim().notEmpty().withMessage('name must not be empty'),
@@ -72,6 +80,12 @@ router.delete(
 router.get(
   '/:id/history',
   verifyToken,
+  (req, res, next) => {
+    const isSelf = req.params.id === req.user.id;
+    const canSeeOthers = ['employer', 'manager', 'admin'].includes(req.user.role);
+    if (!isSelf && !canSeeOthers) return res.status(403).json({ error: 'Forbidden', code: 403 });
+    next();
+  },
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   usersController.history
 );
@@ -89,6 +103,24 @@ router.patch(
     validate,
   ],
   usersController.activateUser
+);
+
+router.patch(
+  '/:id/password',
+  verifyToken,
+  (req, res, next) => {
+    if (req.params.id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden', code: 403 });
+    }
+    next();
+  },
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('current_password').notEmpty().withMessage('current_password is required'),
+    body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),
+    validate,
+  ],
+  usersController.changePassword
 );
 
 router.patch(

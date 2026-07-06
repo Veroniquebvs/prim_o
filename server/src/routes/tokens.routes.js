@@ -35,6 +35,15 @@ router.post(
 router.get(
   '/balance/:userId',
   verifyToken,
+  (req, res, next) => {
+    const isAdmin = req.user.role === 'admin';
+    const isSelf = req.params.userId === req.user.id;
+    const canSeeOthers = ['employer', 'manager'].includes(req.user.role);
+    if (!isAdmin && !isSelf && !canSeeOthers) {
+      return res.status(403).json({ error: 'Forbidden', code: 403 });
+    }
+    next();
+  },
   [param('userId').isUUID().withMessage('userId must be a valid UUID'), validate],
   tokensController.getBalance
 );

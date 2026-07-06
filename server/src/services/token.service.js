@@ -122,10 +122,12 @@ const allocate = async (sender, { target_type, receiver_id, target_team_id, excl
  * Throws 404 if the user does not exist.
  * Returns an object with userId and token_balance fields.
  */
-const getBalance = async (userId) => {
-  const user = await User.findByPk(userId, {
-    attributes: ['id', 'token_balance'],
-  });
+const getBalance = async (userId, requester) => {
+  const where = { id: userId };
+  if (requester && requester.role !== 'admin' && requester.id !== userId) {
+    where.company_id = requester.company_id;
+  }
+  const user = await User.findOne({ where, attributes: ['id', 'token_balance'] });
   if (!user) throw httpError('User not found', 404);
   return { userId: user.id, token_balance: user.token_balance };
 };
@@ -212,7 +214,7 @@ const listTransactions = async ({ company_id, userId, date, type, managerTeamId 
  * id is the UUID of the transaction to retrieve.
  * Throws 404 if no transaction with that id exists.
  */
-const getTransaction = async (id) => {
+const getTransaction = async (id, requester) => {
   const tx = await TokenTransaction.findByPk(id, {
     include: [
       { model: User, as: 'sender', attributes: ['id', 'name', 'first_name', 'email'] },
@@ -220,6 +222,30 @@ const getTransaction = async (id) => {
     ],
   });
   if (!tx) throw httpError('Transaction not found', 404);
+
+  if (requester) {
+    const isAdmin = requester.role === 'admin';
+    const isInvolved = tx.sender_id === requester.id || tx.receiver_id === requester.id;
+    // Employers see any transaction within their company; managers are scoped to their team
+    // only (aligned with listTransactions), so they cannot enumerate unrelated company movements.
+    const isEmployerSameCompany =
+      tx.company_id === requester.company_id && requester.role === 'employer';
+
+    let isManagerTeamTx = false;
+    if (requester.role === 'manager' && tx.company_id === requester.company_id) {
+      const team = await Team.findOne({ where: { manager_id: requester.id, dissolved_at: null } });
+      if (team) {
+        const members = await TeamMember.findAll({ where: { team_id: team.id, left_at: null } });
+        const memberIds = members.map((m) => m.user_id);
+        memberIds.push(requester.id);
+        isManagerTeamTx = memberIds.includes(tx.sender_id) || memberIds.includes(tx.receiver_id);
+      }
+    }
+
+    if (!isAdmin && !isInvolved && !isEmployerSameCompany && !isManagerTeamTx) {
+      throw httpError('Forbidden', 403);
+    }
+  }
   return tx;
 };
 

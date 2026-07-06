@@ -73,6 +73,7 @@ export default function RegisterPage() {
         // Submitting updated company details
         const company = await companyService.create({
           name: companyName,
+          email,
           siret,
           street,
           zip_code: zipCode,

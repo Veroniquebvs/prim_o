@@ -12,6 +12,7 @@ const { Router } = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+
 const { verifyToken } = require('../middleware/verifyToken');
 const { roleGuard } = require('../middleware/roleGuard');
 
@@ -37,12 +38,23 @@ const upload = multer({
 
 const router = Router();
 
+const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
 router.post(
   '/',
   verifyToken,
   roleGuard('admin'),
   upload.array('images', 5),
-  (req, res) => {
+  async (req, res) => {
+    // Verify magic bytes of each saved file — client-supplied mimetype is untrustworthy
+    const { fileTypeFromFile } = await import('file-type');
+    for (const file of req.files) {
+      const detected = await fileTypeFromFile(file.path);
+      if (!detected || !ALLOWED_MIMES.has(detected.mime)) {
+        fs.unlinkSync(file.path);
+        return res.status(400).json({ error: 'Invalid file type detected', code: 400 });
+      }
+    }
     const urls = req.files.map(f => `/uploads/${f.filename}`);
     res.json({ success: true, data: { urls } });
   }

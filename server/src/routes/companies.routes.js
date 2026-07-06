@@ -55,7 +55,7 @@ router.post(
       .withMessage('siret must be 14 digits'),
     body('employer_name').trim().notEmpty().withMessage('employer_name is required'),
     body('employer_first_name').trim().notEmpty().withMessage('employer_first_name is required'),
-    body('employer_email').isEmail().withMessage('valid employer_email is required'),
+    body('employer_email').isEmail().normalizeEmail().withMessage('valid employer_email is required'),
     body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),
     validate,
   ],
@@ -72,10 +72,18 @@ router.get(
 // Admin only — list all companies
 router.get('/', verifyToken, roleGuard('admin'), companiesController.list);
 
-// Authenticated — get one company
+// Authenticated — get one company (scoped to own company, admin sees all)
 router.get(
   '/:id',
   verifyToken,
+  (req, res, next) => {
+    const isAdmin = req.user.role === 'admin';
+    const isOwnCompany = req.params.id === req.user.company_id;
+    if (!isAdmin && !isOwnCompany) {
+      return res.status(403).json({ error: 'Forbidden', code: 403 });
+    }
+    next();
+  },
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   companiesController.getById
 );

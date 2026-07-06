@@ -11,7 +11,11 @@ const { User, Team, TeamMember } = require('../models');
 /** Returns users filtered by optional query parameters role and companyId. */
 const list = async (req, res, next) => {
   try {
-    const data = await usersService.list(req.query);
+    const query = { ...req.query };
+    if (req.user.role !== 'admin') {
+      query.companyId = req.user.company_id;
+    }
+    const data = await usersService.list(query);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -52,7 +56,7 @@ const remove = async (req, res, next) => {
 /** Returns the full token transaction history for a user (sent and received). */
 const history = async (req, res, next) => {
   try {
-    const data = await usersService.history(req.params.id);
+    const data = await usersService.history(req.params.id, req.user.company_id);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -177,6 +181,16 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
+/** Changes the password for the authenticated user after verifying the current password. */
+const changePassword = async (req, res, next) => {
+  try {
+    await usersService.changePassword(req.params.id, req.body);
+    res.json({ success: true, message: 'Password updated' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   list,
   getById,
@@ -188,4 +202,5 @@ module.exports = {
   activateUser,
   getPendingUsers,
   updateEntryDate,
+  changePassword,
 };

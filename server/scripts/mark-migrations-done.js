@@ -1,3 +1,14 @@
+/**
+ * scripts/mark-migrations-done.js — One-off recovery script for Sequelize CLI migration state.
+ *
+ * Used when a database's schema was already brought up to date via sequelize.sync({ alter: true })
+ * (the dev auto-sync) before the corresponding migration file existed in migrations/, so running
+ * `sequelize-cli db:migrate` would fail trying to re-apply changes that are already present.
+ *
+ * Creates the SequelizeMeta tracking table if missing, then inserts rows for the given migration
+ * filenames so the CLI treats them as already run, without executing their `up()` again.
+ * Uses DATABASE_URL from .env; enables SSL automatically for non-local hosts.
+ */
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 

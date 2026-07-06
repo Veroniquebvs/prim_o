@@ -16,6 +16,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const sequelize = require('./src/config/database');
@@ -67,6 +68,31 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many attempts, please try again later', code: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/refresh', authLimiter);
+
+// Throttle the public (unauthenticated) company self-onboarding endpoint to curb
+// mass-creation spam. More permissive than authLimiter since a legit employer may
+// retry a few times during onboarding.
+const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many requests, please try again later', code: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/companies', (req, res, next) =>
+  req.method === 'POST' ? publicWriteLimiter(req, res, next) : next()
+);
 
 app.use('/api', routes);
 
