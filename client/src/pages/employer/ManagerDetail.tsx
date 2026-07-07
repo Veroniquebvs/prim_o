@@ -21,6 +21,7 @@ import { formatTokens } from "../../utils/tokens";
 import { useAuth } from "../../context/AuthContext";
 import { resolveAvatarIndex } from "../../utils/avatar";
 import { Pager, paginate } from "../../components/Pager";
+import MotifSelectionModal from "../../components/MotifSelectionModal";
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -55,6 +56,7 @@ export default function ManagerDetail() {
   const [quickSuccess, setQuickSuccess] = useState("");
   const [quickError, setQuickError] = useState("");
   const [entryDate, setEntryDate] = useState("");
+  const [showMotifModal, setShowMotifModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
@@ -521,16 +523,29 @@ export default function ManagerDetail() {
                   <label className="form-label">
                     Motif {quickTarget === 'team' ? <span style={{ fontWeight: 'normal', color: 'var(--text-muted)' }}>(optionnel)</span> : null}
                   </label>
-                  <input className="form-input" type="text" value={quickReason} list="quick_motifs"
-                    onChange={(e) => setQuickReason(e.target.value)}
-                    placeholder="ex. Bonus trimestriel" required={quickTarget !== 'team'} />
-                  <datalist id="quick_motifs">
-                    <option value="Prime exceptionnelle" />
-                    <option value="Bon travail sur le projet" />
-                    <option value="Atteinte des objectifs" />
-                    <option value="Esprit d'équipe" />
-                    <option value="Initiative récompensée" />
-                  </datalist>
+                  <div
+                    onClick={() => setShowMotifModal(true)}
+                    className="form-input"
+                    style={{
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      color: quickReason ? "var(--text)" : "var(--text-muted)",
+                    }}
+                  >
+                    {quickReason ? quickReason : "Sélectionner un motif..."}
+                  </div>
+                  <input type="hidden" value={quickReason} required={quickTarget !== 'team'} />
+                  {showMotifModal && (
+                    <MotifSelectionModal
+                      initialMotif={quickReason}
+                      onSelect={(motif) => {
+                        setQuickReason(motif);
+                        setShowMotifModal(false);
+                      }}
+                      onClose={() => setShowMotifModal(false)}
+                    />
+                  )}
                 </div>
                 {quickError && <p className="form-error" style={{ marginBottom: 16 }}>{quickError}</p>}
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>

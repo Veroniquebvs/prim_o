@@ -20,6 +20,7 @@ import { formatTokens } from "../../utils/tokens";
 import type { User, TokenTransaction } from "../../types";
 import { fmt } from "../../utils/date";
 import { Pager, paginate } from "../../components/Pager";
+import MotifSelectionModal from "../../components/MotifSelectionModal";
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -60,6 +61,7 @@ export default function EmployeeDetail() {
   const [quickSuccess, setQuickSuccess] = useState("");
   const [quickError, setQuickError] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
+  const [showMotifModal, setShowMotifModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -455,9 +457,29 @@ export default function EmployeeDetail() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Motif</label>
-                  <input className="form-input" type="text" value={quickReason}
-                    onChange={(e) => setQuickReason(e.target.value)}
-                    placeholder="ex. Bonus trimestriel" required />
+                  <div
+                    onClick={() => setShowMotifModal(true)}
+                    className="form-input"
+                    style={{
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      color: quickReason ? "var(--text)" : "var(--text-muted)",
+                    }}
+                  >
+                    {quickReason ? quickReason : "Sélectionner un motif..."}
+                  </div>
+                  <input type="hidden" value={quickReason} required />
+                  {showMotifModal && (
+                    <MotifSelectionModal
+                      initialMotif={quickReason}
+                      onSelect={(motif) => {
+                        setQuickReason(motif);
+                        setShowMotifModal(false);
+                      }}
+                      onClose={() => setShowMotifModal(false)}
+                    />
+                  )}
                 </div>
                 {quickError && <p className="form-error" style={{ marginBottom: 16 }}>{quickError}</p>}
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
