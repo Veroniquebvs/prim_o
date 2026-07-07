@@ -98,12 +98,24 @@ const updateAvatar = async (id, avatar_index) => {
 };
 
 /**
- * Permanently deletes a user by their UUID. Admin-only operation.
- * id is the UUID of the user to delete. Throws 404 if the user does not exist.
+ * Permanently deletes a user by their UUID. Callable by admin (any user) or employer
+ * (only employees/managers within their own company — never other employers or admins).
+ * id is the UUID of the user to delete. Throws 404 if not found/not in scope, 403 if an
+ * employer attempts to delete a peer employer or an admin account.
  */
-const remove = async (id) => {
-  const user = await User.findByPk(id);
+const remove = async (id, requester) => {
+  const isAdmin = requester.role === 'admin';
+
+  const user = isAdmin
+    ? await User.findByPk(id)
+    : await User.findOne({ where: { id, company_id: requester.company_id } });
+
   if (!user) throw httpError('User not found', 404);
+
+  if (!isAdmin && ['employer', 'admin'].includes(user.role)) {
+    throw httpError('Forbidden', 403);
+  }
+
   await user.destroy();
 };
 

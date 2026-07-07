@@ -43,10 +43,13 @@ const update = async (req, res, next) => {
   }
 };
 
-/** Admin-only: permanently deletes a user. */
+/** Employer or admin: permanently deletes a user. Employer is limited to their own company's employees/managers. */
 const remove = async (req, res, next) => {
   try {
-    await usersService.remove(req.params.id);
+    await usersService.remove(req.params.id, {
+      role: req.user.role,
+      company_id: req.user.company_id,
+    });
     res.json({ success: true, message: 'User deleted' });
   } catch (err) {
     next(err);
