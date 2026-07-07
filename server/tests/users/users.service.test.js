@@ -5,7 +5,8 @@
  * - list: returns all users matching the provided filter options
  * - getById: returns the user or throws 404 if not found
  * - update: applies only whitelisted fields; strips password_hash from the response
- * - remove: calls user.destroy(); returns 404 if user not found
+ * - remove: calls user.destroy(); returns 404 if user not found/out of scope, 403 if an
+ *   employer targets another employer/admin
  * - history: returns the user's token transaction history
  */
 jest.mock('../../src/models', () => ({
@@ -129,18 +130,59 @@ describe('update', () => {
 // ─── remove ───────────────────────────────────────────────────────────────────
 
 describe('remove', () => {
-  it('destroys the user', async () => {
+  it('allows an admin to destroy any user', async () => {
     const user = { ...fakeUser, destroy: jest.fn().mockResolvedValue(undefined) };
     User.findByPk.mockResolvedValue(user);
 
-    await remove('user-uuid');
+    await remove('user-uuid', { role: 'admin', company_id: null });
 
     expect(user.destroy).toHaveBeenCalled();
   });
 
-  it('throws 404 when user does not exist', async () => {
+  it('throws 404 when the admin target does not exist', async () => {
     User.findByPk.mockResolvedValue(null);
-    await expect(remove('ghost-uuid')).rejects.toMatchObject({ status: 404 });
+    await expect(remove('ghost-uuid', { role: 'admin', company_id: null })).rejects.toMatchObject({
+      status: 404,
+    });
+  });
+
+  it('allows an employer to destroy an employee in their own company', async () => {
+    const user = { ...fakeUser, destroy: jest.fn().mockResolvedValue(undefined) };
+    User.findOne.mockResolvedValue(user);
+
+    await remove('user-uuid', { role: 'employer', company_id: 'co-uuid' });
+
+    expect(User.findOne).toHaveBeenCalledWith({
+      where: { id: 'user-uuid', company_id: 'co-uuid' },
+    });
+    expect(user.destroy).toHaveBeenCalled();
+  });
+
+  it('throws 404 when the target is not in the employer company', async () => {
+    User.findOne.mockResolvedValue(null);
+    await expect(
+      remove('ghost-uuid', { role: 'employer', company_id: 'co-uuid' })
+    ).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('throws 403 when an employer targets another employer', async () => {
+    const user = { ...fakeUser, role: 'employer', destroy: jest.fn() };
+    User.findOne.mockResolvedValue(user);
+
+    await expect(
+      remove('user-uuid', { role: 'employer', company_id: 'co-uuid' })
+    ).rejects.toMatchObject({ status: 403 });
+    expect(user.destroy).not.toHaveBeenCalled();
+  });
+
+  it('throws 403 when an employer targets an admin', async () => {
+    const user = { ...fakeUser, role: 'admin', destroy: jest.fn() };
+    User.findOne.mockResolvedValue(user);
+
+    await expect(
+      remove('user-uuid', { role: 'employer', company_id: 'co-uuid' })
+    ).rejects.toMatchObject({ status: 403 });
+    expect(user.destroy).not.toHaveBeenCalled();
   });
 });
 
