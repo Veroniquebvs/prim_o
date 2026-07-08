@@ -5,7 +5,7 @@
  * GET    /pending       — employer or admin; list employees awaiting activation
  * GET    /:id           — any authenticated user; fetch one user (scoped to company)
  * PUT    /:id           — any authenticated user; update name/first_name
- * DELETE /:id           — admin only; permanently delete a user
+ * DELETE /:id           — employer or admin; permanently delete a user (employer limited to own company's employees/managers)
  * GET    /:id/history   — any authenticated user; token transaction history
  * PATCH  /:id/activate  — employer or admin; activate a pending employee
  * PATCH  /:id/entry-date — employer or admin; update an employee's entry date
@@ -72,7 +72,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  roleGuard('admin'),
+  roleGuard('employer', 'admin'),
   [param('id').isUUID().withMessage('id must be a valid UUID'), validate],
   usersController.remove
 );

@@ -203,12 +203,42 @@ describe('Users Integration Routes - Security & Isolation', () => {
       expect(mockEmployee.destroy).toHaveBeenCalled();
     });
 
-    it('denies employers from deleting a user (403)', async () => {
+    it('allows employers to delete an employee in their own company', async () => {
+      User.findOne.mockResolvedValue(mockEmployee);
+
       const res = await request(app)
         .delete(`/api/users/${MOCK_EMPLOYEE_ID}`)
         .set('Authorization', `Bearer ${employerToken}`);
 
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(mockEmployee.destroy).toHaveBeenCalled();
+    });
+
+    it('denies cross-company employer deletion by returning 404 (multi-tenant boundary)', async () => {
+      User.findOne.mockResolvedValue(null);
+
+      const res = await request(app)
+        .delete(`/api/users/${MOCK_OTHER_EMPLOYEE_ID}`) // Employee B (Company B)
+        .set('Authorization', `Bearer ${employerToken}`); // Employer (Company A)
+
+      expect(res.status).toBe(404);
+    });
+
+    it('denies employers from deleting another employer (403)', async () => {
+      const peerEmployer = createMockUserInstance({
+        id: MOCK_MANAGER_ID,
+        role: 'employer',
+        company_id: MOCK_COMPANY_A_ID,
+      });
+      User.findOne.mockResolvedValue(peerEmployer);
+
+      const res = await request(app)
+        .delete(`/api/users/${MOCK_MANAGER_ID}`)
+        .set('Authorization', `Bearer ${employerToken}`);
+
       expect(res.status).toBe(403);
+      expect(peerEmployer.destroy).not.toHaveBeenCalled();
     });
 
     it('denies employees from deleting a user (403)', async () => {
