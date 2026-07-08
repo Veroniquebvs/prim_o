@@ -147,7 +147,7 @@ export default function Historique() {
   // Unified personal timeline (tokens received and redemptions)
   const personalTimeline = [
     ...transactions
-      .filter(t => t && t.receiver_id === user?.id)
+      .filter(t => t && (t.receiver_id === user?.id || (t.sender_id === user?.id && t.receiver_id === null)))
       .map(t => ({ ...t, _kind: 'token' })),
     ...redemptions
       .map(r => ({ ...r, _kind: 'redemption' }))
@@ -215,10 +215,22 @@ export default function Historique() {
                       </div>
                     );
                   }
+                  const isDeduction = tx.sender_id === user?.id && tx.receiver_id === null;
                   return (
                     <div key={`tx-${tx.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                       <div>
-                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tokens reçus <span className="token-badge" style={{ marginLeft: 6 }}>+{formatTokens(tx.amount)}</span></p>
+                        <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                          {isDeduction ? 'Tokens retirés' : 'Tokens reçus'}{' '}
+                          <span 
+                            className="token-badge" 
+                            style={{ 
+                              marginLeft: 6,
+                              ...(isDeduction ? { background: '#fef2f2', color: '#991b1b' } : {})
+                            }}
+                          >
+                            {isDeduction ? '−' : '+'}{formatTokens(tx.amount)}
+                          </span>
+                        </p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>Motif : {tx.reason || tx.type || '—'}</p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>{fmtDateTime(tx.createdAt || tx.created_at)}</p>
                       </div>
@@ -260,7 +272,22 @@ export default function Historique() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {slice.map((item) => {
                 const tx = item as TokenTransaction;
-                const firstName = tx.receiver?.first_name || tx.receiver?.name || 'Un collaborateur';
+                const isDeduction = tx.receiver_id === null;
+                const isCompanyDeduction = isDeduction && tx.sender_id === null;
+                
+                let displayName = '';
+                if (isCompanyDeduction) {
+                  displayName = 'Entreprise (déduction)';
+                } else if (isDeduction) {
+                  displayName = tx.sender
+                    ? `${tx.sender.first_name} ${tx.sender.name} (retrait)`
+                    : 'Un collaborateur (retrait)';
+                } else {
+                  displayName = tx.receiver
+                    ? `${tx.receiver.first_name} ${tx.receiver.name}`
+                    : 'Un collaborateur';
+                }
+
                 const motif = tx.reason || tx.type || '—';
                 const amount = tx.amount;
                 const dateStr = fmtDateTime(tx.createdAt || tx.created_at);
@@ -270,7 +297,7 @@ export default function Historique() {
                   <div key={`mtx-${tx.id}`} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                     <div>
                       <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                        {firstName}
+                        {displayName}
                         {user?.role === 'employer' && managerName && (
                           <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
                             (équipe de {managerName})
@@ -285,7 +312,12 @@ export default function Historique() {
                       </p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <span className="token-badge">+{amount} tokens</span>
+                      <span 
+                        className="token-badge"
+                        style={isDeduction ? { background: '#fef2f2', color: '#991b1b' } : {}}
+                      >
+                        {isDeduction ? '−' : '+'}{amount} tokens
+                      </span>
                     </div>
                   </div>
                 );
@@ -333,6 +365,8 @@ export default function Historique() {
             <ul className="feed-list">
               {feed.map((tx) => {
                 const isNew = newIds.has(tx.id);
+                const isDeduction = tx.receiver_id === null;
+
                 return (
                   <li key={tx.id} className={`feed-item${isNew ? ' feed-item--new' : ''}`}>
                     <span className="feed-avatar" style={{ background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -343,7 +377,18 @@ export default function Historique() {
                       />
                     </span>
                     <span className="feed-text">
-                      <span className="token-badge feed-badge">+{formatTokens(tx.amount)}</span> tokens gagnés
+                      {isDeduction ? (
+                        <>
+                          <span className="token-badge feed-badge" style={{ background: '#fef2f2', color: '#991b1b' }}>
+                            −{formatTokens(tx.amount)}
+                          </span>{' '}
+                          tokens retirés
+                        </>
+                      ) : (
+                        <>
+                          <span className="token-badge feed-badge">+{formatTokens(tx.amount)}</span> tokens gagnés
+                        </>
+                      )}
                       {tx.reason && (
                         <> pour : <strong>{tx.reason}</strong></>
                       )}
