@@ -5,7 +5,7 @@
  * Tests cover:
  * - handleWebhook: invalid signature throws 400; unknown event type is silently ignored;
  *   invoice.payment_succeeded credits company token_balance and inserts a TokenTransaction
- *   and commits the transaction
+ *   and commits the transaction; an already-processed payment (Stripe retry) is not credited twice
  */
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
@@ -36,7 +36,7 @@ const mockCompany = {
 };
 jest.mock('../../src/models', () => ({
   Company: { findOne: jest.fn() },
-  TokenTransaction: { create: jest.fn() },
+  TokenTransaction: { create: jest.fn(), findOne: jest.fn() },
 }));
 
 const { Company, TokenTransaction } = require('../../src/models');
@@ -97,6 +97,7 @@ describe('handleWebhook — invoice.payment_succeeded', () => {
   beforeEach(() => {
     mockConstructEvent.mockReturnValue(makeEvent('invoice.payment_succeeded'));
     Company.findOne.mockResolvedValue(mockCompany);
+    TokenTransaction.findOne.mockResolvedValue(null);
     TokenTransaction.create.mockResolvedValue({});
   });
 
@@ -135,5 +136,18 @@ describe('handleWebhook — invoice.payment_succeeded', () => {
 
     await expect(handleWebhook(makeReq())).rejects.toThrow('DB down');
     expect(mockTx.rollback).toHaveBeenCalled();
+    expect(mockTx.commit).not.toHaveBeenCalled();
+  });
+
+  it('does not credit twice when the payment was already processed (Stripe retry)', async () => {
+    TokenTransaction.findOne.mockResolvedValue({ id: 'tx-existing' });
+
+    await expect(handleWebhook(makeReq())).resolves.toBeUndefined();
+    expect(TokenTransaction.findOne).toHaveBeenCalledWith({
+      where: { stripe_payment_id: 'pi_test', type: 'purchase' },
+    });
+    expect(mockCompany.increment).not.toHaveBeenCalled();
+    expect(TokenTransaction.create).not.toHaveBeenCalled();
+    expect(mockTx.commit).not.toHaveBeenCalled();
   });
 });

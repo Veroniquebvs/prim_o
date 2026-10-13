@@ -5,7 +5,6 @@
 
 require('dotenv').config();
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid');
 
 const sequelize = require('./src/config/database');
 const { Company, User, Team, TeamMember } = require('./src/models');

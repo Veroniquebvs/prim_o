@@ -69,7 +69,7 @@ jest.mock('../../src/models', () => ({
   TeamMember: { findAll: jest.fn() },
 }));
 
-const { User, Voucher, Redemption, Company, Favorite } = require('../../src/models');
+const { User, Voucher, Redemption, Favorite } = require('../../src/models');
 const app = require('../../server');
 
 beforeEach(() => jest.clearAllMocks());

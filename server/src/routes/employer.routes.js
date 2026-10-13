@@ -9,7 +9,7 @@
  * PATCH  /allocations/:id        — update an existing allocation rule (amount, active, day_of_month)
  */
 const { Router } = require('express');
-const { body, param, query } = require('express-validator');
+const { body, param } = require('express-validator');
 const employerController = require('../controllers/employer.controller');
 const { verifyToken } = require('../middleware/verifyToken');
 const { roleGuard } = require('../middleware/roleGuard');
