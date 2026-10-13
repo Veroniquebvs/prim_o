@@ -96,7 +96,7 @@ const getPendingUsers = async (req, res) => {
     });
 
     res.json(pendingUsers);
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -52,18 +52,6 @@ const mockEmployee = createMockUserInstance({
   entry_date: '2026-01-01',
 });
 
-const mockOtherEmployee = createMockUserInstance({
-  id: MOCK_OTHER_EMPLOYEE_ID,
-  name: 'Employee B',
-  first_name: 'Alice',
-  email: 'employee.b@company-b.com',
-  role: 'employee',
-  status: 'active',
-  token_balance: 10,
-  company_id: MOCK_COMPANY_B_ID,
-  entry_date: '2026-02-01',
-});
-
 jest.mock('../../src/models', () => ({
   User: {
     findAll: jest.fn(),
@@ -75,7 +63,7 @@ jest.mock('../../src/models', () => ({
   },
 }));
 
-const { User, TokenTransaction } = require('../../src/models');
+const { User } = require('../../src/models');
 const app = require('../../server');
 
 beforeEach(() => jest.clearAllMocks());

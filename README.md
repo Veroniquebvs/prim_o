@@ -1,5 +1,7 @@
 # PRIM'O
 
+[![CI](https://github.com/Veroniquebvs/prim_o/actions/workflows/ci.yml/badge.svg)](https://github.com/Veroniquebvs/prim_o/actions/workflows/ci.yml)
+
 > Real-time meritocratic recognition platform for SMEs.
 
 PRIM'O is a B2B2C SaaS platform that enables real-time meritocratic recognition inside SMEs. Employers buy token packs via Stripe, then allocate tokens to employees on the spot when they observe good performance. Employees accumulate tokens and redeem them for partner vouchers (promo codes) through the integrated marketplace.

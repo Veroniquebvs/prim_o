@@ -1,0 +1,54 @@
+# CI — lint, tests and builds for PRIM'O.
+#
+# server : ESLint + Jest (unit + integration, models mocked: no database, no secrets)
+# client : ESLint + type check + Vite build
+# docker : production image of the API (same target as Render)
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server (lint + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace=server
+      - run: npm test --workspace=server
+
+  client:
+    name: Client (lint + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace=client
+      - run: npm run build --workspace=client
+
+  docker:
+    name: Docker (API production image)
+    runs-on: ubuntu-latest
+    needs: server
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target production -t primo-api:ci server/

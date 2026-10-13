@@ -2,7 +2,8 @@
  * tests/auth/auth.service.test.js — Unit tests for AuthService.
  *
  * Mocks the User model and JWT environment variables. Tests cover:
- * - register: duplicate email returns 409, successful creation returns safe user object
+ * - register: duplicate email returns a generic message without creating a user or issuing tokens,
+ *   successful creation returns safe user object
  * - login: wrong password returns 401, missing user returns 401, valid credentials return tokens
  * - getProfile: missing user returns 404, found user returns safe user object
  * - refreshToken: invalid token returns 401, valid refresh token returns a new access token
@@ -87,12 +88,14 @@ describe('register', () => {
     expect(payload.company_id).toBe('co-uuid');
   });
 
-  it('throws 409 when email is already in use', async () => {
+  it('returns a generic message without creating a user or issuing tokens when email exists', async () => {
     User.findOne.mockResolvedValue(fakeUser);
 
-    await expect(
-      register({ name: 'X', first_name: 'Y', email: 'john@example.com', password: 'pass', role: 'employee' })
-    ).rejects.toMatchObject({ status: 409, message: 'Email already in use' });
+    const result = await register({ name: 'X', first_name: 'Y', email: 'John@Example.com', password: 'pass', role: 'employee' });
+
+    expect(User.findOne).toHaveBeenCalledWith({ where: { email: 'john@example.com' } });
+    expect(User.create).not.toHaveBeenCalled();
+    expect(result).toEqual({ message: 'If this email is new, your account has been created.' });
   });
 
   it('hashes the password before storing', async () => {

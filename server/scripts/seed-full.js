@@ -9,7 +9,6 @@
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid');
 
 const DATABASE_URL = process.argv[2];
 if (!DATABASE_URL) {

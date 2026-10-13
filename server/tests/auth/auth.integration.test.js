@@ -91,7 +91,7 @@ describe('Auth Integration Routes', () => {
       expect(res.body).toHaveProperty('error');
     });
 
-    it('returns 409 when email is already in use', async () => {
+    it('answers 201 with a generic message and no tokens when email is already in use', async () => {
       User.findOne.mockResolvedValue(fakeUser);
 
       const res = await request(app)
@@ -104,8 +104,11 @@ describe('Auth Integration Routes', () => {
           role: 'employee',
         });
 
-      expect(res.status).toBe(409);
-      expect(res.body.error).toBe('Email already in use');
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toEqual({ message: 'If this email is new, your account has been created.' });
+      expect(res.body.data).not.toHaveProperty('accessToken');
+      expect(User.create).not.toHaveBeenCalled();
     });
   });
 

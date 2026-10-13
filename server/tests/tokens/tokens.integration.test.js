@@ -129,11 +129,11 @@ describe('Tokens Integration Routes', () => {
   });
 
   describe('GET /api/tokens/balance/:userId', () => {
-    it('returns token balance of a user', async () => {
-      User.findByPk.mockResolvedValue({ id: MOCK_RECEIVER_ID, token_balance: 42 });
+    it('returns the own token balance of an employee', async () => {
+      User.findOne.mockResolvedValue({ id: MOCK_EMPLOYEE_ID, token_balance: 42 });
 
       const res = await request(app)
-        .get(`/api/tokens/balance/${MOCK_RECEIVER_ID}`)
+        .get(`/api/tokens/balance/${MOCK_EMPLOYEE_ID}`)
         .set('Authorization', `Bearer ${employeeToken}`);
 
       expect(res.status).toBe(200);
@@ -141,10 +141,32 @@ describe('Tokens Integration Routes', () => {
       expect(res.body.data.token_balance).toBe(42);
     });
 
+    it('returns 403 when an employee reads another user balance', async () => {
+      const res = await request(app)
+        .get(`/api/tokens/balance/${MOCK_RECEIVER_ID}`)
+        .set('Authorization', `Bearer ${employeeToken}`);
+
+      expect(res.status).toBe(403);
+      expect(User.findOne).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 when an employer reads a user from another company', async () => {
+      User.findOne.mockResolvedValue(null);
+
+      const res = await request(app)
+        .get(`/api/tokens/balance/${MOCK_RECEIVER_ID}`)
+        .set('Authorization', `Bearer ${employerToken}`);
+
+      expect(res.status).toBe(404);
+      expect(User.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: MOCK_RECEIVER_ID, company_id: MOCK_COMPANY_ID } })
+      );
+    });
+
     it('returns 400 for invalid UUID format', async () => {
       const res = await request(app)
         .get('/api/tokens/balance/invalid-uuid')
-        .set('Authorization', `Bearer ${employeeToken}`);
+        .set('Authorization', `Bearer ${employerToken}`);
 
       expect(res.status).toBe(400);
     });

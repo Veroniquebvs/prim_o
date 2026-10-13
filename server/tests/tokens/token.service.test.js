@@ -6,7 +6,7 @@
  * - allocate: employer with insufficient company balance returns 402; successful allocation
  *   decrements company balance, increments receiver balance, inserts a TokenTransaction,
  *   and commits the transaction; rollback is called on any intermediate failure
- * - getBalance: returns the user's token_balance
+ * - getBalance: returns the user's token_balance, scoped to the requester's company
  * - listTransactions and getTransaction: return the mocked query results
  */
 process.env.JWT_SECRET = 'test_secret';
@@ -126,7 +126,7 @@ describe('allocate', () => {
 
 describe('getBalance', () => {
   it('returns userId and token_balance', async () => {
-    User.findByPk.mockResolvedValue({ id: 'u-uuid', token_balance: 42 });
+    User.findOne.mockResolvedValue({ id: 'u-uuid', token_balance: 42 });
 
     const result = await getBalance('u-uuid');
 
@@ -134,9 +134,27 @@ describe('getBalance', () => {
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
+    User.findOne.mockResolvedValue(null);
 
     await expect(getBalance('ghost-uuid')).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('scopes the lookup to the requester company when reading another user', async () => {
+    User.findOne.mockResolvedValue(null);
+    const employerB = { id: 'employer-b', role: 'employer', company_id: 'company-b' };
+
+    await expect(getBalance('u-uuid', employerB)).rejects.toMatchObject({ status: 404 });
+    expect(User.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'u-uuid', company_id: 'company-b' } })
+    );
+  });
+
+  it('does not scope by company for an admin', async () => {
+    User.findOne.mockResolvedValue({ id: 'u-uuid', token_balance: 5 });
+
+    await getBalance('u-uuid', { id: 'admin-id', role: 'admin' });
+
+    expect(User.findOne).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u-uuid' } }));
   });
 });
 

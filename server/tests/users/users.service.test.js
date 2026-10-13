@@ -191,7 +191,7 @@ describe('remove', () => {
 describe('history', () => {
   it('returns transactions where user is sender or receiver', async () => {
     const { Op } = require('sequelize');
-    User.findByPk.mockResolvedValue({ id: 'user-uuid' });
+    User.findOne.mockResolvedValue({ id: 'user-uuid' });
     TokenTransaction.findAll.mockResolvedValue([{ id: 'tx-1' }]);
 
     const result = await history('user-uuid');
@@ -204,7 +204,18 @@ describe('history', () => {
   });
 
   it('throws 404 when user does not exist', async () => {
-    User.findByPk.mockResolvedValue(null);
+    User.findOne.mockResolvedValue(null);
     await expect(history('ghost-uuid')).rejects.toMatchObject({ status: 404 });
+    expect(TokenTransaction.findAll).not.toHaveBeenCalled();
+  });
+
+  it('throws 404 for a user of another company (company scoping)', async () => {
+    User.findOne.mockResolvedValue(null);
+
+    await expect(history('user-uuid', 'company-b')).rejects.toMatchObject({ status: 404 });
+    expect(User.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'user-uuid', company_id: 'company-b' } })
+    );
+    expect(TokenTransaction.findAll).not.toHaveBeenCalled();
   });
 });

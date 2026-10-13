@@ -18,7 +18,7 @@
 const cron = require('node-cron');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { ScheduledAllocation, User, Company, TokenTransaction, Team, TeamMember } = require('../models');
+const { ScheduledAllocation, User, Company, TokenTransaction, Team } = require('../models');
 const { resolveTargets } = require('./targetResolver.service');
 
 /**
