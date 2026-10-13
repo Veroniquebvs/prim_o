@@ -25,7 +25,8 @@ router.post(
     body('role')
       .isIn(['employer', 'employee'])
       .withMessage('Role must be employer or employee'),
-    body('company_id').optional().isUUID().withMessage('company_id must be a valid UUID'),
+    body('company_id').isUUID().withMessage('company_id must be a valid UUID'),
+    body('claim_token').optional().isString().withMessage('claim_token must be a string'),
     validate,
   ],
   authController.register

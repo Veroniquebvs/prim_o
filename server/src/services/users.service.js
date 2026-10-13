@@ -142,16 +142,16 @@ const history = async (id, requesterCompanyId) => {
 
 /**
  * Activates a pending employee by setting their status to 'active'.
- * id is the UUID of the employee to activate. companyId scopes the lookup to the employer's company.
+ * id is the UUID of the employee to activate. companyId scopes the lookup to the employer's company;
+ * it is undefined for an admin, who can activate a user of any company.
  * entry_date is an optional ISO date string representing the employee's start date; passing
  * null or omitting it clears any previously set entry date.
  * Throws 404 if the user is not found in that company.
  * Returns the updated user record.
  */
 const activateUser = async (id, companyId, entry_date) => {
-  const user = await User.findOne({
-    where: { id, company_id: companyId },
-  });
+  const where = companyId === undefined ? { id } : { id, company_id: companyId };
+  const user = await User.findOne({ where });
 
   if (!user) throw httpError('User not found', 404);
 
@@ -174,7 +174,7 @@ const changePassword = async (id, { current_password, password }) => {
   const bcrypt = require('bcrypt');
   const BCRYPT_ROUNDS = 12;
 
-  const user = await User.findByPk(id);
+  const user = await User.scope('withPassword').findByPk(id);
   if (!user) throw httpError('User not found', 404);
 
   const isValid = await bcrypt.compare(current_password, user.password_hash);

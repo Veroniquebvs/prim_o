@@ -13,6 +13,7 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { Company } = require('../models');
+const { signClaimToken } = require('./companyClaim.service');
 
 const httpError = (message, status) => {
   const err = new Error(message);
@@ -21,16 +22,17 @@ const httpError = (message, status) => {
 };
 
 /**
- * Creates a new company record. Throws 409 if another company already uses the same email.
- * name, street, zip_code, city, and siret are required. email is optional but unique when present.
- * Returns the created Company instance.
+ * Creates a new company record (public self-onboarding). Throws 409 if another company already
+ * uses the same email. name, street, zip_code, city, and siret are required. email is optional
+ * but unique when present. Returns the created company plus a one-hour claim_token that the
+ * creator must send to POST /auth/register to become its employer.
  */
 const create = async ({ name, email, street, zip_code, city, siret }) => {
   if (email) {
     const existing = await Company.findOne({ where: { email } });
     if (existing) throw httpError('Company registration could not be completed', 409);
   }
-  return Company.create({
+  const company = await Company.create({
     name,
     email,
     street,
@@ -38,6 +40,7 @@ const create = async ({ name, email, street, zip_code, city, siret }) => {
     city,
     siret,
   });
+  return { ...company.toJSON(), claim_token: signClaimToken(company.id) };
 };
 
 /**

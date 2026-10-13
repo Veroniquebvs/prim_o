@@ -9,7 +9,8 @@
  *    PrintableQRCode poster), the role is locked to employee, the company is pre-resolved
  *    (name fetched via the public endpoint), and the company ID field is non-editable.
  *
- * On successful registration, navigates to the role-appropriate dashboard.
+ * An employer is logged in and sent to their dashboard. An employee account is created pending
+ * activation by the employer: no session is opened and a confirmation message is shown instead.
  */
 import { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -41,6 +42,7 @@ export default function RegisterPage() {
   const [qrCompanyName, setQrCompanyName] = useState("");
 
   const [error, setError] = useState("");
+  const [pendingMessage, setPendingMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -68,6 +70,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       let cId = companyId;
+      let claimToken: string | undefined;
 
       if (role === "employer") {
         // Submitting updated company details
@@ -80,28 +83,37 @@ export default function RegisterPage() {
           city,
         });
         cId = company.id;
+        claimToken = company.claim_token;
       }
 
-      await register({
+      const result = await register({
         first_name: firstName,
         name: lastName,
         email,
         password,
         role,
         company_id: cId || undefined,
+        claim_token: claimToken,
       });
 
-      if (role === "employer") {
-        navigate("/employer/dashboard", { replace: true });
+      if (result.pending && role === "employer") {
+        // The API only answers this way for an employer when the email is already used
+        setError("Impossible de créer un compte employeur avec cette adresse. Si vous avez déjà un compte, connectez-vous.");
+      } else if (result.pending) {
+        setPendingMessage(result.message);
       } else {
-        navigate("/pour-toi", { replace: true });
+        navigate("/employer/dashboard", { replace: true });
       }
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string } } };
-      setError(
-        axiosErr.response?.data?.error ??
-          "Erreur lors de la création du compte.",
-      );
+      const axiosErr = err as { response?: { status?: number; data?: { error?: string } } };
+      const apiError = axiosErr.response?.data?.error;
+      if (axiosErr.response?.status === 403) {
+        setError("Cette entreprise a déjà un compte employeur. Demandez-lui de vous inviter.");
+      } else if (apiError === "Invalid company") {
+        setError("Entreprise introuvable. Vérifiez l'identifiant ou scannez à nouveau le QR code.");
+      } else {
+        setError(apiError ?? "Erreur lors de la création du compte.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -126,6 +138,14 @@ export default function RegisterPage() {
           <h1 className="auth-title">Créer un compte</h1>
         )}
 
+        {pendingMessage ? (
+          <div role="status">
+            <p className="form-success">{pendingMessage}</p>
+            <Link to="/login" className="btn btn-primary btn-full">
+              Aller à la connexion
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit}>
           {/* Rôle — masqué si l'inscription vient d'un QR code (rôle forcé à employé) */}
           {!qrCompanyId && (
@@ -337,6 +357,7 @@ export default function RegisterPage() {
             {submitting ? "Création…" : "Créer le compte"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

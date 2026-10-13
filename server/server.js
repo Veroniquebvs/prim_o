@@ -75,6 +75,8 @@ const authLimiter = rateLimit({
   message: { error: 'Too many attempts, please try again later', code: 429 },
   standardHeaders: true,
   legacyHeaders: false,
+  // Jest sets NODE_ENV=test: integration suites send more than 10 auth requests per run
+  skip: () => process.env.NODE_ENV === 'test',
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
