@@ -1,5 +1,8 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    // Idempotent: a database created by the base-schema migration already has the columns
+    const columns = await queryInterface.describeTable('scheduled_allocations');
+    if (columns.target_type) return;
     await queryInterface.addColumn('scheduled_allocations', 'target_type', {
       type: Sequelize.ENUM('user', 'all_company', 'all_employees', 'all_managers', 'team', 'team_and_manager'),
       defaultValue: 'all_company',
