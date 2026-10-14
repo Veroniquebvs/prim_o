@@ -23,7 +23,11 @@ interface RegisterPayload {
   password: string;
   role: 'employer' | 'employee';
   company_id?: string;
+  claim_token?: string;
 }
+
+/** pending: the account awaits activation by the employer, nobody is logged in. */
+type RegisterResult = { pending: false } | { pending: true; message: string };
 
 interface AuthContextValue {
   user: User | null;
@@ -31,7 +35,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshCompany: () => Promise<void>;
@@ -87,15 +91,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   /**
-   * Registers a new account with the API, stores both tokens in localStorage, and updates
-   * the user and company state. No return value — the caller navigates after registration.
+   * Registers a new account with the API. An employer gets tokens: they are stored and the user
+   * is logged in. An employee gets no token (account pending activation by the employer): nothing
+   * is stored and the API message is returned so the page can display it.
    */
-  async function register(payload: RegisterPayload): Promise<void> {
-    const { accessToken, refreshToken, user: u } = await authService.register(payload);
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(u);
-    await fetchCompany(u);
+  async function register(payload: RegisterPayload): Promise<RegisterResult> {
+    const data = await authService.register(payload);
+    if (!('accessToken' in data)) {
+      return { pending: true, message: data.message };
+    }
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    setUser(data.user);
+    await fetchCompany(data.user);
+    return { pending: false };
   }
 
   /**

@@ -71,7 +71,7 @@ const activateUser = async (req, res, next) => {
   try {
     const data = await usersService.activateUser(
       req.params.id,
-      req.user.company_id,
+      req.user.role === 'admin' ? undefined : req.user.company_id,
       req.body.entry_date
     );
 
@@ -93,6 +93,7 @@ const getPendingUsers = async (req, res) => {
         status: 'pending',
         role: 'employee',
       },
+      attributes: { exclude: ['password_hash'] },
     });
 
     res.json(pendingUsers);
