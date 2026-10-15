@@ -40,8 +40,13 @@ export default function LoginPage() {
       else if (u.role === "admin")
         navigate("/admin/dashboard", { replace: true });
       else navigate("/pour-toi", { replace: true });
-    } catch {
-      setError("Email ou mot de passe incorrect.");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      setError(
+        status === 403
+          ? "Votre compte est en attente d'activation par votre employeur."
+          : "Email ou mot de passe incorrect.",
+      );
     } finally {
       setSubmitting(false);
     }

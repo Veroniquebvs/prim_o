@@ -9,13 +9,14 @@
  *   employer targets another employer/admin
  * - history: returns the user's token transaction history
  */
-jest.mock('../../src/models', () => ({
-  User: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
-  TokenTransaction: { findAll: jest.fn() },
-}));
+jest.mock('../../src/models', () => {
+  const User = { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() };
+  User.scope = jest.fn(() => User);
+  return { User, TokenTransaction: { findAll: jest.fn() } };
+});
 
 const { User, TokenTransaction } = require('../../src/models');
-const { list, getById, update, remove, history } = require('../../src/services/users.service');
+const { list, getById, update, remove, history, changePassword } = require('../../src/services/users.service');
 
 const fakeUser = {
   id: 'user-uuid',
@@ -217,5 +218,29 @@ describe('history', () => {
       expect.objectContaining({ where: { id: 'user-uuid', company_id: 'company-b' } })
     );
     expect(TokenTransaction.findAll).not.toHaveBeenCalled();
+  });
+});
+
+// ─── changePassword ───────────────────────────────────────────────────────────
+
+describe('changePassword', () => {
+  const bcrypt = require('bcrypt');
+
+  it('loads the hash through the withPassword scope and stores a new bcrypt hash', async () => {
+    const user = { password_hash: bcrypt.hashSync('old-password', 4), save: jest.fn() };
+    User.findByPk.mockResolvedValue(user);
+
+    await changePassword('user-uuid', { current_password: 'old-password', password: 'new-password' });
+
+    expect(User.scope).toHaveBeenCalledWith('withPassword');
+    expect(await bcrypt.compare('new-password', user.password_hash)).toBe(true);
+    expect(user.save).toHaveBeenCalled();
+  });
+
+  it('throws 401 when the current password is wrong', async () => {
+    User.findByPk.mockResolvedValue({ password_hash: bcrypt.hashSync('old-password', 4), save: jest.fn() });
+
+    await expect(changePassword('user-uuid', { current_password: 'nope', password: 'new-password' }))
+      .rejects.toMatchObject({ status: 401 });
   });
 });

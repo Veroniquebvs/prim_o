@@ -8,8 +8,8 @@ name: CI
 on:
   push:
     branches: [main, dev]
+  # Every PR, including stacked PRs targeting another feature branch
   pull_request:
-    branches: [main, dev]
 
 concurrency:
   group: ci-${{ github.ref }}

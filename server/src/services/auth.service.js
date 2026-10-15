@@ -68,50 +68,97 @@ const safeUser = (user) => ({
   company_id: user.company_id ?? null,
 });
 
-/**
- * Registers a new user account. Throws 409 if the email is already taken.
- * name is the user's last name, first_name their given name, email must be unique,
- * password is hashed before storage (never stored in plain text), role must be
- * 'employer', 'employee', or 'admin', and company_id optionally links the user to a company.
- * Returns the safe user profile plus a freshly issued access token and refresh token.
- */
-const register = async ({ name, first_name, email, password, role, company_id }) => {
-  const { User } = require('../models');
-  const normalizedEmail = email.toLowerCase();
-  const existing = await User.findOne({ where: { email: normalizedEmail } });
-  if (existing) {
-    // Return a generic success-like envelope so the HTTP status code (201 vs 409)
-    // cannot be used to confirm whether an email address is already registered.
-    return { message: 'If this email is new, your account has been created.' };
-  }
+/** Generic registration reply: identical for a new employee and an already-used email. */
+const PENDING_MESSAGE =
+  "Si cette adresse est nouvelle, votre compte a été créé. Il sera utilisable dès que votre employeur l'aura activé.";
 
+/**
+ * Registers a new user account. Two cases, both requiring an existing company_id:
+ * - role 'employee': the account is created with status 'pending' and no token is issued.
+ *   The employee can log in only once their employer has activated the account.
+ * - role 'employer': self-onboarding of a company just created via POST /companies. Requires
+ *   the claim_token returned by that call (proof of creation, 1 h) AND a company that still has
+ *   no user (checked under a row lock), so nobody can register as employer of an existing
+ *   company. The employer is 'active' and receives tokens immediately.
+ * An already-used email gets the same generic reply as a new employee (no enumeration), and
+ * the password is hashed in every case to keep response times similar.
+ * Throws 400 if the company does not exist, 403 if an employer targets a company that
+ * already has users.
+ */
+const register = async ({ name, first_name, email, password, role, company_id, claim_token }) => {
+  const { User, Company } = require('../models');
+  const { verifyClaimToken } = require('./companyClaim.service');
+  const sequelize = require('../config/database');
+  const normalizedEmail = email.toLowerCase();
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  const user = await User.create({
-    name,
-    first_name,
-    email: normalizedEmail,
-    password_hash,
-    role,
-    token_balance: 0,
-    ...(company_id ? { company_id } : {}),
-  });
+  const existing = await User.findOne({ where: { email: normalizedEmail } });
+  if (existing) {
+    return { message: PENDING_MESSAGE };
+  }
 
-  return {
-    user: safeUser(user),
-    accessToken: createAccessToken(user),
-    refreshToken: createRefreshToken(user),
-  };
+  if (role === 'employee') {
+    const company = await Company.findByPk(company_id);
+    if (!company) throw httpError('Invalid company', 400);
+    await User.create({
+      name,
+      first_name,
+      email: normalizedEmail,
+      password_hash,
+      role,
+      status: 'pending',
+      token_balance: 0,
+      company_id,
+    });
+    return { message: PENDING_MESSAGE };
+  }
+
+  if (!verifyClaimToken(claim_token, company_id)) {
+    throw httpError('This company already has an employer', 403);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    const company = await Company.findByPk(company_id, { transaction: t, lock: t.LOCK.UPDATE });
+    if (!company) throw httpError('Invalid company', 400);
+    const usersInCompany = await User.count({ where: { company_id }, transaction: t });
+    if (usersInCompany > 0) throw httpError('This company already has an employer', 403);
+
+    const user = await User.create(
+      {
+        name,
+        first_name,
+        email: normalizedEmail,
+        password_hash,
+        role,
+        status: 'active',
+        token_balance: 0,
+        company_id,
+      },
+      { transaction: t }
+    );
+    await t.commit();
+
+    return {
+      user: safeUser(user),
+      accessToken: createAccessToken(user),
+      refreshToken: createRefreshToken(user),
+    };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 };
 
 /**
  * Authenticates a user by email and password. Throws 401 with the generic message
  * 'Invalid credentials' for both wrong-email and wrong-password cases to avoid
- * leaking which field was incorrect. Returns the safe user profile plus both tokens.
+ * leaking which field was incorrect, then 403 if the account is not active yet.
+ * Returns the safe user profile plus both tokens.
  */
 const login = async ({ email, password }) => {
   const { User, Company, Team } = require('../models');
-  const user = await User.findOne({
+  const user = await User.scope('withPassword').findOne({
     where: { email: email.toLowerCase() },
     include: [{ model: Company, as: 'company' }],
   });
@@ -121,6 +168,10 @@ const login = async ({ email, password }) => {
   const isValid = await bcrypt.compare(password, hashToCompare);
   if (!user || !isValid) {
     throw httpError('Invalid credentials', 401);
+  }
+  // Checked only after the password, so the account status is never revealed to a stranger
+  if (user.status !== 'active') {
+    throw httpError('Account pending activation', 403);
   }
 
   const { password_hash: _, ...safeUser } = user.toJSON();
@@ -166,7 +217,7 @@ const getProfile = async (userId) => {
  * Issues a new access token using a valid refresh token.
  * token is the refresh JWT string sent by the client.
  * Throws 400 if no token was provided, 401 if the token is invalid or expired,
- * and 404 if the user referenced by the token no longer exists.
+ * 404 if the user referenced by the token no longer exists, and 403 if the account is not active.
  * Returns an object containing only the new accessToken string.
  */
 const refreshToken = async (token) => {
@@ -187,6 +238,9 @@ const refreshToken = async (token) => {
   const user = await User.findByPk(payload.id);
   if (!user) {
     throw httpError('User not found', 404);
+  }
+  if (user.status !== 'active') {
+    throw httpError('Account pending activation', 403);
   }
 
   return { accessToken: createAccessToken(user) };

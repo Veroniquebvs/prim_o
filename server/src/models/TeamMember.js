@@ -6,8 +6,9 @@
  * dissolved, left_at is set to the current timestamp rather than deleting the row, preserving
  * historical membership records. joined_at records the date the employee was added.
  *
- * This model has no surrogate primary key — team_id and user_id together identify the active
- * membership row. Timestamps are disabled because joined_at and left_at serve that purpose.
+ * The primary key is a UUID like every other table (team_id and user_id are not unique together,
+ * since an employee can leave and rejoin a team). Timestamps are disabled because joined_at and
+ * left_at serve that purpose.
  */
 const { Model, DataTypes } = require('sequelize');
 
@@ -20,6 +21,11 @@ class TeamMember extends Model {}
 const initTeamMember = (sequelize) => {
   TeamMember.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       joined_at: {
         type: DataTypes.DATE,
         allowNull: false,

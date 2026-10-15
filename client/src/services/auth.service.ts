@@ -20,12 +20,18 @@ interface RegisterPayload {
   first_name: string;
   role: "employer" | "employee";
   company_id?: string;
+  claim_token?: string;
 }
 
 interface AuthData {
   accessToken: string;
   refreshToken: string;
   user: User;
+}
+
+/** Register reply for an employee (or an already-used email): no token, account awaits activation. */
+interface PendingRegistration {
+  message: string;
 }
 
 export const authService = {
@@ -37,8 +43,8 @@ export const authService = {
     return data.data;
   },
 
-  async register(payload: RegisterPayload): Promise<AuthData> {
-    const { data } = await api.post<ApiResponse<AuthData>>(
+  async register(payload: RegisterPayload): Promise<AuthData | PendingRegistration> {
+    const { data } = await api.post<ApiResponse<AuthData | PendingRegistration>>(
       "/auth/register",
       payload,
     );

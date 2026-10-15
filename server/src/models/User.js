@@ -17,7 +17,14 @@ const { Model, DataTypes } = require('sequelize');
  * the model can be used for database queries.
  */
 class User extends Model {
-  // Space for future custom methods (e.g., password validation)
+  /**
+   * Serialises the user without its password hash, so a User instance can never leak the hash
+   * in an API response (defence in depth on top of the default scope).
+   */
+  toJSON() {
+    const { password_hash: _, ...values } = super.toJSON();
+    return values;
+  }
 }
 
 const initUser = (sequelize) => {
@@ -103,6 +110,10 @@ const initUser = (sequelize) => {
       tableName: 'users',
       timestamps: true, // Automatically handles createdAt and updatedAt (timestamps)
       underscored: true, // Converts camelCase to snake_case in DB (e.g., password_hash)
+      // The hash is never loaded unless explicitly requested with User.scope('withPassword')
+      // (login and password change only). Also applies to every include of User.
+      defaultScope: { attributes: { exclude: ['password_hash'] } },
+      scopes: { withPassword: { attributes: { include: ['password_hash'] } } },
     }
   );
   return User;

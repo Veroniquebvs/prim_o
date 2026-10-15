@@ -19,8 +19,14 @@ through managers — upon observed performance. Employees redeem tokens for part
 | `manager` | Leads a team: receives a team token envelope from the employer and redistributes it to team members (earns a retribution %), manages own scheduled allocations |
 | `employee` | Receives tokens, redeems vouchers, favourites, history |
 
-New users register with `status: 'pending'` and must be activated by their employer (or admin).
-Employees typically join via a QR code printed by the employer (`/register?companyId=...` → `GET /api/companies/:id/public`).
+**Registration & account status** (`auth.service.register`):
+- Employees join via a QR code printed by the employer (`/register?companyId=...` → `GET /api/companies/:id/public`).
+  They are created `status: 'pending'`, get **no token**, and can log in only after activation by their employer or an admin (`PATCH /users/:id/activate`).
+- Employer self-onboarding is two calls: public `POST /companies` returns the company **and a 1-hour `claim_token`**, then
+  `POST /auth/register` with `role: 'employer'` requires that token and a company with no user yet. The employer is created `active` and logged in.
+  A company id alone (e.g. read from a QR code) is never enough to become its employer.
+- `login` and `refresh` return 403 when `status !== 'active'` (checked after the password). An already-used email gets the same reply as a new employee.
+- `User` never exposes `password_hash`: excluded by the default scope (use `User.scope('withPassword')` only for login / password change) and stripped by `toJSON`.
 
 ---
 
@@ -287,7 +293,8 @@ When adding an env var: update `render.yaml`, `docker-compose.yml` and the `.env
 ## Known Gaps / TODO (as of 13 October 2026)
 
 - Stripe webhook idempotence check runs outside the transaction and without a row lock: two concurrent deliveries of the same event could credit twice (ticket open)
-- Registering with an already-used email returns 201 with a generic `{ message }` and no tokens. Enumeration is still possible because a new email gets `{ user, accessToken, refreshToken }`, so the two bodies differ. Also, `AuthContext.register` does not handle the generic body and stores `undefined` tokens (ticket open)
+- `verifyToken` does not check `status` in the database: an access token issued before a deactivation stays valid until it expires (7 days by default; refresh is refused). Rotate `JWT_SECRET` when recreating the database
+- Two simultaneous registrations with the same email: the second hits the unique constraint (500) instead of the generic reply
 - Client ESLint: unused vars and `any` are warnings (≈ 90), not errors — existing debt to burn down
 - Prettier has never been applied repo-wide (`prettier --check` fails on most files) — do it in a dedicated PR, not mixed with logic changes
 - No CD step yet: CI (`.github/workflows/ci.yml`) runs lint → tests → client build → API Docker build; deploys remain Render/Vercel auto-deploys

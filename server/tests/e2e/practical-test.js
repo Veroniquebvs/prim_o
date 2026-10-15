@@ -215,6 +215,7 @@ async function runAll() {
       password: 'SecurePass123!',
       role: 'employer',
       company_id: ctx.company?.id,
+      claim_token: ctx.company?.claim_token,  // preuve de création renvoyée par POST /companies
     });
     assertStatus(res, 201);
     ctx.employer          = res.data.data?.user;
@@ -232,9 +233,8 @@ async function runAll() {
       company_id: ctx.company?.id,
     });
     assertStatus(res, 201);
-    ctx.employee1      = res.data.data?.user;
-    ctx.employee1Token = res.data.data?.accessToken;
-    return `id: ${ctx.employee1?.id}`;
+    assert(!res.data.data?.accessToken, 'un salarié ne doit pas recevoir de token avant activation');
+    return 'compte créé en attente d\'activation (pas de token)';
   });
 
   await test('Inscrire employee 2 — POST /api/auth/register', async () => {
@@ -246,9 +246,8 @@ async function runAll() {
       company_id: ctx.company?.id,
     });
     assertStatus(res, 201);
-    ctx.employee2      = res.data.data?.user;
-    ctx.employee2Token = res.data.data?.accessToken;
-    return `id: ${ctx.employee2?.id}`;
+    assert(!res.data.data?.accessToken, 'un salarié ne doit pas recevoir de token avant activation');
+    return 'compte créé en attente d\'activation (pas de token)';
   });
 
   await test('Inscrire admin — POST /api/auth/register', async () => {
@@ -264,15 +263,29 @@ async function runAll() {
     return `id: ${ctx.admin?.id}`;
   });
 
-  await test('Email déjà utilisé → 409', async () => {
+  await test('Employeur sans claim_token sur une entreprise existante → 403', async () => {
     const res = await api('POST', '/api/auth/register', {
-      name: 'Dupont', first_name: 'Jean',
-      email: `employer-${TS}@test.com`,  // même email
+      name: 'Pirate', first_name: 'Eve',
+      email: `pirate-${TS}@test.com`,
       password: 'SecurePass123!',
       role: 'employer',
+      company_id: ctx.company?.id,  // id lisible sur le QR code
     });
-    assertStatus(res, 409);
-    return '409 Email already in use';
+    assertStatus(res, 403);
+    return '403 prise de contrôle refusée';
+  });
+
+  await test('Email déjà utilisé → même réponse qu\'un nouveau salarié (pas d\'énumération)', async () => {
+    const res = await api('POST', '/api/auth/register', {
+      name: 'Dupont', first_name: 'Jean',
+      email: `employee1-${TS}@test.com`,  // même email
+      password: 'SecurePass123!',
+      role: 'employee',
+      company_id: ctx.company?.id,
+    });
+    assertStatus(res, 201);
+    assert(!res.data.data?.accessToken, 'aucun token attendu');
+    return '201 message générique';
   });
 
   await test('Mot de passe trop court → 400', async () => {
@@ -306,6 +319,28 @@ async function runAll() {
     });
     assertStatus(res, 401);
     return '401 Invalid credentials';
+  });
+
+  await test('Login salarié en attente → 403', async () => {
+    const res = await api('POST', '/api/auth/login', {
+      email: `employee1-${TS}@test.com`, password: 'SecurePass123!',
+    });
+    assertStatus(res, 403);
+    return '403 Account pending activation';
+  });
+
+  await test('Activer les salariés — GET /api/users/pending + PATCH /api/users/:id/activate', async () => {
+    const list = await api('GET', '/api/users/pending', null, ctx.employerToken);
+    assertStatus(list, 200);
+    assert(list.data.every((u) => !('password_hash' in u)), 'password_hash exposé');
+    ctx.employee1 = list.data.find((u) => u.email === `employee1-${TS}@test.com`);
+    ctx.employee2 = list.data.find((u) => u.email === `employee2-${TS}@test.com`);
+    assert(ctx.employee1 && ctx.employee2, 'salariés en attente introuvables');
+    for (const emp of [ctx.employee1, ctx.employee2]) {
+      const res = await api('PATCH', `/api/users/${emp.id}/activate`, {}, ctx.employerToken);
+      assertStatus(res, 200);
+    }
+    return '2 salariés activés';
   });
 
   await test('Login employee 1 — POST /api/auth/login', async () => {
@@ -701,9 +736,13 @@ async function runAll() {
       email: `temp-${TS}@test.com`,
       password: 'SecurePass123!',
       role: 'employee',
+      company_id: ctx.company?.id,
     });
     assertStatus(regRes, 201);
-    const tempId = regRes.data.data?.user?.id;
+    // Le salarié n'est pas renvoyé à l'inscription : on le retrouve dans la liste des comptes en attente
+    const pending = await api('GET', '/api/users/pending', null, ctx.employerToken);
+    const tempId = pending.data.find((u) => u.email === `temp-${TS}@test.com`)?.id;
+    assert(tempId, 'utilisateur temporaire introuvable');
 
     const delRes = await api('DELETE', `/api/users/${tempId}`, null, ctx.adminToken);
     assertStatus(delRes, 200);

@@ -118,6 +118,19 @@ describe('Users Integration Routes - Security & Isolation', () => {
       expect(res.status).toBe(200);
     });
 
+    it('queries pending employees of the own company without the password hash (T-81)', async () => {
+      User.findAll.mockResolvedValue([]);
+
+      await request(app).get('/api/users/pending').set('Authorization', `Bearer ${employerToken}`);
+
+      expect(User.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: MOCK_COMPANY_A_ID, status: 'pending' }),
+          attributes: { exclude: ['password_hash'] },
+        })
+      );
+    });
+
     it('denies access to employees (403)', async () => {
       const res = await request(app)
         .get('/api/users/pending')
@@ -255,11 +268,24 @@ describe('Users Integration Routes - Security & Isolation', () => {
       User.findOne.mockResolvedValue(null);
 
       const res = await request(app)
-        .patch(`/api/users/${MOCK_EMPLOYEE_ID}`) // Employee A (Company A)
+        .patch(`/api/users/${MOCK_EMPLOYEE_ID}/activate`) // Employee A (Company A)
         .set('Authorization', `Bearer ${otherEmployerToken}`) // Employer (Company B)
         .send({ entry_date: '2026-06-01' });
 
       expect(res.status).toBe(404);
+      expect(User.findOne).toHaveBeenCalledWith({ where: { id: MOCK_EMPLOYEE_ID, company_id: MOCK_COMPANY_B_ID } });
+    });
+
+    it('allows an admin to activate a user of any company (T-84)', async () => {
+      User.findOne.mockResolvedValue(mockEmployee);
+
+      const res = await request(app)
+        .patch(`/api/users/${MOCK_EMPLOYEE_ID}/activate`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(User.findOne).toHaveBeenCalledWith({ where: { id: MOCK_EMPLOYEE_ID } });
+      expect(res.body.data).not.toHaveProperty('password_hash');
     });
 
     it('denies employee from activating another employee (403)', async () => {

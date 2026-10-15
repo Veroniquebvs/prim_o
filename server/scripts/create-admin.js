@@ -35,6 +35,7 @@ async function main() {
     email: ADMIN_EMAIL,
     password_hash: hash,
     role: 'admin',
+    status: 'active',
     name: 'Admin Primo',
     first_name: 'Admin',
     last_name: 'Primo',

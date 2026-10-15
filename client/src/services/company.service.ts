@@ -42,8 +42,9 @@ export const companyService = {
     return data.data;
   },
 
-  async create(payload: CreateCompanyPayload): Promise<Company> {
-    const { data } = await api.post<ApiResponse<Company>>(
+  /** Public self-onboarding: also returns the claim_token required to register the employer. */
+  async create(payload: CreateCompanyPayload): Promise<Company & { claim_token: string }> {
+    const { data } = await api.post<ApiResponse<Company & { claim_token: string }>>(
       "/companies",
       payload,
     );
